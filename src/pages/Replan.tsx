@@ -60,7 +60,7 @@ export default function Replan() {
 
   return (
     <AppShell>
-      <h1 className="pace-title">Carrying over</h1>
+      <h1 className="pace-screen-title">Carrying over</h1>
       <div className="pace-eyebrow mt-1">From earlier · {carry.length} {carry.length === 1 ? 'task' : 'tasks'}</div>
 
       <div className="mt-5 space-y-3">
@@ -73,7 +73,7 @@ export default function Replan() {
         {carry.map(t => (
           <div key={t.id} className="space-y-2.5">
             <div className="pace-alert animate-fade-in">
-              <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+              <div className="pace-eyebrow mb-1">
                 <span className="priority-dot must" />{t.title} didn't get done
               </div>
               That's okay. What feels right for today?
@@ -87,7 +87,7 @@ export default function Replan() {
 
             {(t.reschedule_count ?? 0) >= 2 && (
               <div className="pace-alert">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                <div className="pace-eyebrow mb-1">
                   <span className="priority-dot should" />This has moved a few times
                 </div>
                 No judgment. Want to reconnect with why it matters, or shrink it to something tiny?

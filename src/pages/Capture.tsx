@@ -55,7 +55,7 @@ export default function Capture() {
   return (
     <AppShell>
       <div className="pace-eyebrow">New responsibility</div>
-      <h1 className="pace-title mt-1">Capture</h1>
+      <h1 className="pace-screen-title mt-1">Capture</h1>
 
       <div className="mt-6 space-y-4">
         <div>
@@ -119,7 +119,7 @@ export default function Capture() {
 
         {heavy && (
           <div className="pace-alert animate-fade-in">
-            <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+            <div className="pace-eyebrow mb-1">
               <span className="priority-dot should" />Coping suggestions
             </div>
             This looks like a heavy one. Want to break it down, schedule a short rest first, or move it to a fresher morning? You can do that later from the task too.

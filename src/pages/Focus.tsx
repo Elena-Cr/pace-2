@@ -87,7 +87,7 @@ export default function Focus() {
   return (
     <AppShell>
       <div className="pace-eyebrow">Focusing on</div>
-      <h1 className="pace-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
+      <h1 className="pace-screen-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
       {task?.next_action && (
         <div className="mt-2 text-[13px] text-muted-foreground flex items-start gap-1.5">
           <ArrowRight className="w-3.5 h-3.5 mt-1 shrink-0" />
@@ -106,10 +106,10 @@ export default function Focus() {
             <circle cx={ringSize/2} cy={ringSize/2} r={r - 14} stroke="hsl(var(--foreground))" strokeOpacity="0.2" strokeWidth="1" strokeDasharray="3 4" fill="none" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="font-display text-[40px] font-semibold tabular-nums tracking-tight">
+            <div className="text-[44px] font-semibold tabular-nums tracking-tight">
               {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
             </div>
-            <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+            <div className="pace-eyebrow mt-1">
               of {String(planned).padStart(2, '0')}:00
             </div>
           </div>

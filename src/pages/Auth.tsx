@@ -51,8 +51,8 @@ export default function Auth() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-background">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10 animate-fade-in">
-          <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Pace</div>
-          <h1 className="font-display text-[28px] font-semibold leading-tight">
+          <div className="text-[13px] font-semibold text-primary mb-3 tracking-tight">Pace</div>
+          <h1 className="pace-screen-title">
             Plan with rest,<br/>not around it.
           </h1>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
@@ -88,7 +88,7 @@ export default function Auth() {
 
           <div className="flex items-center gap-2 my-1">
             <div className="flex-1 h-px bg-foreground/15" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">or</span>
+            <span className="text-[12px] text-muted-foreground">or</span>
             <div className="flex-1 h-px bg-foreground/15" />
           </div>
 

@@ -13,16 +13,16 @@ export default function BottomNav() {
   const loc = useLocation();
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t-[1.5px] border-foreground/90"
+      className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border/60"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="mx-auto max-w-md flex items-end justify-around px-2 pt-2 pb-2">
+      <div className="mx-auto max-w-md flex items-end justify-around px-3 pt-2 pb-2">
         {items.map((it) => {
           const active = loc.pathname === it.to;
           if (it.fab) {
             return (
               <NavLink key={it.to} to={it.to} aria-label="Capture"
-                className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full border-[2px] border-foreground bg-foreground text-background shadow-[3px_3px_0_hsl(var(--ink-4))] transition active:translate-y-px">
+                className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.35)] transition active:scale-95">
                 <Plus className="w-6 h-6" />
               </NavLink>
             );
@@ -30,9 +30,9 @@ export default function BottomNav() {
           const Icon = it.icon;
           return (
             <NavLink key={it.to} to={it.to}
-              className={`flex flex-1 flex-col items-center gap-1 py-1.5 ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-              <Icon className={`w-5 h-5 ${active ? 'stroke-[2.4]' : ''}`} strokeWidth={active ? 2.4 : 1.8} />
-              <span className="font-mono text-[9px] uppercase tracking-wider font-semibold">{it.label}</span>
+              className={`flex flex-1 flex-col items-center gap-1 py-1.5 ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+              <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.8} />
+              <span className="text-[12px] font-medium">{it.label}</span>
             </NavLink>
           );
         })}
