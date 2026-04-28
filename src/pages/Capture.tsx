@@ -117,10 +117,60 @@ export default function Capture() {
       <p className="pace-meta mt-1">Just a title is enough — you can estimate later.</p>
 
       <div className="mt-6 space-y-4">
+        {/* Recurring templates from past tasks */}
+        {templates.length > 0 && title.length === 0 && (
+          <div>
+            <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-2">
+              <Repeat className="w-3 h-3" /> Recurring intentions
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {templates.map((t, i) => (
+                <button key={i} onClick={() => applySuggestion(t, t.exampleTitle)} className="pace-chip">
+                  {t.exampleTitle}
+                  <span className="ml-1 text-[10px] text-muted-foreground">×{t.matches}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
           <label className="pace-field-label">What needs doing?</label>
-          <input className="pace-field" autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Stats problem set 4" />
+          <input className="pace-field" autoFocus value={title} onChange={e => { setTitle(e.target.value); setAppliedFor(null); }} placeholder="e.g. Stats problem set 4" />
         </div>
+
+        {/* Live suggestion based on title */}
+        {showSuggestion && suggestion && (
+          <div className="pace-card-soft border border-primary/20 animate-fade-in">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="pace-eyebrow inline-flex items-center gap-1.5 text-primary">
+                  <Sparkles className="w-3 h-3" />
+                  {suggestion.source === 'repeating' ? 'Looks familiar' : 'Similar to past intentions'}
+                </div>
+                <div className="text-[13px] text-muted-foreground mt-1">
+                  Based on {suggestion.matches} past {suggestion.matches === 1 ? 'intention' : 'intentions'} like
+                  {' '}<span className="text-foreground font-medium">"{suggestion.exampleTitle}"</span>
+                </div>
+              </div>
+              <button onClick={dismissSuggestion} className="p-1 -m-1 rounded-full hover:bg-muted shrink-0" aria-label="Dismiss">
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="mt-2 flex gap-1 flex-wrap text-[12px]">
+              {suggestion.domain && <span className="pace-chip">Domain · {DOMAIN_LABEL[suggestion.domain]}</span>}
+              {suggestion.priority && <span className="pace-chip">Priority · {PRIORITY_LABEL[suggestion.priority]}</span>}
+              {suggestion.estimated_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.estimated_minutes)}</span>}
+              {suggestion.energy && <span className="pace-chip">Energy · {suggestion.energy}</span>}
+              {suggestion.effort_level && <span className="pace-chip">Effort · {suggestion.effort_level}</span>}
+              {suggestion.difficulty != null && <span className="pace-chip">Difficulty · {suggestion.difficulty}/5</span>}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => applySuggestion(suggestion)} className="pace-btn-primary pace-btn-sm">Use these</button>
+              <button onClick={dismissSuggestion} className="pace-btn-ghost pace-btn-sm">Not this time</button>
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="pace-field-label">Domain</label>
