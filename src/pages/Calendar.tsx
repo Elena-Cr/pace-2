@@ -112,6 +112,24 @@ export default function CalendarView() {
       });
   }, [user, weekStart]);
 
+  // Month grid range (Mon-start, 6 rows = 42 days)
+  const monthGrid = useMemo(() => {
+    const first = new Date(monthAnchor);
+    const gridStart = startOfWeek(first);
+    return Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(gridStart); d.setDate(d.getDate() + i); return d;
+    });
+  }, [monthAnchor]);
+
+  useEffect(() => {
+    if (!user || view !== 'month') return;
+    const start = monthGrid[0].toISOString().slice(0, 10);
+    const end = new Date(monthGrid[41]); end.setDate(end.getDate() + 1);
+    supabase.from('tasks').select('*')
+      .gte('scheduled_for', start).lt('scheduled_for', end.toISOString().slice(0, 10))
+      .then(({ data }) => setMonthTasks(data ?? []));
+  }, [user, monthAnchor, view]);
+
   // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day
   const events: CalEvent[] = useMemo(() => {
     const list: CalEvent[] = [];
