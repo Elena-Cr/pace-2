@@ -14,16 +14,177 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      focus_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          outcome: Database["public"]["Enums"]["focus_outcome"] | null
+          planned_minutes: number
+          started_at: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          outcome?: Database["public"]["Enums"]["focus_outcome"] | null
+          planned_minutes?: number
+          started_at?: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          outcome?: Database["public"]["Enums"]["focus_outcome"] | null
+          planned_minutes?: number
+          started_at?: string
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          difficulty: number | null
+          domain: Database["public"]["Enums"]["task_domain"] | null
+          energy: string | null
+          estimated_minutes: number | null
+          id: string
+          involves_others: boolean
+          is_rest: boolean
+          next_action: string | null
+          notes: string | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          progress: number
+          reschedule_count: number
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          difficulty?: number | null
+          domain?: Database["public"]["Enums"]["task_domain"] | null
+          energy?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          involves_others?: boolean
+          is_rest?: boolean
+          next_action?: string | null
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          progress?: number
+          reschedule_count?: number
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          difficulty?: number | null
+          domain?: Database["public"]["Enums"]["task_domain"] | null
+          energy?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          involves_others?: boolean
+          is_rest?: boolean
+          next_action?: string | null
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          progress?: number
+          reschedule_count?: number
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      focus_outcome: "completed" | "more_time" | "replan" | "abandoned"
+      task_domain: "academic" | "work" | "social" | "personal"
+      task_priority: "must" | "should" | "could"
+      task_status: "not_started" | "in_progress" | "done" | "rescheduled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +311,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      focus_outcome: ["completed", "more_time", "replan", "abandoned"],
+      task_domain: ["academic", "work", "social", "personal"],
+      task_priority: ["must", "should", "could"],
+      task_status: ["not_started", "in_progress", "done", "rescheduled"],
+    },
   },
 } as const
