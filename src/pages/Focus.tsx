@@ -109,7 +109,7 @@ export default function Focus() {
             <div className="font-display text-[40px] font-semibold tabular-nums tracking-tight">
               {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
             </div>
-            <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+            <div className="pace-eyebrow mt-1">
               of {String(planned).padStart(2, '0')}:00
             </div>
           </div>

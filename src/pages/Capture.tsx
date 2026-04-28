@@ -119,7 +119,7 @@ export default function Capture() {
 
         {heavy && (
           <div className="pace-alert animate-fade-in">
-            <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+            <div className="pace-eyebrow mb-1">
               <span className="priority-dot should" />Coping suggestions
             </div>
             This looks like a heavy one. Want to break it down, schedule a short rest first, or move it to a fresher morning? You can do that later from the task too.

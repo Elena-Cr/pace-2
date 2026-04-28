@@ -60,7 +60,7 @@ export default function Plan() {
             <label className="pace-field-label">Hours available</label>
             <input type="range" min={1} max={12} step={0.5} value={capacityHours}
               onChange={e => setCapacityHours(Number(e.target.value))} className="w-full accent-foreground" />
-            <div className="font-mono text-[11px] mt-1">{capacityHours}h</div>
+            <div className="text-[13px] font-medium mt-1">{capacityHours}h</div>
           </div>
           <div>
             <label className="pace-field-label">Energy</label>
@@ -73,14 +73,14 @@ export default function Plan() {
 
       <div className="pace-eyebrow mt-5 mb-1.5">Planned vs available</div>
       <div className={`pace-capacity ${over ? 'over' : ''}`}><i style={{ width: `${pct}%` }} /></div>
-      <div className="mt-1.5 flex justify-between font-mono text-[10px] text-muted-foreground">
+      <div className="mt-1.5 flex justify-between text-[12px] text-muted-foreground">
         <span>{fmt(plannedMinutes)} planned</span>
         <span>{fmt(capacityMinutes)} available</span>
       </div>
 
       {over && (
         <div className="pace-alert mt-3 animate-fade-in">
-          <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="pace-eyebrow mb-1">
             <span className="priority-dot must" />Looks like a lot for today
           </div>
           You're {fmt(plannedMinutes - capacityMinutes)} over capacity. Want to move one task, shorten one, or split it across two days?
