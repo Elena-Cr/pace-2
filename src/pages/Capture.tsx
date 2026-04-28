@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { Domain, Priority } from '@/lib/pace';
+import { Domain, Priority, PRIORITY_LABEL } from '@/lib/pace';
 import { toast } from 'sonner';
 import { X, Plus } from 'lucide-react';
 
@@ -103,7 +103,7 @@ export default function Capture() {
             {(['must','should','could'] as Priority[]).map(p => (
               <button key={p} onClick={() => setPriority(p)}
                 className={priority === p ? 'pace-chip-filled' : 'pace-chip'}>
-                <span className={`priority-dot ${p}`} />{p}
+                <span className={`priority-dot ${p}`} />{PRIORITY_LABEL[p]}
               </button>
             ))}
           </div>

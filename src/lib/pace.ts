@@ -21,6 +21,12 @@ export type Mood = 'fine' | 'tired' | 'overwhelmed' | 'frustrated' | 'unsure';
 
 export type Subtask = { id: string; title: string; done: boolean };
 
+export const PRIORITY_LABEL: Record<Priority, string> = {
+  must: 'High',
+  should: 'Medium',
+  could: 'Low',
+};
+
 export const DOMAIN_LABEL: Record<Domain, string> = {
   academic: 'Academic',
   work: 'Work',
