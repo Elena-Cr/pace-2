@@ -76,9 +76,11 @@ const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'pers
 export default function CalendarView() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const [view, setView] = useState<'week' | 'day'>('week');
+  const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
+  const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
+  const [monthTasks, setMonthTasks] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [capacities, setCapacities] = useState<Record<string, { available_hours: number; energy_level: string }>>({});
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
