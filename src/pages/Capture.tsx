@@ -76,7 +76,7 @@ export default function Capture() {
 
   return (
     <AppShell>
-      <div className="pace-eyebrow">New responsibility</div>
+      <div className="pace-eyebrow">New intention</div>
       <h1 className="pace-screen-title mt-1">Capture</h1>
       <p className="pace-meta mt-1">Just a title is enough — you can estimate later.</p>
 
@@ -204,7 +204,7 @@ export default function Capture() {
         )}
 
         <button onClick={save} disabled={busy} className="pace-btn-primary w-full">
-          {busy ? 'Saving…' : 'Save responsibility'}
+          {busy ? 'Saving…' : 'Save intention'}
         </button>
         <button onClick={() => nav(-1)} className="pace-btn w-full">Cancel</button>
       </div>

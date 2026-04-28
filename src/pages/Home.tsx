@@ -106,7 +106,7 @@ export default function Home() {
       <div className="mt-3 space-y-2.5">
         {filtered.length === 0 && restBlocks.length === 0 && (
           <div className="pace-card-soft text-sm text-muted-foreground">
-            Nothing on the list yet. Tap the <span className="font-semibold text-foreground">＋</span> below to capture your first responsibility — title is the only thing required.
+            Nothing on the list yet. Tap the <span className="font-semibold text-foreground">＋</span> below to capture your first intention — title is the only thing required.
           </div>
         )}
 

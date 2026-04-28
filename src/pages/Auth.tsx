@@ -56,7 +56,7 @@ export default function Auth() {
             Plan with rest,<br/>not around it.
           </h1>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            A calm planner for students. See all your responsibilities, estimate workload realistically, and replan with care when things change.
+            A calm planner for students. See all your intentions, estimate workload realistically, and replan with care when things change.
           </p>
         </div>
 
