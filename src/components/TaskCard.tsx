@@ -15,7 +15,7 @@ export default function TaskCard({ task, onOpen }: { task: Task; onOpen?: (t: Ta
           <span className={`priority-dot ${task.priority}`} />
           {task.domain ? DOMAIN_LABEL[task.domain] : 'Uncategorized'} · {formatDeadline(task.deadline)}
         </span>
-        <span className="pace-chip-dashed">{STATUS_LABEL[task.status]}</span>
+        <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status]}</span>
       </div>
       <div className="mt-1 font-display text-[14px] font-semibold leading-snug">{task.title}</div>
       {task.progress > 0 && (

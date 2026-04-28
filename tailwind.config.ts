@@ -32,6 +32,14 @@ export default {
         warning: { DEFAULT: "hsl(var(--warning))", foreground: "hsl(var(--warning-foreground))" },
         attention: { DEFAULT: "hsl(var(--attention))", foreground: "hsl(var(--attention-foreground))" },
         success: { DEFAULT: "hsl(var(--success))", foreground: "hsl(var(--success-foreground))" },
+        status: {
+          "not-started": "hsl(var(--status-not-started))",
+          "in-progress": "hsl(var(--status-in-progress))",
+          blocked: "hsl(var(--status-blocked))",
+          "nearly-done": "hsl(var(--status-nearly-done))",
+          completed: "hsl(var(--status-completed))",
+          rest: "hsl(var(--status-rest))",
+        },
       },
       borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
       keyframes: {
