@@ -48,7 +48,7 @@ export default function Home() {
   return (
     <AppShell>
       <div className="pace-eyebrow">{dateStr}</div>
-      <h1 className="pace-title mt-1">{greeting()}, {profile?.display_name ?? 'friend'}</h1>
+      <h1 className="pace-screen-title mt-1">{greeting()}, {profile?.display_name ?? 'friend'}</h1>
       <div className="pace-eyebrow mt-1">
         {real.length} {real.length === 1 ? 'thing' : 'things'} planned · {restBlocks.length} rest {restBlocks.length === 1 ? 'block' : 'blocks'}
       </div>

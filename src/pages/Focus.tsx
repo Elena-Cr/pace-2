@@ -87,7 +87,7 @@ export default function Focus() {
   return (
     <AppShell>
       <div className="pace-eyebrow">Focusing on</div>
-      <h1 className="pace-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
+      <h1 className="pace-screen-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
       {task?.next_action && (
         <div className="mt-2 text-[13px] text-muted-foreground flex items-start gap-1.5">
           <ArrowRight className="w-3.5 h-3.5 mt-1 shrink-0" />

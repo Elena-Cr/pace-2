@@ -50,7 +50,7 @@ export default function Plan() {
 
   return (
     <AppShell>
-      <h1 className="pace-title">Today's plan</h1>
+      <h1 className="pace-screen-title">Today's plan</h1>
       <div className="pace-eyebrow mt-1">{new Date().toLocaleDateString([], { weekday: 'long' })} · capacity {fmt(capacityMinutes)}</div>
 
       <div className="mt-5 pace-card">

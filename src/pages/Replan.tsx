@@ -60,7 +60,7 @@ export default function Replan() {
 
   return (
     <AppShell>
-      <h1 className="pace-title">Carrying over</h1>
+      <h1 className="pace-screen-title">Carrying over</h1>
       <div className="pace-eyebrow mt-1">From earlier · {carry.length} {carry.length === 1 ? 'task' : 'tasks'}</div>
 
       <div className="mt-5 space-y-3">
