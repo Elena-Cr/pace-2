@@ -88,7 +88,7 @@ export default function Auth() {
 
           <div className="flex items-center gap-2 my-1">
             <div className="flex-1 h-px bg-foreground/15" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">or</span>
+            <span className="text-[12px] text-muted-foreground">or</span>
             <div className="flex-1 h-px bg-foreground/15" />
           </div>
 
