@@ -85,70 +85,73 @@
   .pace-sub   { @apply pace-eyebrow; }
 
   .pace-card {
-    @apply rounded-2xl border-[1.5px] border-foreground/90 bg-card p-3.5;
+    @apply rounded-2xl border border-border bg-card p-3.5;
     box-shadow: var(--shadow-card);
   }
   .pace-card-soft {
-    @apply rounded-2xl border border-foreground/15 bg-card p-3.5;
+    @apply rounded-2xl border border-border/60 bg-card p-3.5;
     box-shadow: var(--shadow-card);
   }
 
   .pace-chip {
-    @apply inline-flex items-center gap-1 rounded-full border-[1.2px] border-foreground/90 bg-background
-           px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider;
+    @apply inline-flex items-center gap-1 rounded-full border border-border bg-card
+           px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-foreground;
   }
-  .pace-chip-filled { @apply pace-chip bg-foreground text-background border-foreground; }
+  .pace-chip-filled { @apply pace-chip bg-primary text-primary-foreground border-primary; }
   .pace-chip-dashed { @apply pace-chip border-dashed; }
 
   .pace-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border-[1.5px] border-foreground/90 bg-background
-           px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition
-           hover:bg-foreground/5 active:translate-y-px disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card
+           px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground transition
+           hover:bg-muted active:translate-y-px disabled:opacity-50;
   }
-  .pace-btn-primary { @apply pace-btn bg-foreground text-background hover:bg-foreground/90; }
+  .pace-btn-primary { @apply pace-btn bg-primary text-primary-foreground border-primary hover:bg-primary/90; }
+  .pace-btn-secondary { @apply pace-btn bg-secondary text-secondary-foreground border-secondary hover:bg-secondary/90; }
   .pace-btn-sm { @apply px-3 py-1.5 text-[10px]; }
 
   .pace-field {
-    @apply w-full rounded-xl border-[1.5px] border-foreground/90 bg-background px-3 py-2.5
+    @apply w-full rounded-xl border border-input bg-card px-3 py-2.5
            font-mono text-[13px] text-foreground placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-foreground/20;
+           focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring;
   }
   .pace-field-label {
     @apply font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground mb-1.5 flex items-center;
   }
 
   .pace-rest {
-    @apply rounded-xl border-[1.5px] border-dashed border-foreground/80 bg-transparent
-           px-3 py-2 font-mono text-[11px] text-muted-foreground flex items-center justify-between;
+    @apply rounded-xl border border-dashed bg-accent/40 text-accent-foreground
+           px-3 py-2 font-mono text-[11px] flex items-center justify-between;
+    border-color: hsl(var(--rest));
   }
 
   .pace-alert {
-    @apply rounded-xl border-[1.5px] border-foreground/90 p-3.5 text-[13px] leading-snug;
-    background: repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--foreground) / 0.04) 6px 12px);
+    @apply rounded-xl border p-3.5 text-[13px] leading-snug text-foreground;
+    border-color: hsl(var(--warning));
+    background: hsl(var(--warning) / 0.15);
   }
 
   .pace-progress {
-    @apply h-1.5 rounded-full border border-foreground/90 overflow-hidden;
+    @apply h-1.5 rounded-full bg-muted overflow-hidden;
   }
   .pace-progress > i {
     display: block; height: 100%;
-    background: repeating-linear-gradient(135deg, hsl(var(--foreground)) 0 3px, transparent 3px 6px);
+    background: hsl(var(--primary));
   }
 
   .pace-capacity {
-    @apply h-6 rounded-lg border-[1.5px] border-foreground/90 overflow-hidden bg-background relative;
+    @apply h-6 rounded-lg border border-border overflow-hidden bg-muted relative;
   }
   .pace-capacity > i {
-    display: block; height: 100%; background: hsl(var(--foreground)); position: relative;
+    display: block; height: 100%; background: hsl(var(--primary)); position: relative;
   }
   .pace-capacity > i::after {
     content: ''; position: absolute; inset: 0;
-    background: repeating-linear-gradient(45deg, transparent 0 4px, hsl(0 0% 100% / 0.25) 4px 8px);
+    background: repeating-linear-gradient(45deg, transparent 0 6px, hsl(0 0% 100% / 0.18) 6px 12px);
   }
-  .pace-capacity.over > i { background: hsl(var(--must)); }
+  .pace-capacity.over > i { background: hsl(var(--warning)); }
 
-  .priority-dot { @apply inline-block w-2 h-2 rounded-full border-[1.2px] border-foreground mr-1.5 align-middle shrink-0; }
-  .priority-dot.must   { background: hsl(var(--must));   border-color: hsl(var(--must)); }
-  .priority-dot.should { background: transparent;        border-color: hsl(var(--should)); }
-  .priority-dot.could  { background: hsl(var(--could));  border-color: hsl(var(--could)); opacity: 0.6; }
+  .priority-dot { @apply inline-block w-2 h-2 rounded-full mr-1.5 align-middle shrink-0; }
+  .priority-dot.must   { background: hsl(var(--must)); }
+  .priority-dot.should { background: hsl(var(--should)); }
+  .priority-dot.could  { background: hsl(var(--could)); opacity: 0.7; }
 }
