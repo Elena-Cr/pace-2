@@ -57,6 +57,20 @@
     --success: 117 26% 55%;    /* green */
     --success-foreground: 0 0% 100%;
 
+    /* Task status palette */
+    --status-not-started: 152 9% 81%;       /* #CBD5D1 */
+    --status-not-started-foreground: 206 7% 20%;
+    --status-in-progress: 211 27% 56%;      /* #6F8FAF */
+    --status-in-progress-foreground: 0 0% 100%;
+    --status-blocked: 8 53% 67%;            /* #D9897E */
+    --status-blocked-foreground: 0 0% 100%;
+    --status-nearly-done: 33 71% 67%;       /* #E8B86D */
+    --status-nearly-done-foreground: 206 7% 20%;
+    --status-completed: 117 26% 55%;        /* #8DBF8A */
+    --status-completed-foreground: 0 0% 100%;
+    --status-rest: 251 53% 88%;             /* #D8D2F2 */
+    --status-rest-foreground: 206 7% 20%;
+
     --radius: 0.875rem;
 
     --shadow-soft: 4px 4px 0 hsl(220 9% 88%);
