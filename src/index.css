@@ -71,6 +71,13 @@
     --status-rest: 251 53% 88%;             /* #D8D2F2 */
     --status-rest-foreground: 206 7% 20%;
 
+    /* Domain palette (calendar) — soft, accessible */
+    --domain-academic: 211 27% 56%;        /* muted blue */
+    --domain-work:     151 21% 59%;        /* sage */
+    --domain-social:   33 71% 67%;         /* amber */
+    --domain-personal: 220 9% 55%;         /* slate */
+    --domain-rest:     251 53% 78%;        /* lavender */
+
     --radius: 1.25rem;
 
     --shadow-soft: 0 1px 2px hsl(206 7% 20% / 0.04), 0 4px 16px hsl(206 7% 20% / 0.05);
