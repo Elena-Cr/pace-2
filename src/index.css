@@ -7,51 +7,60 @@
 /* Pace — design system. All colors HSL. */
 @layer base {
   :root {
-    /* Paper palette */
-    --background: 44 26% 95%;          /* #f5f3ee paper */
-    --foreground: 0 0% 10%;            /* ink */
+    /* Calm palette */
+    --background: 44 30% 95%;          /* #F7F5EF warm off-white */
+    --foreground: 206 7% 20%;          /* #2F3437 charcoal */
 
-    --paper-2: 48 16% 91%;
-    --ink-2: 0 0% 27%;
-    --ink-3: 0 0% 53%;
-    --ink-4: 0 0% 75%;
-    --hair: 0 0% 60%;
+    --paper-2: 44 24% 92%;
+    --ink-2: 206 7% 25%;
+    --ink-3: 220 9% 46%;
+    --ink-4: 220 9% 70%;
+    --hair: 220 9% 80%;
 
-    --card: 44 26% 95%;
-    --card-foreground: 0 0% 10%;
+    --card: 0 0% 100%;                 /* #FFFFFF surfaces */
+    --card-foreground: 206 7% 20%;
 
-    --popover: 44 26% 95%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 206 7% 20%;
 
-    --primary: 0 0% 10%;
-    --primary-foreground: 44 26% 95%;
+    --primary: 151 21% 59%;            /* #7FAF9B soft sage */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 16% 91%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 211 27% 56%;          /* #6F8FAF muted blue */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 48 16% 91%;
-    --muted-foreground: 0 0% 30%;
+    --muted: 44 24% 92%;
+    --muted-foreground: 220 9% 46%;    /* #6B7280 slate */
 
-    --accent: 48 16% 91%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 251 53% 88%;             /* #D8D2F2 soft lavender */
+    --accent-foreground: 206 7% 20%;
 
-    --destructive: 4 65% 51%;          /* must red */
+    --destructive: 8 53% 67%;          /* #D9897E dusty coral - needs attention */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
-    --ring: 0 0% 10%;
+    --border: 220 9% 85%;
+    --input: 220 9% 80%;
+    --ring: 151 21% 59%;
 
-    /* Priority */
-    --must: 4 65% 51%;     /* #d63a2f */
-    --should: 33 79% 47%;  /* #d68a1c */
-    --could: 0 0% 42%;
-    --ok: 132 39% 30%;
+    /* Priority & semantic */
+    --must: 8 53% 67%;     /* dusty coral */
+    --should: 33 71% 67%;  /* muted amber */
+    --could: 220 9% 60%;   /* slate */
+    --ok: 117 26% 55%;     /* calm green */
+
+    --rest: 251 53% 88%;       /* lavender */
+    --rest-foreground: 206 7% 20%;
+    --warning: 33 71% 67%;     /* amber */
+    --warning-foreground: 206 7% 20%;
+    --attention: 8 53% 67%;    /* coral */
+    --attention-foreground: 0 0% 100%;
+    --success: 117 26% 55%;    /* green */
+    --success-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
 
-    --shadow-soft: 4px 4px 0 hsl(0 0% 75%);
-    --shadow-card: 0 2px 0 hsl(0 0% 87%), 0 1px 6px hsl(0 0% 0% / 0.04);
+    --shadow-soft: 4px 4px 0 hsl(220 9% 88%);
+    --shadow-card: 0 2px 0 hsl(220 9% 92%), 0 1px 6px hsl(206 7% 20% / 0.04);
   }
 }
 
