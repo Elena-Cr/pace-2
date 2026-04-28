@@ -11,6 +11,7 @@ import Plan from "./pages/Plan";
 import Replan from "./pages/Replan";
 import Focus from "./pages/Focus";
 import Workload from "./pages/Workload";
+import CalendarView from "./pages/Calendar";
 import TaskDetail from "./pages/TaskDetail";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/replan" element={<Replan />} />
             <Route path="/focus" element={<Focus />} />
             <Route path="/workload" element={<Workload />} />
+            <Route path="/calendar" element={<CalendarView />} />
             <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

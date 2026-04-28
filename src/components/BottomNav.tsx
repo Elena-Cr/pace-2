@@ -3,7 +3,7 @@ import { Home, CalendarDays, Plus, Timer, BarChart3 } from 'lucide-react';
 
 const items = [
   { to: '/', icon: Home, label: 'Today' },
-  { to: '/plan', icon: CalendarDays, label: 'Plan' },
+  { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { to: '/capture', icon: Plus, label: '', fab: true },
   { to: '/focus', icon: Timer, label: 'Focus' },
   { to: '/workload', icon: BarChart3, label: 'Workload' },
