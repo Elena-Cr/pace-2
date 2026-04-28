@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { Domain, Priority, PRIORITY_LABEL } from '@/lib/pace';
+import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat } from 'lucide-react';
+import { useTaskSuggestions, Suggestion } from '@/hooks/useTaskSuggestions';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
@@ -36,6 +37,41 @@ export default function Capture() {
   const [subInput, setSubInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [appliedFor, setAppliedFor] = useState<string | null>(null); // title we last applied a suggestion for
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  const { templates, suggestFor } = useTaskSuggestions(user?.id);
+
+  // Debounced live suggestion
+  const [debouncedTitle, setDebouncedTitle] = useState(title);
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedTitle(title), 250);
+    return () => clearTimeout(id);
+  }, [title]);
+
+  const suggestion = useMemo(() => suggestFor(debouncedTitle), [debouncedTitle, suggestFor]);
+  const showSuggestion = suggestion && appliedFor !== debouncedTitle && !dismissed.has(debouncedTitle);
+
+  function applySuggestion(s: Suggestion, presetTitle?: string) {
+    if (presetTitle) setTitle(presetTitle);
+    // Only fill fields the user hasn't set yet, so we never overwrite intent
+    if (!domain && s.domain) setDomain(s.domain);
+    if (priority === 'should' && s.priority) setPriority(s.priority);
+    if (estimate === '' && s.estimated_minutes) setEstimate(s.estimated_minutes);
+    if (!energy && s.energy) setEnergy(s.energy);
+    if (!effort && s.effort_level) setEffort(s.effort_level);
+    if (!difficulty && s.difficulty) setDifficulty(s.difficulty);
+    if (!nextAction && s.next_action) setNextAction(s.next_action);
+    if (!involvesOthers && s.involves_others) setInvolvesOthers(true);
+    if (!othersRely && s.others_rely) setOthersRely(true);
+    setShowAdvanced(true);
+    setAppliedFor(presetTitle ?? debouncedTitle);
+    toast.success('Pre-filled from your past intentions.');
+  }
+
+  function dismissSuggestion() {
+    setDismissed(prev => new Set(prev).add(debouncedTitle));
+  }
 
   const heavy = (difficulty ?? 0) >= 4 || (estimate || 0) >= 90 || effort === 'Heavy';
 
