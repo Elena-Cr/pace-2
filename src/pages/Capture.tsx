@@ -204,7 +204,7 @@ export default function Capture() {
         )}
 
         <button onClick={save} disabled={busy} className="pace-btn-primary w-full">
-          {busy ? 'Saving…' : 'Save responsibility'}
+          {busy ? 'Saving…' : 'Save intention'}
         </button>
         <button onClick={() => nav(-1)} className="pace-btn w-full">Cancel</button>
       </div>
