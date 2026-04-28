@@ -126,6 +126,7 @@
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium;
   }
   .status-not_started { background: hsl(var(--status-not-started) / 0.45); color: hsl(var(--foreground)); }
+  .status-started     { background: hsl(var(--status-in-progress) / 0.12); color: hsl(var(--status-in-progress)); }
   .status-in_progress { background: hsl(var(--status-in-progress) / 0.18); color: hsl(var(--status-in-progress)); }
   .status-blocked     { background: hsl(var(--status-blocked) / 0.18);     color: hsl(var(--status-blocked)); }
   .status-nearly_done { background: hsl(var(--status-nearly-done) / 0.22); color: hsl(206 7% 20%); }

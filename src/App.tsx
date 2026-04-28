@@ -10,6 +10,8 @@ import Capture from "./pages/Capture";
 import Plan from "./pages/Plan";
 import Replan from "./pages/Replan";
 import Focus from "./pages/Focus";
+import Workload from "./pages/Workload";
+import TaskDetail from "./pages/TaskDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/plan" element={<Plan />} />
             <Route path="/replan" element={<Replan />} />
             <Route path="/focus" element={<Focus />} />
+            <Route path="/workload" element={<Workload />} />
+            <Route path="/task/:id" element={<TaskDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
