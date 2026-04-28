@@ -1,12 +1,12 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, CalendarDays, Plus, Timer, Sparkles } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Home, CalendarDays, Plus, Timer, BarChart3 } from 'lucide-react';
 
 const items = [
-  { to: '/', icon: Home, label: 'Home' },
+  { to: '/', icon: Home, label: 'Today' },
   { to: '/plan', icon: CalendarDays, label: 'Plan' },
   { to: '/capture', icon: Plus, label: '', fab: true },
   { to: '/focus', icon: Timer, label: 'Focus' },
-  { to: '/replan', icon: Sparkles, label: 'Replan' },
+  { to: '/workload', icon: BarChart3, label: 'Workload' },
 ];
 
 export default function BottomNav() {
@@ -32,7 +32,7 @@ export default function BottomNav() {
             <NavLink key={it.to} to={it.to}
               className={`flex flex-1 flex-col items-center gap-1 py-1.5 ${active ? 'text-primary' : 'text-muted-foreground'}`}>
               <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.8} />
-              <span className="text-[12px] font-medium">{it.label}</span>
+              <span className="text-[11px] font-medium">{it.label}</span>
             </NavLink>
           );
         })}

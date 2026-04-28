@@ -29,7 +29,7 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success('Welcome to Pace. Check your email if confirmation is required.');
+        toast.success('Welcome to Capacity Planner. Check your email if confirmation is required.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -51,12 +51,12 @@ export default function Auth() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-background">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10 animate-fade-in">
-          <div className="text-[13px] font-semibold text-primary mb-3 tracking-tight">Pace</div>
+          <div className="text-[13px] font-semibold text-primary mb-3 tracking-tight">Capacity Planner</div>
           <h1 className="pace-screen-title">
             Plan with rest,<br/>not around it.
           </h1>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            A calm planner that protects your sleep, meals, and recovery — and meets missed work with care.
+            A calm planner for students. See all your responsibilities, estimate workload realistically, and replan with care when things change.
           </p>
         </div>
 
