@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_capacity: {
+        Row: {
+          available_hours: number
+          created_at: string
+          date: string
+          energy_level: string
+          id: string
+          recovery_notes: string | null
+          recovery_rating: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_hours?: number
+          created_at?: string
+          date: string
+          energy_level?: string
+          id?: string
+          recovery_notes?: string | null
+          recovery_rating?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_hours?: number
+          created_at?: string
+          date?: string
+          energy_level?: string
+          id?: string
+          recovery_notes?: string | null
+          recovery_rating?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       focus_sessions: {
         Row: {
           created_at: string
@@ -85,18 +121,23 @@ export type Database = {
           deadline: string | null
           difficulty: number | null
           domain: Database["public"]["Enums"]["task_domain"] | null
+          effort_level: string | null
           energy: string | null
           estimated_minutes: number | null
           id: string
           involves_others: boolean
           is_rest: boolean
+          last_mood: Database["public"]["Enums"]["mood"] | null
           next_action: string | null
           notes: string | null
+          others_rely: boolean
           priority: Database["public"]["Enums"]["task_priority"]
           progress: number
+          replanning_reason: Database["public"]["Enums"]["replan_reason"] | null
           reschedule_count: number
           scheduled_for: string | null
           status: Database["public"]["Enums"]["task_status"]
+          subtasks: Json
           title: string
           updated_at: string
           user_id: string
@@ -106,18 +147,25 @@ export type Database = {
           deadline?: string | null
           difficulty?: number | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
+          effort_level?: string | null
           energy?: string | null
           estimated_minutes?: number | null
           id?: string
           involves_others?: boolean
           is_rest?: boolean
+          last_mood?: Database["public"]["Enums"]["mood"] | null
           next_action?: string | null
           notes?: string | null
+          others_rely?: boolean
           priority?: Database["public"]["Enums"]["task_priority"]
           progress?: number
+          replanning_reason?:
+            | Database["public"]["Enums"]["replan_reason"]
+            | null
           reschedule_count?: number
           scheduled_for?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          subtasks?: Json
           title: string
           updated_at?: string
           user_id: string
@@ -127,18 +175,25 @@ export type Database = {
           deadline?: string | null
           difficulty?: number | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
+          effort_level?: string | null
           energy?: string | null
           estimated_minutes?: number | null
           id?: string
           involves_others?: boolean
           is_rest?: boolean
+          last_mood?: Database["public"]["Enums"]["mood"] | null
           next_action?: string | null
           notes?: string | null
+          others_rely?: boolean
           priority?: Database["public"]["Enums"]["task_priority"]
           progress?: number
+          replanning_reason?:
+            | Database["public"]["Enums"]["replan_reason"]
+            | null
           reschedule_count?: number
           scheduled_for?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          subtasks?: Json
           title?: string
           updated_at?: string
           user_id?: string
@@ -182,9 +237,24 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       focus_outcome: "completed" | "more_time" | "replan" | "abandoned"
+      mood: "fine" | "tired" | "overwhelmed" | "frustrated" | "unsure"
+      replan_reason:
+        | "too_tired"
+        | "underestimated"
+        | "waiting_others"
+        | "higher_priority"
+        | "needed_more_time"
+        | "circumstances_changed"
       task_domain: "academic" | "work" | "social" | "personal"
       task_priority: "must" | "should" | "could"
-      task_status: "not_started" | "in_progress" | "done" | "rescheduled"
+      task_status:
+        | "not_started"
+        | "in_progress"
+        | "done"
+        | "rescheduled"
+        | "started"
+        | "blocked"
+        | "nearly_done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -314,9 +384,26 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       focus_outcome: ["completed", "more_time", "replan", "abandoned"],
+      mood: ["fine", "tired", "overwhelmed", "frustrated", "unsure"],
+      replan_reason: [
+        "too_tired",
+        "underestimated",
+        "waiting_others",
+        "higher_priority",
+        "needed_more_time",
+        "circumstances_changed",
+      ],
       task_domain: ["academic", "work", "social", "personal"],
       task_priority: ["must", "should", "could"],
-      task_status: ["not_started", "in_progress", "done", "rescheduled"],
+      task_status: [
+        "not_started",
+        "in_progress",
+        "done",
+        "rescheduled",
+        "started",
+        "blocked",
+        "nearly_done",
+      ],
     },
   },
 } as const
