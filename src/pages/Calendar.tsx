@@ -1,0 +1,473 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, X, MoveRight } from 'lucide-react';
+import AppShell from '@/components/AppShell';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason } from '@/lib/pace';
+import { toast } from 'sonner';
+
+type CalKind = 'task' | 'rest' | 'meal' | 'sleep' | 'recovery' | 'focus';
+
+type CalEvent = {
+  id: string;
+  title: string;
+  domain: Domain | 'rest';
+  kind: CalKind;
+  status?: Status;
+  next_action?: string | null;
+  estimated_minutes?: number | null;
+  effort_level?: string | null;
+  energy?: string | null;
+  difficulty?: number | null;
+  notes?: string | null;
+  others_rely?: boolean;
+  // time
+  day: number;        // 0..6 (week index)
+  startMin: number;   // minutes from 00:00
+  endMin: number;
+  // backing
+  taskId?: string;
+  fixed?: boolean;    // sleep/meal/recovery aren't tasks
+};
+
+const HOUR_PX = 56;
+const START_HOUR = 6;
+const END_HOUR = 24; // exclusive
+const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function startOfWeek(d: Date) {
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  const dow = (x.getDay() + 6) % 7; // Mon=0
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+function fmtTime(min: number) {
+  const h = Math.floor(min / 60); const m = min % 60;
+  const am = h < 12; const hh = ((h + 11) % 12) + 1;
+  return `${hh}${m ? ':' + String(m).padStart(2, '0') : ''}${am ? 'a' : 'p'}`;
+}
+function fmtRange(s: number, e: number) { return `${fmtTime(s)} – ${fmtTime(e)}`; }
+
+// Sample non-task blocks repeated each weekday
+const FIXED_BLOCKS: Array<Omit<CalEvent, 'id' | 'day'>> = [
+  { title: 'Sleep', domain: 'rest', kind: 'sleep', startMin: 0, endMin: 7 * 60 + 30, fixed: true },
+  { title: 'Breakfast', domain: 'rest', kind: 'meal', startMin: 8 * 60, endMin: 8 * 60 + 30, fixed: true },
+  { title: 'Lunch', domain: 'rest', kind: 'meal', startMin: 12 * 60 + 30, endMin: 13 * 60, fixed: true },
+  { title: 'Recovery walk', domain: 'rest', kind: 'recovery', startMin: 17 * 60, endMin: 17 * 60 + 30, fixed: true },
+  { title: 'Dinner', domain: 'rest', kind: 'meal', startMin: 19 * 60, endMin: 19 * 60 + 30, fixed: true },
+  { title: 'Sleep', domain: 'rest', kind: 'sleep', startMin: 23 * 60 + 30, endMin: 24 * 60, fixed: true },
+];
+
+function domainClass(domain: Domain | 'rest') {
+  // soft tinted background + colored left bar
+  switch (domain) {
+    case 'academic': return { bg: 'bg-[hsl(var(--domain-academic)/0.14)]', bar: 'bg-[hsl(var(--domain-academic))]', text: 'text-[hsl(var(--domain-academic))]' };
+    case 'work':     return { bg: 'bg-[hsl(var(--domain-work)/0.16)]',     bar: 'bg-[hsl(var(--domain-work))]',     text: 'text-[hsl(var(--domain-work))]' };
+    case 'social':   return { bg: 'bg-[hsl(var(--domain-social)/0.18)]',   bar: 'bg-[hsl(var(--domain-social))]',   text: 'text-[hsl(206_7%_20%)]' };
+    case 'personal': return { bg: 'bg-[hsl(var(--domain-personal)/0.14)]', bar: 'bg-[hsl(var(--domain-personal))]', text: 'text-[hsl(var(--domain-personal))]' };
+    case 'rest':     return { bg: 'bg-[hsl(var(--domain-rest)/0.55)]',     bar: 'bg-[hsl(var(--domain-rest))]',     text: 'text-[hsl(var(--rest-foreground))]' };
+  }
+}
+
+const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'personal', 'rest'];
+
+export default function CalendarView() {
+  const { user, loading } = useAuth();
+  const nav = useNavigate();
+  const [view, setView] = useState<'week' | 'day'>('week');
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [capacities, setCapacities] = useState<Record<string, { available_hours: number; energy_level: string }>>({});
+  const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [open, setOpen] = useState<CalEvent | null>(null);
+  const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
+  const [drag, setDrag] = useState<{ id: string } | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+  }), [weekStart]);
+
+  useEffect(() => {
+    if (!user) return;
+    const start = days[0].toISOString().slice(0, 10);
+    const end = new Date(days[6]); end.setDate(end.getDate() + 1);
+    const endIso = end.toISOString().slice(0, 10);
+    supabase.from('tasks').select('*')
+      .gte('scheduled_for', start).lt('scheduled_for', endIso)
+      .then(({ data }) => setTasks(data ?? []));
+    supabase.from('daily_capacity').select('*').gte('date', start).lt('date', endIso)
+      .then(({ data }) => {
+        const map: Record<string, any> = {};
+        (data ?? []).forEach((c: any) => { map[c.date] = c; });
+        setCapacities(map);
+      });
+  }, [user, weekStart]);
+
+  // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day
+  const events: CalEvent[] = useMemo(() => {
+    const list: CalEvent[] = [];
+    days.forEach((d, di) => {
+      FIXED_BLOCKS.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
+    });
+    tasks.forEach((t, i) => {
+      const dateStr = t.scheduled_for as string | null;
+      if (!dateStr) return;
+      const di = days.findIndex(d => d.toISOString().slice(0, 10) === dateStr);
+      if (di < 0) return;
+      const minutes = t.estimated_minutes || 45;
+      // synthetic start time: stagger across the day so blocks don't fully stack
+      const baseStart = 9 * 60 + (i % 6) * 80;
+      const startMin = baseStart;
+      const endMin = startMin + minutes;
+      list.push({
+        id: `task-${t.id}`,
+        taskId: t.id,
+        title: t.title,
+        domain: (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest',
+        kind: t.is_rest ? 'rest' : 'task',
+        status: t.status, next_action: t.next_action,
+        estimated_minutes: t.estimated_minutes, effort_level: t.effort_level,
+        energy: t.energy, difficulty: t.difficulty, notes: t.notes,
+        others_rely: t.others_rely,
+        day: di, startMin, endMin,
+      });
+    });
+    return list;
+  }, [tasks, days]);
+
+  // Compute per-day workload + conflicts
+  const daySummary = days.map((d, di) => {
+    const date = d.toISOString().slice(0, 10);
+    const cap = capacities[date];
+    const availH = cap ? Number(cap.available_hours) : 5.5;
+    const energy = cap?.energy_level ?? 'Med';
+    const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
+    const capMin = Math.round(availH * 60 * mult);
+    const taskEvents = events.filter(e => e.day === di && e.kind === 'task');
+    const planned = taskEvents.reduce((s, e) => s + (e.endMin - e.startMin), 0);
+    const restEvents = events.filter(e => e.day === di && e.kind !== 'task');
+    // conflicts: any task overlapping a fixed (rest/meal/sleep) block
+    const conflictIds = new Set<string>();
+    taskEvents.forEach(t => {
+      restEvents.forEach(r => {
+        if (t.startMin < r.endMin && t.endMin > r.startMin) conflictIds.add(t.id);
+      });
+    });
+    const ratio = planned / Math.max(1, capMin);
+    let state: 'balanced' | 'close' | 'over' = 'balanced';
+    if (ratio > 1) state = 'over'; else if (ratio > 0.85) state = 'close';
+    return { date, availH, energy, capMin, planned, conflictIds, state };
+  });
+
+  const visibleEvents = events.filter(e => {
+    if (!filter.has(e.domain)) return false;
+    if (!showCompleted && e.status === 'done') return false;
+    return true;
+  });
+
+  function toggleFilter(d: Domain | 'rest') {
+    const next = new Set(filter);
+    next.has(d) ? next.delete(d) : next.add(d);
+    setFilter(next);
+  }
+
+  function shiftWeek(delta: number) {
+    const d = new Date(weekStart); d.setDate(d.getDate() + delta * 7); setWeekStart(d);
+  }
+
+  // Drag & drop reschedule
+  async function handleDrop(targetDay: number) {
+    if (!drag) return;
+    const ev = events.find(e => e.id === drag.id);
+    setDrag(null);
+    if (!ev || !ev.taskId || ev.day === targetDay) return;
+    const newDate = days[targetDay].toISOString().slice(0, 10);
+    const t = tasks.find(x => x.id === ev.taskId);
+    const { error } = await supabase.from('tasks').update({
+      scheduled_for: newDate,
+      reschedule_count: (t?.reschedule_count || 0) + 1,
+    }).eq('id', ev.taskId);
+    if (error) { toast.error(error.message); return; }
+    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, scheduled_for: newDate, reschedule_count: (x.reschedule_count || 0) + 1 } : x));
+    setReplanFor({ taskId: ev.taskId, title: ev.title });
+  }
+
+  async function setReplanReason(reason: ReplanReason | null) {
+    if (!replanFor) return;
+    if (reason) await supabase.from('tasks').update({ replanning_reason: reason }).eq('id', replanFor.taskId);
+    toast.success('Task moved. Progress preserved.');
+    setReplanFor(null);
+  }
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const todayDayIdx = days.findIndex(d => d.toDateString() === new Date().toDateString());
+
+  const visibleDays = view === 'week' ? days.map((_, i) => i) : [dayIdx];
+  const totalGridHeight = (END_HOUR - START_HOUR) * HOUR_PX;
+
+  return (
+    <AppShell>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="pace-screen-title">Calendar</h1>
+        <div className="flex items-center bg-muted rounded-full p-1 text-[12px] font-medium">
+          <button onClick={() => setView('day')} className={`px-3 py-1 rounded-full ${view === 'day' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Day</button>
+          <button onClick={() => setView('week')} className={`px-3 py-1 rounded-full ${view === 'week' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Week</button>
+        </div>
+      </div>
+
+      {/* Date nav */}
+      <div className="mt-3 flex items-center justify-between">
+        <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label="Previous week"><ChevronLeft className="w-5 h-5" /></button>
+        <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="pace-chip">
+          {days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString([], { month: 'short', day: 'numeric' })}
+        </button>
+        <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label="Next week"><ChevronRight className="w-5 h-5" /></button>
+      </div>
+
+      {/* Filters */}
+      <div className="mt-3 flex gap-1.5 flex-wrap">
+        {ALL_DOMAINS.map(d => {
+          const on = filter.has(d);
+          const dc = domainClass(d);
+          const label = d === 'rest' ? 'Rest' : DOMAIN_LABEL[d];
+          return (
+            <button key={d} onClick={() => toggleFilter(d)}
+              className={`pace-chip ${on ? '' : 'opacity-40'}`}>
+              <span className={`inline-block w-2 h-2 rounded-full ${dc.bar}`} />
+              {label}
+            </button>
+          );
+        })}
+        <button onClick={() => setShowCompleted(s => !s)} className={`pace-chip ${showCompleted ? '' : 'opacity-60'}`}>
+          {showCompleted ? 'Hide completed' : 'Show completed'}
+        </button>
+      </div>
+
+      {/* Day picker for day view */}
+      {view === 'day' && (
+        <div className="mt-3 flex gap-1 overflow-x-auto -mx-1 px-1">
+          {days.map((d, i) => {
+            const active = i === dayIdx;
+            const summary = daySummary[i];
+            return (
+              <button key={i} onClick={() => setDayIdx(i)}
+                className={`shrink-0 px-3 py-2 rounded-2xl text-center min-w-[56px] ${active ? 'bg-primary text-primary-foreground' : 'bg-card border border-border/60'}`}>
+                <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{DAYS[i]}</div>
+                <div className="text-[15px] font-semibold">{d.getDate()}</div>
+                {summary.state !== 'balanced' && (
+                  <div className={`mt-0.5 inline-block w-1.5 h-1.5 rounded-full ${summary.state === 'over' ? 'bg-[hsl(var(--attention))]' : 'bg-[hsl(var(--warning))]'}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Calendar grid */}
+      <div className="mt-4 pace-card !p-3 overflow-hidden">
+        {/* Day headers + summaries */}
+        <div className="flex" style={{ paddingLeft: 36 }}>
+          {visibleDays.map(di => {
+            const d = days[di];
+            const s = daySummary[di];
+            const isToday = d.toDateString() === new Date().toDateString();
+            const stateLabel = s.state === 'over' ? 'Needs adjustment' : s.state === 'close' ? 'Close to capacity' : 'Balanced';
+            const stateClass = s.state === 'over' ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]' :
+                               s.state === 'close' ? 'bg-[hsl(var(--warning)/0.22)] text-[hsl(206_7%_20%)]' :
+                               'bg-[hsl(var(--success)/0.18)] text-[hsl(var(--success))]';
+            return (
+              <div key={di} className="flex-1 min-w-0 px-1">
+                <div className={`text-center ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{DAYS[di]}</div>
+                  <div className="text-[15px] font-semibold">{d.getDate()}</div>
+                </div>
+                <div className={`mt-1 rounded-lg px-1.5 py-1 text-[10px] text-center ${stateClass}`}>
+                  {stateLabel}
+                </div>
+                <div className="text-[10px] text-muted-foreground text-center mt-0.5">
+                  {fmtMin(s.planned)} / {fmtMin(s.capMin)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Time grid */}
+        <div ref={gridRef} className="relative mt-2 flex" style={{ height: totalGridHeight }}>
+          {/* Hour labels */}
+          <div className="w-9 shrink-0 relative">
+            {HOURS.map((h, i) => (
+              <div key={h} className="absolute left-0 right-0 text-[10px] text-muted-foreground -translate-y-1.5"
+                   style={{ top: i * HOUR_PX }}>
+                {((h + 11) % 12 + 1)}{h < 12 ? 'a' : 'p'}
+              </div>
+            ))}
+          </div>
+
+          {/* Day columns */}
+          <div className="flex-1 flex relative">
+            {visibleDays.map(di => {
+              const dayEvs = visibleEvents.filter(e => e.day === di);
+              const summary = daySummary[di];
+              return (
+                <div key={di}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(di)}
+                  className="flex-1 min-w-0 relative border-l border-border/40">
+                  {/* Hour lines + click-to-add */}
+                  {HOURS.map((h, i) => (
+                    <button key={h}
+                      onClick={() => createAt(di, h)}
+                      className="absolute left-0 right-0 border-t border-border/30 hover:bg-muted/40 transition"
+                      style={{ top: i * HOUR_PX, height: HOUR_PX }}
+                      aria-label={`Add at ${h}:00`} />
+                  ))}
+
+                  {/* Overbooking ribbon */}
+                  {summary.state === 'over' && (
+                    <div className="absolute top-0 left-1 right-1 z-20 rounded-md bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))] text-[10px] px-1.5 py-0.5 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5" /> Plan may need adjustment
+                    </div>
+                  )}
+
+                  {/* Events */}
+                  {dayEvs.map(ev => {
+                    const top = ((ev.startMin - START_HOUR * 60) / 60) * HOUR_PX;
+                    const height = Math.max(22, ((ev.endMin - ev.startMin) / 60) * HOUR_PX - 2);
+                    const dc = domainClass(ev.domain);
+                    const conflict = summary.conflictIds.has(ev.id);
+                    const isFixed = !!ev.fixed;
+                    return (
+                      <button
+                        key={ev.id}
+                        draggable={!isFixed}
+                        onDragStart={() => setDrag({ id: ev.id })}
+                        onClick={() => setOpen(ev)}
+                        className={`absolute left-0.5 right-0.5 rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
+                        style={{ top, height, zIndex: 5 }}>
+                        <div className="flex gap-1 items-start">
+                          <span className={`w-0.5 self-stretch rounded-full ${dc.bar} shrink-0`} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
+                            <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
+                            {view === 'day' && ev.next_action && (
+                              <div className="text-[10px] text-muted-foreground truncate mt-0.5">→ {ev.next_action}</div>
+                            )}
+                            <div className="flex gap-1 mt-0.5 flex-wrap">
+                              {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" />}
+                              {conflict && <AlertTriangle className="w-2.5 h-2.5 text-[hsl(var(--attention))]" aria-label="Conflict with rest" />}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  {/* Current time line */}
+                  {di === todayDayIdx && nowMin >= START_HOUR * 60 && nowMin <= END_HOUR * 60 && (
+                    <div className="absolute left-0 right-0 z-10 pointer-events-none"
+                         style={{ top: ((nowMin - START_HOUR * 60) / 60) * HOUR_PX }}>
+                      <div className="h-px bg-[hsl(var(--attention))]" />
+                      <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-[hsl(var(--attention))]" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Add responsibility */}
+      <button onClick={() => nav('/capture')} className="pace-btn-primary mt-4 w-full">
+        <Plus className="w-4 h-4" /> Add responsibility
+      </button>
+
+      {/* Detail modal */}
+      {open && (
+        <div className="fixed inset-0 z-40 bg-foreground/30 flex items-end sm:items-center justify-center p-3" onClick={() => setOpen(null)}>
+          <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="pace-tag flex items-center">
+                  <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${domainClass(open.domain).bar}`} />
+                  {open.domain === 'rest' ? 'Rest / Recovery' : DOMAIN_LABEL[open.domain]} · {fmtRange(open.startMin, open.endMin)}
+                </div>
+                <div className="pace-title mt-1">{open.title}</div>
+              </div>
+              <button onClick={() => setOpen(null)} className="p-1.5 rounded-full hover:bg-muted"><X className="w-4 h-4" /></button>
+            </div>
+
+            {open.status && (
+              <div className="mt-3"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
+            )}
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+              {open.estimated_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.estimated_minutes)}</div>}
+              {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
+              {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
+              {open.difficulty != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Difficulty</div>{open.difficulty}/5</div>}
+            </div>
+
+            {open.next_action && (
+              <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>
+            )}
+            {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
+
+            {open.taskId && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button onClick={() => { setOpen(null); nav(`/task/${open.taskId}`); }} className="pace-btn pace-btn-sm">Edit</button>
+                <button onClick={() => { setOpen(null); nav('/replan'); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
+                <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
+              </div>
+            )}
+            {open.fixed && (
+              <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Replan reason prompt */}
+      {replanFor && (
+        <div className="fixed inset-0 z-50 bg-foreground/30 flex items-end sm:items-center justify-center p-3" onClick={() => setReplanReason(null)}>
+          <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="pace-title">Task moved. What changed?</div>
+            <div className="text-[13px] text-muted-foreground mt-1">Optional — helps you spot patterns.</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={() => setReplanReason(null)} className="pace-chip">Better time</button>
+              {(Object.keys(REPLAN_REASON_LABEL) as ReplanReason[]).map(r => (
+                <button key={r} onClick={() => setReplanReason(r)} className="pace-chip">{REPLAN_REASON_LABEL[r]}</button>
+              ))}
+            </div>
+            <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+          </div>
+        </div>
+      )}
+    </AppShell>
+  );
+
+  async function createAt(dayI: number, hour: number) {
+    if (!user) return;
+    const title = window.prompt('New responsibility title');
+    if (!title?.trim()) return;
+    const date = days[dayI].toISOString().slice(0, 10);
+    const { data, error } = await supabase.from('tasks').insert({
+      user_id: user.id, title: title.trim(),
+      domain: 'personal', priority: 'should', status: 'not_started',
+      scheduled_for: date, estimated_minutes: 60,
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
+    setTasks(arr => [...arr, data]);
+    toast.success('Added to your plan.');
+  }
+}
