@@ -114,6 +114,17 @@
   .pace-chip-filled { @apply pace-chip bg-primary text-primary-foreground border-primary; }
   .pace-chip-dashed { @apply pace-chip border-dashed; }
 
+  .status-chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider border;
+  }
+  .status-not_started { background: hsl(var(--status-not-started)); color: hsl(var(--status-not-started-foreground)); border-color: hsl(var(--status-not-started)); }
+  .status-in_progress { background: hsl(var(--status-in-progress)); color: hsl(var(--status-in-progress-foreground)); border-color: hsl(var(--status-in-progress)); }
+  .status-blocked     { background: hsl(var(--status-blocked));     color: hsl(var(--status-blocked-foreground));     border-color: hsl(var(--status-blocked)); }
+  .status-nearly_done { background: hsl(var(--status-nearly-done)); color: hsl(var(--status-nearly-done-foreground)); border-color: hsl(var(--status-nearly-done)); }
+  .status-done        { background: hsl(var(--status-completed));   color: hsl(var(--status-completed-foreground));   border-color: hsl(var(--status-completed)); }
+  .status-rescheduled { background: hsl(var(--status-blocked));     color: hsl(var(--status-blocked-foreground));     border-color: hsl(var(--status-blocked)); }
+  .status-rest        { background: hsl(var(--status-rest));        color: hsl(var(--status-rest-foreground));        border-color: hsl(var(--status-rest)); }
+
   .pace-btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card
            px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground transition
