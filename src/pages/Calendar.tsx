@@ -241,17 +241,28 @@ export default function CalendarView() {
         <div className="flex items-center bg-muted rounded-full p-1 text-[12px] font-medium">
           <button onClick={() => setView('day')} className={`px-3 py-1 rounded-full ${view === 'day' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Day</button>
           <button onClick={() => setView('week')} className={`px-3 py-1 rounded-full ${view === 'week' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Week</button>
+          <button onClick={() => setView('month')} className={`px-3 py-1 rounded-full ${view === 'month' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Month</button>
         </div>
       </div>
 
       {/* Date nav */}
-      <div className="mt-3 flex items-center justify-between">
-        <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label="Previous week"><ChevronLeft className="w-5 h-5" /></button>
-        <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="pace-chip">
-          {days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString([], { month: 'short', day: 'numeric' })}
-        </button>
-        <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label="Next week"><ChevronRight className="w-5 h-5" /></button>
-      </div>
+      {view !== 'month' ? (
+        <div className="mt-3 flex items-center justify-between">
+          <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label="Previous week"><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="pace-chip">
+            {days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString([], { month: 'short', day: 'numeric' })}
+          </button>
+          <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label="Next week"><ChevronRight className="w-5 h-5" /></button>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center justify-between">
+          <button onClick={() => { const d = new Date(monthAnchor); d.setMonth(d.getMonth() - 1); setMonthAnchor(d); }} className="p-2 rounded-full hover:bg-muted" aria-label="Previous month"><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); setMonthAnchor(d); }} className="pace-chip">
+            {monthAnchor.toLocaleDateString([], { month: 'long', year: 'numeric' })}
+          </button>
+          <button onClick={() => { const d = new Date(monthAnchor); d.setMonth(d.getMonth() + 1); setMonthAnchor(d); }} className="p-2 rounded-full hover:bg-muted" aria-label="Next month"><ChevronRight className="w-5 h-5" /></button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mt-3 flex gap-1.5 flex-wrap">
@@ -292,7 +303,108 @@ export default function CalendarView() {
         </div>
       )}
 
-      {/* Calendar grid */}
+      {/* === DAY VIEW: to-do list style === */}
+      {view === 'day' && (() => {
+        const dayEvs = visibleEvents.filter(e => e.day === dayIdx).sort((a, b) => a.startMin - b.startMin);
+        const summary = daySummary[dayIdx];
+        const stateLabel = summary.state === 'over' ? 'Needs adjustment' : summary.state === 'close' ? 'Close to capacity' : 'Balanced';
+        const stateClass = summary.state === 'over' ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]' :
+                           summary.state === 'close' ? 'bg-[hsl(var(--warning)/0.22)] text-[hsl(206_7%_20%)]' :
+                           'bg-[hsl(var(--success)/0.18)] text-[hsl(var(--success))]';
+        const taskItems = dayEvs.filter(e => e.kind === 'task' || e.kind === 'focus');
+        const restItems = dayEvs.filter(e => e.kind !== 'task' && e.kind !== 'focus');
+        const dateObj = days[dayIdx];
+
+        return (
+          <div className="mt-4 space-y-4">
+            {/* Day summary card */}
+            <div className="pace-card">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="pace-eyebrow">{DAYS[dayIdx]}</div>
+                  <div className="pace-title mt-0.5">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                </div>
+                <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+              </div>
+              <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
+            </div>
+
+            {/* To-do list */}
+            <div>
+              <div className="pace-eyebrow mb-2">Your day</div>
+              {taskItems.length === 0 ? (
+                <div className="pace-card text-center text-[14px] text-muted-foreground">
+                  Nothing planned yet. Add an intention below to get started.
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {taskItems.map(ev => {
+                    const dc = domainClass(ev.domain);
+                    const conflict = summary.conflictIds.has(ev.id);
+                    const done = ev.status === 'done';
+                    return (
+                      <li key={ev.id}>
+                        <button onClick={() => setOpen(ev)}
+                          className={`w-full text-left pace-card !p-3 flex items-start gap-3 hover:shadow-sm transition ${done ? 'opacity-60' : ''}`}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDone(ev); }}
+                            className={`mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${done ? 'bg-[hsl(var(--success))] border-[hsl(var(--success))]' : 'border-border'}`}
+                            aria-label={done ? 'Mark as not done' : 'Mark complete'}>
+                            {done && <span className="text-white text-[10px]">✓</span>}
+                          </button>
+                          <span className={`w-1 self-stretch rounded-full ${dc.bar} shrink-0`} />
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-[15px] font-medium leading-snug ${done ? 'line-through' : ''}`}>{ev.title}</div>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
+                              <span className={`inline-flex items-center gap-1 ${dc.text}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
+                                {ev.domain === 'rest' ? 'Rest' : DOMAIN_LABEL[ev.domain as Domain]}
+                              </span>
+                              {ev.estimated_minutes != null && <span>· {fmtMin(ev.estimated_minutes)}</span>}
+                              {ev.energy && <span>· {ev.energy} energy</span>}
+                              {ev.others_rely && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> shared</span>}
+                              {conflict && <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]"><AlertTriangle className="w-3 h-3" /> overlaps rest</span>}
+                            </div>
+                            {ev.next_action && (
+                              <div className="mt-1.5 text-[13px] text-muted-foreground">
+                                <span className="font-medium text-foreground">Next:</span> {ev.next_action}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* Rest & care */}
+            {restItems.length > 0 && (
+              <div>
+                <div className="pace-eyebrow mb-2">Rest & care</div>
+                <ul className="space-y-1.5">
+                  {restItems.map(ev => {
+                    const dc = domainClass(ev.domain);
+                    return (
+                      <li key={ev.id}>
+                        <button onClick={() => setOpen(ev)} className={`w-full text-left rounded-2xl ${dc.bg} border border-border/30 px-3 py-2 flex items-center gap-2`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
+                          <span className="text-[14px] font-medium">{ev.title}</span>
+                          <span className="ml-auto text-[12px] text-muted-foreground">{fmtRange(ev.startMin, ev.endMin)}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* === WEEK VIEW (time grid) === */}
+      {view === 'week' && (
       <div className="mt-4 pace-card !p-3 overflow-hidden">
         {/* Day headers + summaries */}
         <div className="flex" style={{ paddingLeft: 36 }}>
@@ -379,9 +491,6 @@ export default function CalendarView() {
                           <div className="min-w-0 flex-1">
                             <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
                             <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
-                            {view === 'day' && ev.next_action && (
-                              <div className="text-[10px] text-muted-foreground truncate mt-0.5">→ {ev.next_action}</div>
-                            )}
                             <div className="flex gap-1 mt-0.5 flex-wrap">
                               {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" />}
                               {conflict && <AlertTriangle className="w-2.5 h-2.5 text-[hsl(var(--attention))]" aria-label="Conflict with rest" />}
@@ -406,7 +515,54 @@ export default function CalendarView() {
           </div>
         </div>
       </div>
+      )}
 
+      {/* === MONTH VIEW === */}
+      {view === 'month' && (() => {
+        const monthIdx = monthAnchor.getMonth();
+        const todayStr = new Date().toDateString();
+        // group monthTasks by date
+        const byDate: Record<string, any[]> = {};
+        monthTasks.forEach(t => {
+          if (!t.scheduled_for) return;
+          if (!showCompleted && t.status === 'done') return;
+          const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+          if (!filter.has(dom)) return;
+          (byDate[t.scheduled_for] ||= []).push(t);
+        });
+        return (
+          <div className="mt-4 pace-card !p-2">
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {DAYS.map(d => <div key={d} className="text-[10px] text-center text-muted-foreground uppercase tracking-wider font-medium py-1">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {monthGrid.map((d, i) => {
+                const inMonth = d.getMonth() === monthIdx;
+                const isToday = d.toDateString() === todayStr;
+                const dateStr = d.toISOString().slice(0, 10);
+                const items = byDate[dateStr] || [];
+                return (
+                  <button key={i}
+                    onClick={() => { setDayIdx((d.getDay() + 6) % 7); setWeekStart(startOfWeek(d)); setView('day'); }}
+                    className={`aspect-square min-h-[54px] rounded-xl border text-left p-1 flex flex-col gap-0.5 transition hover:bg-muted/40
+                      ${inMonth ? 'bg-card border-border/50' : 'bg-muted/30 border-transparent text-muted-foreground'}
+                      ${isToday ? '!border-primary border-2' : ''}`}>
+                    <div className={`text-[11px] font-semibold ${isToday ? 'text-primary' : ''}`}>{d.getDate()}</div>
+                    <div className="flex flex-wrap gap-0.5 mt-auto">
+                      {items.slice(0, 4).map((t, ti) => {
+                        const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+                        const dc = domainClass(dom);
+                        return <span key={ti} className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />;
+                      })}
+                      {items.length > 4 && <span className="text-[9px] text-muted-foreground leading-none">+{items.length - 4}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {/* Add responsibility */}
       <button onClick={() => nav('/capture')} className="pace-btn-primary mt-4 w-full">
         <Plus className="w-4 h-4" /> Add responsibility
