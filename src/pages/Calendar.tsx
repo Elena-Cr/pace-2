@@ -632,9 +632,17 @@ export default function CalendarView() {
     </AppShell>
   );
 
+  async function toggleDone(ev: CalEvent) {
+    if (!ev.taskId) return;
+    const newStatus: Status = ev.status === 'done' ? 'in_progress' : 'done';
+    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', ev.taskId);
+    if (error) { toast.error(error.message); return; }
+    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, status: newStatus } : x));
+  }
+
   async function createAt(dayI: number, hour: number) {
     if (!user) return;
-    const title = window.prompt('New responsibility title');
+    const title = window.prompt('New intention');
     if (!title?.trim()) return;
     const date = days[dayI].toISOString().slice(0, 10);
     const { data, error } = await supabase.from('tasks').insert({
