@@ -76,7 +76,7 @@ export default function Capture() {
 
   return (
     <AppShell>
-      <div className="pace-eyebrow">New responsibility</div>
+      <div className="pace-eyebrow">New intention</div>
       <h1 className="pace-screen-title mt-1">Capture</h1>
       <p className="pace-meta mt-1">Just a title is enough — you can estimate later.</p>
 
