@@ -563,9 +563,9 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add responsibility */}
+      {/* Add intention */}
       <button onClick={() => nav('/capture')} className="pace-btn-primary mt-4 w-full">
-        <Plus className="w-4 h-4" /> Add responsibility
+        <Plus className="w-4 h-4" /> Add intention
       </button>
 
       {/* Detail modal */}
