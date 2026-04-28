@@ -28,6 +28,10 @@ export default {
         must: "hsl(var(--must))",
         should: "hsl(var(--should))",
         could: "hsl(var(--could))",
+        rest: { DEFAULT: "hsl(var(--rest))", foreground: "hsl(var(--rest-foreground))" },
+        warning: { DEFAULT: "hsl(var(--warning))", foreground: "hsl(var(--warning-foreground))" },
+        attention: { DEFAULT: "hsl(var(--attention))", foreground: "hsl(var(--attention-foreground))" },
+        success: { DEFAULT: "hsl(var(--success))", foreground: "hsl(var(--success-foreground))" },
       },
       borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
       keyframes: {

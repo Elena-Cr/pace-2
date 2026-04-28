@@ -7,51 +7,60 @@
 /* Pace — design system. All colors HSL. */
 @layer base {
   :root {
-    /* Paper palette */
-    --background: 44 26% 95%;          /* #f5f3ee paper */
-    --foreground: 0 0% 10%;            /* ink */
+    /* Calm palette */
+    --background: 44 30% 95%;          /* #F7F5EF warm off-white */
+    --foreground: 206 7% 20%;          /* #2F3437 charcoal */
 
-    --paper-2: 48 16% 91%;
-    --ink-2: 0 0% 27%;
-    --ink-3: 0 0% 53%;
-    --ink-4: 0 0% 75%;
-    --hair: 0 0% 60%;
+    --paper-2: 44 24% 92%;
+    --ink-2: 206 7% 25%;
+    --ink-3: 220 9% 46%;
+    --ink-4: 220 9% 70%;
+    --hair: 220 9% 80%;
 
-    --card: 44 26% 95%;
-    --card-foreground: 0 0% 10%;
+    --card: 0 0% 100%;                 /* #FFFFFF surfaces */
+    --card-foreground: 206 7% 20%;
 
-    --popover: 44 26% 95%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 206 7% 20%;
 
-    --primary: 0 0% 10%;
-    --primary-foreground: 44 26% 95%;
+    --primary: 151 21% 59%;            /* #7FAF9B soft sage */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 48 16% 91%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 211 27% 56%;          /* #6F8FAF muted blue */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 48 16% 91%;
-    --muted-foreground: 0 0% 30%;
+    --muted: 44 24% 92%;
+    --muted-foreground: 220 9% 46%;    /* #6B7280 slate */
 
-    --accent: 48 16% 91%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 251 53% 88%;             /* #D8D2F2 soft lavender */
+    --accent-foreground: 206 7% 20%;
 
-    --destructive: 4 65% 51%;          /* must red */
+    --destructive: 8 53% 67%;          /* #D9897E dusty coral - needs attention */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
-    --ring: 0 0% 10%;
+    --border: 220 9% 85%;
+    --input: 220 9% 80%;
+    --ring: 151 21% 59%;
 
-    /* Priority */
-    --must: 4 65% 51%;     /* #d63a2f */
-    --should: 33 79% 47%;  /* #d68a1c */
-    --could: 0 0% 42%;
-    --ok: 132 39% 30%;
+    /* Priority & semantic */
+    --must: 8 53% 67%;     /* dusty coral */
+    --should: 33 71% 67%;  /* muted amber */
+    --could: 220 9% 60%;   /* slate */
+    --ok: 117 26% 55%;     /* calm green */
+
+    --rest: 251 53% 88%;       /* lavender */
+    --rest-foreground: 206 7% 20%;
+    --warning: 33 71% 67%;     /* amber */
+    --warning-foreground: 206 7% 20%;
+    --attention: 8 53% 67%;    /* coral */
+    --attention-foreground: 0 0% 100%;
+    --success: 117 26% 55%;    /* green */
+    --success-foreground: 0 0% 100%;
 
     --radius: 0.875rem;
 
-    --shadow-soft: 4px 4px 0 hsl(0 0% 75%);
-    --shadow-card: 0 2px 0 hsl(0 0% 87%), 0 1px 6px hsl(0 0% 0% / 0.04);
+    --shadow-soft: 4px 4px 0 hsl(220 9% 88%);
+    --shadow-card: 0 2px 0 hsl(220 9% 92%), 0 1px 6px hsl(206 7% 20% / 0.04);
   }
 }
 
@@ -76,70 +85,73 @@
   .pace-sub   { @apply pace-eyebrow; }
 
   .pace-card {
-    @apply rounded-2xl border-[1.5px] border-foreground/90 bg-card p-3.5;
+    @apply rounded-2xl border border-border bg-card p-3.5;
     box-shadow: var(--shadow-card);
   }
   .pace-card-soft {
-    @apply rounded-2xl border border-foreground/15 bg-card p-3.5;
+    @apply rounded-2xl border border-border/60 bg-card p-3.5;
     box-shadow: var(--shadow-card);
   }
 
   .pace-chip {
-    @apply inline-flex items-center gap-1 rounded-full border-[1.2px] border-foreground/90 bg-background
-           px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider;
+    @apply inline-flex items-center gap-1 rounded-full border border-border bg-card
+           px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-foreground;
   }
-  .pace-chip-filled { @apply pace-chip bg-foreground text-background border-foreground; }
+  .pace-chip-filled { @apply pace-chip bg-primary text-primary-foreground border-primary; }
   .pace-chip-dashed { @apply pace-chip border-dashed; }
 
   .pace-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border-[1.5px] border-foreground/90 bg-background
-           px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider transition
-           hover:bg-foreground/5 active:translate-y-px disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card
+           px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground transition
+           hover:bg-muted active:translate-y-px disabled:opacity-50;
   }
-  .pace-btn-primary { @apply pace-btn bg-foreground text-background hover:bg-foreground/90; }
+  .pace-btn-primary { @apply pace-btn bg-primary text-primary-foreground border-primary hover:bg-primary/90; }
+  .pace-btn-secondary { @apply pace-btn bg-secondary text-secondary-foreground border-secondary hover:bg-secondary/90; }
   .pace-btn-sm { @apply px-3 py-1.5 text-[10px]; }
 
   .pace-field {
-    @apply w-full rounded-xl border-[1.5px] border-foreground/90 bg-background px-3 py-2.5
+    @apply w-full rounded-xl border border-input bg-card px-3 py-2.5
            font-mono text-[13px] text-foreground placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-foreground/20;
+           focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring;
   }
   .pace-field-label {
     @apply font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground mb-1.5 flex items-center;
   }
 
   .pace-rest {
-    @apply rounded-xl border-[1.5px] border-dashed border-foreground/80 bg-transparent
-           px-3 py-2 font-mono text-[11px] text-muted-foreground flex items-center justify-between;
+    @apply rounded-xl border border-dashed bg-accent/40 text-accent-foreground
+           px-3 py-2 font-mono text-[11px] flex items-center justify-between;
+    border-color: hsl(var(--rest));
   }
 
   .pace-alert {
-    @apply rounded-xl border-[1.5px] border-foreground/90 p-3.5 text-[13px] leading-snug;
-    background: repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--foreground) / 0.04) 6px 12px);
+    @apply rounded-xl border p-3.5 text-[13px] leading-snug text-foreground;
+    border-color: hsl(var(--warning));
+    background: hsl(var(--warning) / 0.15);
   }
 
   .pace-progress {
-    @apply h-1.5 rounded-full border border-foreground/90 overflow-hidden;
+    @apply h-1.5 rounded-full bg-muted overflow-hidden;
   }
   .pace-progress > i {
     display: block; height: 100%;
-    background: repeating-linear-gradient(135deg, hsl(var(--foreground)) 0 3px, transparent 3px 6px);
+    background: hsl(var(--primary));
   }
 
   .pace-capacity {
-    @apply h-6 rounded-lg border-[1.5px] border-foreground/90 overflow-hidden bg-background relative;
+    @apply h-6 rounded-lg border border-border overflow-hidden bg-muted relative;
   }
   .pace-capacity > i {
-    display: block; height: 100%; background: hsl(var(--foreground)); position: relative;
+    display: block; height: 100%; background: hsl(var(--primary)); position: relative;
   }
   .pace-capacity > i::after {
     content: ''; position: absolute; inset: 0;
-    background: repeating-linear-gradient(45deg, transparent 0 4px, hsl(0 0% 100% / 0.25) 4px 8px);
+    background: repeating-linear-gradient(45deg, transparent 0 6px, hsl(0 0% 100% / 0.18) 6px 12px);
   }
-  .pace-capacity.over > i { background: hsl(var(--must)); }
+  .pace-capacity.over > i { background: hsl(var(--warning)); }
 
-  .priority-dot { @apply inline-block w-2 h-2 rounded-full border-[1.2px] border-foreground mr-1.5 align-middle shrink-0; }
-  .priority-dot.must   { background: hsl(var(--must));   border-color: hsl(var(--must)); }
-  .priority-dot.should { background: transparent;        border-color: hsl(var(--should)); }
-  .priority-dot.could  { background: hsl(var(--could));  border-color: hsl(var(--could)); opacity: 0.6; }
+  .priority-dot { @apply inline-block w-2 h-2 rounded-full mr-1.5 align-middle shrink-0; }
+  .priority-dot.must   { background: hsl(var(--must)); }
+  .priority-dot.should { background: hsl(var(--should)); }
+  .priority-dot.could  { background: hsl(var(--could)); opacity: 0.7; }
 }
