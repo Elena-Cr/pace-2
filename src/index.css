@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -8,8 +8,8 @@
 @layer base {
   :root {
     /* Calm palette */
-    --background: 44 30% 95%;          /* #F7F5EF warm off-white */
-    --foreground: 206 7% 20%;          /* #2F3437 charcoal */
+    --background: 44 30% 95%; /* #F7F5EF warm off-white */
+    --foreground: 206 7% 20%; /* #2F3437 charcoal */
 
     --paper-2: 44 24% 92%;
     --ink-2: 206 7% 25%;
@@ -17,25 +17,25 @@
     --ink-4: 220 9% 70%;
     --hair: 220 9% 80%;
 
-    --card: 0 0% 100%;                 /* #FFFFFF surfaces */
+    --card: 0 0% 100%; /* #FFFFFF surfaces */
     --card-foreground: 206 7% 20%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 206 7% 20%;
 
-    --primary: 151 21% 59%;            /* #7FAF9B soft sage */
+    --primary: 155, 23% 41%; /* #7FAF9B soft sage */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 211 27% 56%;          /* #6F8FAF muted blue */
+    --secondary: 211 27% 56%; /* #6F8FAF muted blue */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 44 24% 92%;
-    --muted-foreground: 220 9% 46%;    /* #6B7280 slate */
+    --muted-foreground: 220 9% 46%; /* #6B7280 slate */
 
-    --accent: 251 53% 88%;             /* #D8D2F2 soft lavender */
+    --accent: 251 53% 88%; /* #D8D2F2 soft lavender */
     --accent-foreground: 206 7% 20%;
 
-    --destructive: 8 53% 67%;          /* #D9897E dusty coral - needs attention */
+    --destructive: 8 53% 67%; /* #D9897E dusty coral - needs attention */
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 9% 85%;
@@ -43,40 +43,40 @@
     --ring: 151 21% 59%;
 
     /* Priority & semantic */
-    --must: 8 53% 67%;     /* dusty coral */
-    --should: 33 71% 67%;  /* muted amber */
-    --could: 220 9% 60%;   /* slate */
-    --ok: 117 26% 55%;     /* calm green */
+    --must: 8 53% 67%; /* dusty coral */
+    --should: 33 71% 67%; /* muted amber */
+    --could: 220 9% 60%; /* slate */
+    --ok: 117 26% 55%; /* calm green */
 
-    --rest: 251 53% 88%;       /* lavender */
+    --rest: 251 53% 88%; /* lavender */
     --rest-foreground: 206 7% 20%;
-    --warning: 33 71% 67%;     /* amber */
+    --warning: 33 71% 67%; /* amber */
     --warning-foreground: 206 7% 20%;
-    --attention: 8 53% 67%;    /* coral */
+    --attention: 8 53% 67%; /* coral */
     --attention-foreground: 0 0% 100%;
-    --success: 117 26% 55%;    /* green */
+    --success: 117 26% 55%; /* green */
     --success-foreground: 0 0% 100%;
 
     /* Task status palette */
-    --status-not-started: 152 9% 81%;       /* #CBD5D1 */
+    --status-not-started: 152 9% 81%; /* #CBD5D1 */
     --status-not-started-foreground: 206 7% 20%;
-    --status-in-progress: 211 27% 56%;      /* #6F8FAF */
+    --status-in-progress: 211 27% 56%; /* #6F8FAF */
     --status-in-progress-foreground: 0 0% 100%;
-    --status-blocked: 8 53% 67%;            /* #D9897E */
+    --status-blocked: 8 53% 67%; /* #D9897E */
     --status-blocked-foreground: 0 0% 100%;
-    --status-nearly-done: 33 71% 67%;       /* #E8B86D */
+    --status-nearly-done: 33 71% 67%; /* #E8B86D */
     --status-nearly-done-foreground: 206 7% 20%;
-    --status-completed: 117 26% 55%;        /* #8DBF8A */
+    --status-completed: 117 26% 55%; /* #8DBF8A */
     --status-completed-foreground: 0 0% 100%;
-    --status-rest: 251 53% 88%;             /* #D8D2F2 */
+    --status-rest: 251 53% 88%; /* #D8D2F2 */
     --status-rest-foreground: 206 7% 20%;
 
     /* Domain palette (calendar) — soft, accessible */
-    --domain-academic: 211 27% 56%;        /* muted blue */
-    --domain-work:     151 21% 59%;        /* sage */
-    --domain-social:   33 71% 67%;         /* amber */
-    --domain-personal: 220 9% 55%;         /* slate */
-    --domain-rest:     251 53% 78%;        /* lavender */
+    --domain-academic: 211 27% 56%; /* muted blue */
+    --domain-work: 151 21% 59%; /* sage */
+    --domain-social: 33 71% 67%; /* amber */
+    --domain-personal: 220 9% 55%; /* slate */
+    --domain-rest: 251 53% 78%; /* lavender */
 
     --radius: 1.25rem;
 
@@ -86,30 +86,64 @@
 }
 
 @layer base {
-  * { @apply border-border; }
-  html, body, #root { height: 100%; }
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     line-height: 1.55;
   }
-  h1, h2, h3, h4 { line-height: 1.25; letter-spacing: -0.01em; }
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
 }
 
 @layer components {
   /* Typography scale (mobile-first) */
-  .pace-screen-title { @apply text-[26px] font-semibold leading-tight tracking-tight; }
-  .pace-title        { @apply text-[19px] font-semibold leading-snug; }
-  .pace-section      { @apply text-[18px] font-semibold leading-snug; }
-  .pace-task-title   { @apply text-[16px] font-semibold leading-snug; }
-  .pace-body         { @apply text-[15px] leading-relaxed; }
-  .pace-meta         { @apply text-[13px] font-medium text-muted-foreground; }
-  .pace-eyebrow      { @apply text-[12px] font-medium text-muted-foreground tracking-wide; }
-  .pace-sub          { @apply pace-meta; }
+  .pace-screen-title {
+    @apply text-[26px] font-semibold leading-tight tracking-tight;
+  }
+  .pace-title {
+    @apply text-[19px] font-semibold leading-snug;
+  }
+  .pace-section {
+    @apply text-[18px] font-semibold leading-snug;
+  }
+  .pace-task-title {
+    @apply text-[16px] font-semibold leading-snug;
+  }
+  .pace-body {
+    @apply text-[15px] leading-relaxed;
+  }
+  .pace-meta {
+    @apply text-[13px] font-medium text-muted-foreground;
+  }
+  .pace-eyebrow {
+    @apply text-[12px] font-medium text-muted-foreground tracking-wide;
+  }
+  .pace-sub {
+    @apply pace-meta;
+  }
   /* Tiny domain tag — the only acceptable all-caps */
-  .pace-tag          { @apply text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground; }
+  .pace-tag {
+    @apply text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
 
   /* Cards */
   .pace-card {
@@ -125,21 +159,49 @@
     @apply inline-flex items-center gap-1.5 rounded-full bg-muted
            px-3 py-1 text-[12px] font-medium text-foreground;
   }
-  .pace-chip-filled { @apply pace-chip bg-primary/15 text-foreground; }
-  .pace-chip-dashed { @apply pace-chip bg-transparent border border-dashed border-border; }
+  .pace-chip-filled {
+    @apply pace-chip bg-primary/15 text-foreground;
+  }
+  .pace-chip-dashed {
+    @apply pace-chip bg-transparent border border-dashed border-border;
+  }
 
   /* Status chips — soft filled, gentle */
   .status-chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium;
   }
-  .status-not_started { background: hsl(var(--status-not-started) / 0.45); color: hsl(var(--foreground)); }
-  .status-started     { background: hsl(var(--status-in-progress) / 0.12); color: hsl(var(--status-in-progress)); }
-  .status-in_progress { background: hsl(var(--status-in-progress) / 0.18); color: hsl(var(--status-in-progress)); }
-  .status-blocked     { background: hsl(var(--status-blocked) / 0.18);     color: hsl(var(--status-blocked)); }
-  .status-nearly_done { background: hsl(var(--status-nearly-done) / 0.22); color: hsl(206 7% 20%); }
-  .status-done        { background: hsl(var(--status-completed) / 0.22);   color: hsl(var(--status-completed)); }
-  .status-rescheduled { background: hsl(var(--status-blocked) / 0.18);     color: hsl(var(--status-blocked)); }
-  .status-rest        { background: hsl(var(--status-rest) / 0.55);        color: hsl(var(--rest-foreground)); }
+  .status-not_started {
+    background: hsl(var(--status-not-started) / 0.45);
+    color: hsl(var(--foreground));
+  }
+  .status-started {
+    background: hsl(var(--status-in-progress) / 0.12);
+    color: hsl(var(--status-in-progress));
+  }
+  .status-in_progress {
+    background: hsl(var(--status-in-progress) / 0.18);
+    color: hsl(var(--status-in-progress));
+  }
+  .status-blocked {
+    background: hsl(var(--status-blocked) / 0.18);
+    color: hsl(var(--status-blocked));
+  }
+  .status-nearly_done {
+    background: hsl(var(--status-nearly-done) / 0.22);
+    color: hsl(206 7% 20%);
+  }
+  .status-done {
+    background: hsl(var(--status-completed) / 0.22);
+    color: hsl(var(--status-completed));
+  }
+  .status-rescheduled {
+    background: hsl(var(--status-blocked) / 0.18);
+    color: hsl(var(--status-blocked));
+  }
+  .status-rest {
+    background: hsl(var(--status-rest) / 0.55);
+    color: hsl(var(--rest-foreground));
+  }
 
   /* Buttons — pill, thumb-friendly */
   .pace-btn {
@@ -147,10 +209,18 @@
            px-5 min-h-[48px] text-[15px] font-semibold transition
            hover:bg-muted/70 active:scale-[0.99] disabled:opacity-50;
   }
-  .pace-btn-primary   { @apply pace-btn bg-primary text-primary-foreground hover:bg-primary/90; }
-  .pace-btn-secondary { @apply pace-btn bg-secondary text-secondary-foreground hover:bg-secondary/90; }
-  .pace-btn-ghost     { @apply pace-btn bg-transparent text-foreground hover:bg-muted/60; }
-  .pace-btn-sm        { @apply min-h-[40px] px-4 text-[14px]; }
+  .pace-btn-primary {
+    @apply pace-btn bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  .pace-btn-secondary {
+    @apply pace-btn bg-secondary text-secondary-foreground hover:bg-secondary/90;
+  }
+  .pace-btn-ghost {
+    @apply pace-btn bg-transparent text-foreground hover:bg-muted/60;
+  }
+  .pace-btn-sm {
+    @apply min-h-[40px] px-4 text-[14px];
+  }
 
   /* Inputs */
   .pace-field {
@@ -176,17 +246,42 @@
   }
 
   /* Progress */
-  .pace-progress { @apply h-1.5 rounded-full bg-muted overflow-hidden; }
-  .pace-progress > i { display: block; height: 100%; background: hsl(var(--primary)); border-radius: inherit; }
+  .pace-progress {
+    @apply h-1.5 rounded-full bg-muted overflow-hidden;
+  }
+  .pace-progress > i {
+    display: block;
+    height: 100%;
+    background: hsl(var(--primary));
+    border-radius: inherit;
+  }
 
   /* Capacity bar */
-  .pace-capacity { @apply h-3 rounded-full overflow-hidden bg-muted relative; }
-  .pace-capacity > i { display: block; height: 100%; background: hsl(var(--primary)); border-radius: inherit; }
-  .pace-capacity.over > i { background: hsl(var(--warning)); }
+  .pace-capacity {
+    @apply h-3 rounded-full overflow-hidden bg-muted relative;
+  }
+  .pace-capacity > i {
+    display: block;
+    height: 100%;
+    background: hsl(var(--primary));
+    border-radius: inherit;
+  }
+  .pace-capacity.over > i {
+    background: hsl(var(--warning));
+  }
 
   /* Priority dots — quiet */
-  .priority-dot { @apply inline-block w-2 h-2 rounded-full mr-2 align-middle shrink-0; }
-  .priority-dot.must   { background: hsl(var(--must)); }
-  .priority-dot.should { background: hsl(var(--should)); }
-  .priority-dot.could  { background: hsl(var(--could)); opacity: 0.7; }
+  .priority-dot {
+    @apply inline-block w-2 h-2 rounded-full mr-2 align-middle shrink-0;
+  }
+  .priority-dot.must {
+    background: hsl(var(--must));
+  }
+  .priority-dot.should {
+    background: hsl(var(--should));
+  }
+  .priority-dot.could {
+    background: hsl(var(--could));
+    opacity: 0.7;
+  }
 }
