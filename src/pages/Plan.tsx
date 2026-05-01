@@ -18,28 +18,63 @@ const ENERGIES = ['Low', 'Med', 'High'];
 
 export default function Plan() {
   const { user, loading } = useAuth();
+  const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
+  const [backlog, setBacklog] = useState<any[]>([]);
   const [capacityHours, setCapacityHours] = useState(5.5);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
+  const [hasCapacityRow, setHasCapacityRow] = useState(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
+  // When the profile loads and there is no per-day override, seed slider with the profile default.
+  useEffect(() => {
+    if (userProfile && !hasCapacityRow) {
+      setCapacityHours(userProfile.daily_capacity_minutes / 60);
+    }
+  }, [userProfile, hasCapacityRow]);
+
   useEffect(() => {
     if (!user) return;
-    supabase.from('tasks').select('*').neq('status', 'done').eq('is_rest', false)
+    // Today's scheduled tasks
+    supabase.from('tasks').select('*')
+      .eq('scheduled_date', todayISO())
+      .neq('status', 'done').eq('is_rest', false)
       .order('deadline', { ascending: true, nullsFirst: false })
       .then(({ data }) => setTasks(data ?? []));
+    // Backlog: unscheduled, open
+    supabase.from('tasks').select('*')
+      .is('scheduled_date', null).neq('status', 'done').eq('is_rest', false)
+      .order('priority', { ascending: true })
+      .order('deadline', { ascending: true, nullsFirst: false })
+      .then(({ data }) => setBacklog(data ?? []));
     supabase.from('daily_capacity').select('*').eq('date', todayISO()).maybeSingle()
       .then(({ data }) => {
         if (data) {
+          setHasCapacityRow(true);
           setCapacityHours(Number(data.available_hours));
           setEnergyLevel(data.energy_level);
           setRecoveryNotes(data.recovery_notes ?? '');
         }
       });
   }, [user]);
+
+  async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
+    const date = new Date();
+    if (when === 'tomorrow') date.setDate(date.getDate() + 1);
+    const iso = toISODate(date);
+    const { error } = await supabase.from('tasks').update({ scheduled_date: iso }).eq('id', taskId);
+    if (error) { toast.error(error.message); return; }
+    setBacklog(b => b.filter(t => t.id !== taskId));
+    if (when === 'today') {
+      const moved = backlog.find(t => t.id === taskId);
+      if (moved) setTasks(arr => [...arr, { ...moved, scheduled_date: iso }]);
+    }
+    toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
+  }
+
 
   async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
     if (!user) return;
