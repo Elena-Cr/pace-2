@@ -29,7 +29,9 @@ export default function Capture() {
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
   const [deadline, setDeadline] = useState('');
-  const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog'>('backlog');
+  const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
+  const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [estimate, setEstimate] = useState<number | ''>('');
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
