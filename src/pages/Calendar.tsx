@@ -92,7 +92,10 @@ export default function CalendarView() {
   const { update, insert } = useTaskMutations();
   const nav = useNavigate();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
+  // weekStart drives the 7-day window used by Day view's day picker.
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  // centerDate drives the 3-day sliding Week view (centerDate-1, centerDate, centerDate+1).
+  const [centerDate, setCenterDate] = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
   const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
   const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
