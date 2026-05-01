@@ -174,7 +174,9 @@ export default function Focus() {
       } as any });
       nav('/');
     } else if (outcome === 'blocked') {
-      await markBlocked();
+      if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
+      toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
+      nav('/');
     } else {
       nav('/replan');
     }
