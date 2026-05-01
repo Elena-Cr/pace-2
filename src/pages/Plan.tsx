@@ -215,15 +215,31 @@ export default function Plan() {
       <div className="pace-eyebrow mt-6 mb-2">Tasks today</div>
       <div className="space-y-2">
         {tasks.length === 0 && <div className="text-sm text-muted-foreground">Nothing scheduled. Capture something or rest — both count.</div>}
-        {tasks.map(t => (
-          <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
-              <div className="text-[12px] mt-0.5">{t.duration_minutes ? fmtMin(t.duration_minutes) : '—'}{t.effort_level ? ` · ${t.effort_level}` : ''}</div>
-            </div>
-            {t.duration_minutes && <span className="pace-chip">+{Math.ceil(t.duration_minutes * 0.15)}m buffer</span>}
-          </button>
-        ))}
+        {tasks.map(t => {
+          const conflict = planConflictTaskIds.has(t.id);
+          return (
+            <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
+                <div className="text-[12px] mt-0.5">{t.duration_minutes ? fmtMin(t.duration_minutes) : '—'}{t.effort_level ? ` · ${t.effort_level}` : ''}</div>
+                <div className="mt-1 flex flex-wrap gap-1.5 items-center text-[11px] text-muted-foreground">
+                  {(t.involves_others || t.others_rely) && (
+                    <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" />{t.others_rely ? 'Others rely' : 'Involves others'}</span>
+                  )}
+                  {(t.reschedule_count ?? 0) >= 2 && (
+                    <span>· Rescheduled {t.reschedule_count}×</span>
+                  )}
+                  {conflict && (
+                    <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]">
+                      · <AlertTriangle className="w-3 h-3" /> overlaps rest
+                    </span>
+                  )}
+                </div>
+              </div>
+              {t.duration_minutes && <span className="pace-chip">+{bufferMinutes(t)}m buffer</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Backlog */}
