@@ -97,7 +97,7 @@ export default function Capture() {
       notes: notes || null,
       involves_others: involvesOthers,
       others_rely: othersRely,
-      subtasks: subtasks as any,
+      subtasks,
       scheduled_date: toISODate(new Date()),
     });
     setBusy(false);

@@ -37,7 +37,6 @@ export default {
           blocked: "hsl(var(--status-blocked))",
           "nearly-done": "hsl(var(--status-nearly-done))",
           completed: "hsl(var(--status-completed))",
-          rest: "hsl(var(--status-rest))",
         },
       },
       borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },

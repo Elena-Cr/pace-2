@@ -68,8 +68,6 @@
     --status-nearly-done-foreground: 206 7% 20%;
     --status-completed: 117 26% 55%; /* #8DBF8A */
     --status-completed-foreground: 0 0% 100%;
-    --status-rest: 251 53% 88%; /* #D8D2F2 */
-    --status-rest-foreground: 206 7% 20%;
 
     /* Domain palette (calendar) — soft, accessible */
     --domain-academic: 211 27% 56%; /* muted blue */
@@ -197,10 +195,6 @@
   .status-rescheduled {
     background: hsl(var(--status-blocked) / 0.18);
     color: hsl(var(--status-blocked));
-  }
-  .status-rest {
-    background: hsl(var(--status-rest) / 0.55);
-    color: hsl(var(--rest-foreground));
   }
 
   /* Buttons — pill, thumb-friendly */
