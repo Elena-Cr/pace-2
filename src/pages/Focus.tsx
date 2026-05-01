@@ -383,20 +383,48 @@ export default function Focus() {
         </div>
       )}
 
-      {completionCheck && (
-        <div className="pace-card animate-fade-in space-y-3">
-          <div>
-            <div className="pace-section">What happened with this task?</div>
-            <div className="text-[13px] text-muted-foreground mt-1">No wrong answer.</div>
+      {completionCheck && (() => {
+        // actualMinutes = planned − remaining, rounded up so a 24:30 session
+        // reads as "25m" not "24m". Caps at planned (overrun is its own flow).
+        const actualMinutes = Math.max(0, Math.min(planned, Math.ceil((planned * 60 - secondsLeft) / 60)));
+        return (
+          <div className="pace-card animate-fade-in space-y-3">
+            <div>
+              <div className="pace-section">
+                {task
+                  ? `You focused for ${actualMinutes}m on ${task.title}. What's the status now?`
+                  : `You focused for ${actualMinutes}m. What's the status now?`}
+              </div>
+              <div className="text-[13px] text-muted-foreground mt-1">
+                This updates the task, not just the session.
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => complete('completed')} className="pace-btn-primary">Task completed</button>
+              <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
+              <button onClick={() => complete('replan')} className="pace-btn">Should be replanned</button>
+              <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => complete('completed')} className="pace-btn-primary">Completed</button>
-            <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
-            <button onClick={() => complete('replan')} className="pace-btn">Should be replanned</button>
-            <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
+        );
+      })()}
+
+      {/* Switch-task confirmation when a session is in flight. */}
+      <Dialog open={!!pendingSwitchId} onOpenChange={(o) => { if (!o) setPendingSwitchId(null); }}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Switch task?</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              Your current session will end without being saved. The new task starts fresh.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button onClick={() => setPendingSwitchId(null)} className="pace-btn">Keep going</button>
+            <button onClick={confirmSwitch} className="pace-btn-primary">Switch</button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
+
     </AppShell>
   );
 }
