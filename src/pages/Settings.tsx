@@ -37,6 +37,22 @@ export default function Settings() {
   function setBlock(i: number, patch: Partial<TimeBlock>) {
     setBlocks(b => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
   }
+  function toggleDay(i: number, dow: number) {
+    setBlocks(b => b.map((x, idx) => {
+      if (idx !== i) return x;
+      const current = x.days ?? [];
+      // If `days` was empty/undefined we treat it as "every day". The first
+      // tap makes it explicit by selecting the 6 other days, deselecting `dow`.
+      const allDays = [0, 1, 2, 3, 4, 5, 6];
+      const base = current.length === 0 ? allDays : current;
+      const next = base.includes(dow) ? base.filter(d => d !== dow) : [...base, dow].sort((a, b) => a - b);
+      // If the user re-enables every day, drop the field so it stays
+      // backwards-compatible ("applies every day").
+      const cleaned = next.length === 7 ? undefined : next;
+      const { days: _drop, ...rest } = x;
+      return cleaned ? { ...rest, days: cleaned } : rest;
+    }));
+  }
   function addBlock() {
     setBlocks(b => [...b, { label: 'New block', start: '09:00', end: '09:30', kind: 'recovery' }]);
   }
