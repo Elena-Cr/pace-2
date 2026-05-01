@@ -188,6 +188,7 @@ export default function CalendarView() {
         energy: t.energy,
         notes: t.notes,
         others_rely: t.others_rely,
+        reschedule_count: t.reschedule_count,
         day: di,
         startMin: ev.startMin,
         endMin: ev.endMin,
