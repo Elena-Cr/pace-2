@@ -31,6 +31,7 @@ type CalEvent = {
   energy?: string | null;
   notes?: string | null;
   others_rely?: boolean;
+  reschedule_count?: number;
   // time
   day: number;        // 0..6 (week index)
   startMin: number;   // minutes from 00:00
