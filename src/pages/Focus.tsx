@@ -65,6 +65,37 @@ export default function Focus() {
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
+  // Today's open tasks for the in-page picker.
+  const todayOpen = useMemo(
+    () => getTodayTasks(allTasks, todayISO()).filter(t => t.status !== 'done'),
+    [allTasks],
+  );
+
+  // True when the timer is at its initial state and no session has started.
+  const isIdle = !running && !sessionId && secondsLeft === planned * 60 && !overrunPrompt && !completionCheck && !breakMode;
+
+  function chooseTask(id: string) {
+    if (sessionId || running) {
+      // A session is in flight — confirm before swapping subjects.
+      setPendingSwitchId(id);
+      return;
+    }
+    nav('/focus', { state: { taskId: id }, replace: true });
+  }
+
+  function confirmSwitch() {
+    const id = pendingSwitchId;
+    setPendingSwitchId(null);
+    if (!id) return;
+    // Drop the running session locally — outcomes are only persisted on
+    // explicit complete; a quick switch is treated as a discard.
+    setRunning(false);
+    setSessionId(null);
+    setSecondsLeft(planned * 60);
+    nav('/focus', { state: { taskId: id }, replace: true });
+  }
+
+
   useEffect(() => {
     if (!running) return;
     tick.current = window.setInterval(() => {
