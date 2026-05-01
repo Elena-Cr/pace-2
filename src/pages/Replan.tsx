@@ -21,7 +21,7 @@ export default function Replan() {
     if (!user) return;
     supabase.from('tasks').select('*')
       .neq('status', 'done')
-      .lt('scheduled_for', todayISO())
+      .lt('scheduled_date', todayISO())
       .order('reschedule_count', { ascending: false })
       .then(({ data }) => setCarry(data ?? []));
   }, [user]);
@@ -45,7 +45,7 @@ export default function Replan() {
     if (kind === 'reschedule') {
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
       await supabase.from('tasks').update({
-        scheduled_for: tomorrow.toISOString().slice(0, 10),
+        scheduled_date: tomorrow.toISOString().slice(0, 10),
         reschedule_count: (t.reschedule_count || 0) + 1,
         status: 'rescheduled',
         last_mood: mood,
@@ -57,8 +57,8 @@ export default function Replan() {
     }
     if (kind === 'tiny') {
       await supabase.from('tasks').update({
-        estimated_minutes: 10,
-        scheduled_for: todayISO(),
+        duration_minutes: 10,
+        scheduled_date: todayISO(),
         next_action: t.next_action || 'Just open it for 10 minutes',
         last_mood: mood,
         replanning_reason: reason,

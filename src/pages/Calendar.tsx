@@ -16,10 +16,9 @@ type CalEvent = {
   kind: CalKind;
   status?: Status;
   next_action?: string | null;
-  estimated_minutes?: number | null;
+  duration_minutes?: number | null;
   effort_level?: string | null;
   energy?: string | null;
-  difficulty?: number | null;
   notes?: string | null;
   others_rely?: boolean;
   // time
@@ -102,7 +101,7 @@ export default function CalendarView() {
     const end = new Date(days[6]); end.setDate(end.getDate() + 1);
     const endIso = end.toISOString().slice(0, 10);
     supabase.from('tasks').select('*')
-      .gte('scheduled_for', start).lt('scheduled_for', endIso)
+      .gte('scheduled_date', start).lt('scheduled_date', endIso)
       .then(({ data }) => setTasks(data ?? []));
     supabase.from('daily_capacity').select('*').gte('date', start).lt('date', endIso)
       .then(({ data }) => {
@@ -126,7 +125,7 @@ export default function CalendarView() {
     const start = monthGrid[0].toISOString().slice(0, 10);
     const end = new Date(monthGrid[41]); end.setDate(end.getDate() + 1);
     supabase.from('tasks').select('*')
-      .gte('scheduled_for', start).lt('scheduled_for', end.toISOString().slice(0, 10))
+      .gte('scheduled_date', start).lt('scheduled_date', end.toISOString().slice(0, 10))
       .then(({ data }) => setMonthTasks(data ?? []));
   }, [user, monthAnchor, view]);
 
@@ -137,11 +136,11 @@ export default function CalendarView() {
       FIXED_BLOCKS.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
     });
     tasks.forEach((t, i) => {
-      const dateStr = t.scheduled_for as string | null;
+      const dateStr = t.scheduled_date as string | null;
       if (!dateStr) return;
       const di = days.findIndex(d => d.toISOString().slice(0, 10) === dateStr);
       if (di < 0) return;
-      const minutes = t.estimated_minutes || 45;
+      const minutes = t.duration_minutes || 45;
       // synthetic start time: stagger across the day so blocks don't fully stack
       const baseStart = 9 * 60 + (i % 6) * 80;
       const startMin = baseStart;
@@ -153,8 +152,8 @@ export default function CalendarView() {
         domain: (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest',
         kind: t.is_rest ? 'rest' : 'task',
         status: t.status, next_action: t.next_action,
-        estimated_minutes: t.estimated_minutes, effort_level: t.effort_level,
-        energy: t.energy, difficulty: t.difficulty, notes: t.notes,
+        duration_minutes: t.duration_minutes, effort_level: t.effort_level,
+        energy: t.energy, notes: t.notes,
         others_rely: t.others_rely,
         day: di, startMin, endMin,
       });
@@ -211,11 +210,11 @@ export default function CalendarView() {
     const newDate = days[targetDay].toISOString().slice(0, 10);
     const t = tasks.find(x => x.id === ev.taskId);
     const { error } = await supabase.from('tasks').update({
-      scheduled_for: newDate,
+      scheduled_date: newDate,
       reschedule_count: (t?.reschedule_count || 0) + 1,
     }).eq('id', ev.taskId);
     if (error) { toast.error(error.message); return; }
-    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, scheduled_for: newDate, reschedule_count: (x.reschedule_count || 0) + 1 } : x));
+    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, scheduled_date: newDate, reschedule_count: (x.reschedule_count || 0) + 1 } : x));
     setReplanFor({ taskId: ev.taskId, title: ev.title });
   }
 
@@ -360,7 +359,7 @@ export default function CalendarView() {
                                 <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
                                 {ev.domain === 'rest' ? 'Rest' : DOMAIN_LABEL[ev.domain as Domain]}
                               </span>
-                              {ev.estimated_minutes != null && <span>· {fmtMin(ev.estimated_minutes)}</span>}
+                              {ev.duration_minutes != null && <span>· {fmtMin(ev.duration_minutes)}</span>}
                               {ev.energy && <span>· {ev.energy} energy</span>}
                               {ev.others_rely && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> shared</span>}
                               {conflict && <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]"><AlertTriangle className="w-3 h-3" /> overlaps rest</span>}
@@ -524,11 +523,11 @@ export default function CalendarView() {
         // group monthTasks by date
         const byDate: Record<string, any[]> = {};
         monthTasks.forEach(t => {
-          if (!t.scheduled_for) return;
+          if (!t.scheduled_date) return;
           if (!showCompleted && t.status === 'done') return;
           const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
           if (!filter.has(dom)) return;
-          (byDate[t.scheduled_for] ||= []).push(t);
+          (byDate[t.scheduled_date] ||= []).push(t);
         });
         return (
           <div className="mt-4 pace-card !p-2">
@@ -588,10 +587,9 @@ export default function CalendarView() {
             )}
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-              {open.estimated_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.estimated_minutes)}</div>}
+              {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
               {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
               {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
-              {open.difficulty != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Difficulty</div>{open.difficulty}/5</div>}
             </div>
 
             {open.next_action && (
@@ -648,7 +646,7 @@ export default function CalendarView() {
     const { data, error } = await supabase.from('tasks').insert({
       user_id: user.id, title: title.trim(),
       domain: 'personal', priority: 'should', status: 'not_started',
-      scheduled_for: date, estimated_minutes: 60,
+      scheduled_date: date, duration_minutes: 60,
     }).select().single();
     if (error) { toast.error(error.message); return; }
     setTasks(arr => [...arr, data]);

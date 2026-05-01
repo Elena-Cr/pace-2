@@ -79,7 +79,7 @@ export default function TaskDetail() {
   async function reschedule() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     await update({
-      scheduled_for: tomorrow.toISOString().slice(0, 10),
+      scheduled_date: tomorrow.toISOString().slice(0, 10),
       reschedule_count: (task.reschedule_count || 0) + 1,
       status: 'rescheduled',
     });
@@ -91,7 +91,7 @@ export default function TaskDetail() {
   }
 
   async function reduceScope() {
-    await update({ estimated_minutes: Math.max(10, Math.round((task.estimated_minutes || 30) / 2)) });
+    await update({ duration_minutes: Math.max(10, Math.round((task.duration_minutes || 30) / 2)) });
     toast.success('Scope reduced. Smaller is still real.');
   }
 
@@ -173,10 +173,9 @@ export default function TaskDetail() {
       <div className="mt-4 pace-card">
         <div className="pace-eyebrow mb-2">Estimates</div>
         <div className="flex flex-wrap gap-1.5 text-[13px]">
-          {task.estimated_minutes && <span className="pace-chip">{fmtMin(task.estimated_minutes)}</span>}
+          {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
           {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
           {task.energy && <span className="pace-chip">Energy · {task.energy}</span>}
-          {task.difficulty && <span className="pace-chip">Difficulty · {task.difficulty}/5</span>}
           {task.involves_others && <span className="pace-chip">Involves others</span>}
           {task.others_rely && <span className="pace-chip">Others rely</span>}
           {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}

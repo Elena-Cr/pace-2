@@ -51,10 +51,10 @@ export default function Home() {
     const all = data ?? [];
 
     const open = all.filter(t => t.status !== 'done');
-    setTasks(open.filter(t => !t.scheduled_for || t.scheduled_for >= today));
-    setMissed(open.filter(t => t.scheduled_for && t.scheduled_for < today && !t.is_rest));
+    setTasks(open.filter(t => !t.scheduled_date || t.scheduled_date >= today));
+    setMissed(open.filter(t => t.scheduled_date && t.scheduled_date < today && !t.is_rest));
     setDoneToday(all.filter(t => t.status === 'done' && (t.updated_at ?? '').slice(0, 10) === today));
-    setTomorrowCount(open.filter(t => t.scheduled_for === tomorrowStr && !t.is_rest).length);
+    setTomorrowCount(open.filter(t => t.scheduled_date === tomorrowStr && !t.is_rest).length);
 
     const { data: cap } = await supabase.from('daily_capacity').select('available_hours, energy_level').eq('date', today).maybeSingle();
     setCapacity(cap as any);
@@ -71,7 +71,7 @@ export default function Home() {
     const t = missed.find(x => x.id === id); if (!t) return;
     if (kind === 'reschedule') {
       await supabase.from('tasks').update({
-        scheduled_for: todayISO(),
+        scheduled_date: todayISO(),
         reschedule_count: (t.reschedule_count || 0) + 1,
         status: 'rescheduled',
       }).eq('id', id);
@@ -87,8 +87,8 @@ export default function Home() {
   const dateStr = today.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
   const todayStr = todayISO();
 
-  const todayTasks = useMemo(() => tasks.filter(t => t.scheduled_for === todayStr && !t.is_rest), [tasks, todayStr]);
-  const restBlocks = useMemo(() => tasks.filter(t => t.is_rest && (!t.scheduled_for || t.scheduled_for === todayStr)), [tasks, todayStr]);
+  const todayTasks = useMemo(() => tasks.filter(t => t.scheduled_date === todayStr && !t.is_rest), [tasks, todayStr]);
+  const restBlocks = useMemo(() => tasks.filter(t => t.is_rest && (!t.scheduled_date || t.scheduled_date === todayStr)), [tasks, todayStr]);
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
 
@@ -97,7 +97,7 @@ export default function Home() {
   const energy = capacity?.energy_level ?? 'Med';
   const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
   const capMin = Math.round(capH * 60 * mult);
-  const plannedMin = real.reduce((s, t) => s + (t.estimated_minutes || 0), 0);
+  const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0);
   const ratio = plannedMin / Math.max(1, capMin);
   const capState: 'balanced' | 'close' | 'over' = ratio > 1 ? 'over' : ratio > 0.85 ? 'close' : 'balanced';
   const capLabel = capState === 'over' ? 'Over capacity' : capState === 'close' ? 'Close to capacity' : 'Balanced';
@@ -204,7 +204,7 @@ export default function Home() {
               <div className="text-[16px] font-medium leading-snug truncate">{nextUp.title}</div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
                 {nextUp.domain && <span>{DOMAIN_LABEL[nextUp.domain as Domain]}</span>}
-                {nextUp.estimated_minutes != null && <span>· {fmtMin(nextUp.estimated_minutes)}</span>}
+                {nextUp.duration_minutes != null && <span>· {fmtMin(nextUp.duration_minutes)}</span>}
                 {nextUp.next_action && <span>· {nextUp.next_action}</span>}
               </div>
             </div>

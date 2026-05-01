@@ -119,11 +119,11 @@ export type Database = {
         Row: {
           created_at: string
           deadline: string | null
-          difficulty: number | null
           domain: Database["public"]["Enums"]["task_domain"] | null
+          duration_minutes: number | null
           effort_level: string | null
+          end_time: string | null
           energy: string | null
-          estimated_minutes: number | null
           id: string
           involves_others: boolean
           is_rest: boolean
@@ -131,11 +131,13 @@ export type Database = {
           next_action: string | null
           notes: string | null
           others_rely: boolean
+          parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           progress: number
           replanning_reason: Database["public"]["Enums"]["replan_reason"] | null
           reschedule_count: number
-          scheduled_for: string | null
+          scheduled_date: string | null
+          start_time: string | null
           status: Database["public"]["Enums"]["task_status"]
           subtasks: Json
           title: string
@@ -145,11 +147,11 @@ export type Database = {
         Insert: {
           created_at?: string
           deadline?: string | null
-          difficulty?: number | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
+          duration_minutes?: number | null
           effort_level?: string | null
+          end_time?: string | null
           energy?: string | null
-          estimated_minutes?: number | null
           id?: string
           involves_others?: boolean
           is_rest?: boolean
@@ -157,13 +159,15 @@ export type Database = {
           next_action?: string | null
           notes?: string | null
           others_rely?: boolean
+          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress?: number
           replanning_reason?:
             | Database["public"]["Enums"]["replan_reason"]
             | null
           reschedule_count?: number
-          scheduled_for?: string | null
+          scheduled_date?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           subtasks?: Json
           title: string
@@ -173,11 +177,11 @@ export type Database = {
         Update: {
           created_at?: string
           deadline?: string | null
-          difficulty?: number | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
+          duration_minutes?: number | null
           effort_level?: string | null
+          end_time?: string | null
           energy?: string | null
-          estimated_minutes?: number | null
           id?: string
           involves_others?: boolean
           is_rest?: boolean
@@ -185,16 +189,59 @@ export type Database = {
           next_action?: string | null
           notes?: string | null
           others_rely?: boolean
+          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress?: number
           replanning_reason?:
             | Database["public"]["Enums"]["replan_reason"]
             | null
           reschedule_count?: number
-          scheduled_for?: string | null
+          scheduled_date?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           subtasks?: Json
           title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          daily_capacity_minutes: number
+          default_time_blocks: Json
+          id: string
+          onboarding_completed: boolean
+          preferred_tasks_per_day: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_capacity_minutes?: number
+          default_time_blocks?: Json
+          id?: string
+          onboarding_completed?: boolean
+          preferred_tasks_per_day?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_capacity_minutes?: number
+          default_time_blocks?: Json
+          id?: string
+          onboarding_completed?: boolean
+          preferred_tasks_per_day?: number
           updated_at?: string
           user_id?: string
         }

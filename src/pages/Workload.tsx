@@ -34,8 +34,8 @@ export default function Workload() {
     const start = startOfWeek().toISOString().slice(0, 10);
     const end = new Date(); end.setDate(end.getDate() + 14);
     supabase.from('tasks').select('*')
-      .gte('scheduled_for', start)
-      .lte('scheduled_for', end.toISOString().slice(0, 10))
+      .gte('scheduled_date', start)
+      .lte('scheduled_date', end.toISOString().slice(0, 10))
       .then(({ data }) => setTasks(data ?? []));
   }, [user]);
 
@@ -44,12 +44,12 @@ export default function Workload() {
     return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const iso = d.toISOString().slice(0, 10);
-      const dayTasks = tasks.filter(t => t.scheduled_for === iso && !t.is_rest);
+      const dayTasks = tasks.filter(t => t.scheduled_date === iso && !t.is_rest);
       const totals: Record<Domain, number> = { academic: 0, work: 0, social: 0, personal: 0 };
       let rest = 0;
       let total = 0;
       dayTasks.forEach(t => {
-        const m = t.estimated_minutes || 30;
+        const m = t.duration_minutes || 30;
         total += m;
         if (t.is_rest) rest += m;
         else if (t.domain) totals[t.domain as Domain] += m;

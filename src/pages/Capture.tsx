@@ -28,7 +28,7 @@ export default function Capture() {
   const [estimate, setEstimate] = useState<number | ''>('');
   const [energy, setEnergy] = useState<string | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<number | null>(null);
+  // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
   const [notes, setNotes] = useState('');
   const [involvesOthers, setInvolvesOthers] = useState(false);
@@ -54,13 +54,11 @@ export default function Capture() {
 
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
-    // Only fill fields the user hasn't set yet, so we never overwrite intent
     if (!domain && s.domain) setDomain(s.domain);
     if (priority === 'should' && s.priority) setPriority(s.priority);
-    if (estimate === '' && s.estimated_minutes) setEstimate(s.estimated_minutes);
+    if (estimate === '' && s.duration_minutes) setEstimate(s.duration_minutes);
     if (!energy && s.energy) setEnergy(s.energy);
     if (!effort && s.effort_level) setEffort(s.effort_level);
-    if (!difficulty && s.difficulty) setDifficulty(s.difficulty);
     if (!nextAction && s.next_action) setNextAction(s.next_action);
     if (!involvesOthers && s.involves_others) setInvolvesOthers(true);
     if (!othersRely && s.others_rely) setOthersRely(true);
@@ -73,7 +71,7 @@ export default function Capture() {
     setDismissed(prev => new Set(prev).add(debouncedTitle));
   }
 
-  const heavy = (difficulty ?? 0) >= 4 || (estimate || 0) >= 90 || effort === 'Heavy';
+  const heavy = (estimate || 0) >= 90 || effort === 'Heavy';
 
   function addSub() {
     const t = subInput.trim(); if (!t) return;
@@ -85,7 +83,7 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
-    const buffer = difficulty && difficulty >= 4 ? 0.2 : 0.1;
+    const buffer = effort === 'Heavy' ? 0.2 : 0.1;
     const suggested = estimate ? Math.round(estimate * (1 + buffer)) : null;
     const { error } = await supabase.from('tasks').insert({
       user_id: user.id,
@@ -93,16 +91,15 @@ export default function Capture() {
       domain,
       priority,
       deadline: deadline ? new Date(deadline).toISOString() : null,
-      estimated_minutes: suggested,
+      duration_minutes: suggested,
       energy,
       effort_level: effort,
-      difficulty,
       next_action: nextAction || null,
       notes: notes || null,
       involves_others: involvesOthers,
       others_rely: othersRely,
       subtasks: subtasks as any,
-      scheduled_for: new Date().toISOString().slice(0, 10),
+      scheduled_date: new Date().toISOString().slice(0, 10),
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
@@ -160,10 +157,9 @@ export default function Capture() {
             <div className="mt-2 flex gap-1 flex-wrap text-[12px]">
               {suggestion.domain && <span className="pace-chip">Domain · {DOMAIN_LABEL[suggestion.domain]}</span>}
               {suggestion.priority && <span className="pace-chip">Priority · {PRIORITY_LABEL[suggestion.priority]}</span>}
-              {suggestion.estimated_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.estimated_minutes)}</span>}
+              {suggestion.duration_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.duration_minutes)}</span>}
               {suggestion.energy && <span className="pace-chip">Energy · {suggestion.energy}</span>}
               {suggestion.effort_level && <span className="pace-chip">Effort · {suggestion.effort_level}</span>}
-              {suggestion.difficulty != null && <span className="pace-chip">Difficulty · {suggestion.difficulty}/5</span>}
             </div>
             <div className="mt-3 flex gap-2">
               <button onClick={() => applySuggestion(suggestion)} className="pace-btn-primary pace-btn-sm">Use these</button>
@@ -222,15 +218,6 @@ export default function Capture() {
                   {EFFORTS.map(e => (
                     <button key={e} onClick={() => setEffort(e === effort ? null : e)}
                       className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-3">
-                <div className="pace-field-label">Difficulty {difficulty ? `· ${difficulty}/5` : ''}</div>
-                <div className="flex gap-1.5">
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setDifficulty(n === difficulty ? null : n)}
-                      className={difficulty === n ? 'pace-chip-filled' : 'pace-chip'}>{n}</button>
                   ))}
                 </div>
               </div>
