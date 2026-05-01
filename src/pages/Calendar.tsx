@@ -85,6 +85,85 @@ function domainClass(domain: Domain | 'rest') {
 
 const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'personal', 'rest'];
 
+// Collapsible "Needs attention" panel for the day-view agenda. Each item
+// expands inline to surface neutral-toned recovery actions.
+function NeedsAttention({
+  items,
+  onReschedule,
+  onReduce,
+  onBlock,
+  onStart,
+}: {
+  items: CalEvent[];
+  onReschedule: (ev: CalEvent) => void;
+  onReduce: (ev: CalEvent) => void;
+  onBlock: (ev: CalEvent) => void;
+  onStart: (ev: CalEvent) => void;
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <div className="rounded-2xl border border-[hsl(var(--attention)/0.35)] bg-[hsl(var(--attention)/0.06)] p-3">
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-2 text-left">
+        <AlertTriangle className="w-4 h-4 text-[hsl(var(--attention))]" />
+        <span className="text-[13px] font-semibold text-[hsl(var(--attention))]">
+          Needs attention · {items.length}
+        </span>
+        <span className="ml-auto text-[11px] text-muted-foreground">
+          {collapsed ? 'Show' : 'Hide'}
+        </span>
+      </button>
+      {!collapsed && (
+        <ul className="mt-2 space-y-1.5">
+          {items.map(ev => {
+            const isOpen = openId === ev.id;
+            const h = Math.floor(ev.startMin / 60);
+            const timeLabel = `${((h + 11) % 12) + 1}${h < 12 ? 'a' : 'p'}`;
+            return (
+              <li key={ev.id} className="rounded-xl bg-card border border-border/50">
+                <button
+                  type="button"
+                  onClick={() => setOpenId(isOpen ? null : ev.id)}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2">
+                  <span className="text-[13px] font-medium truncate">{ev.title}</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
+                    Scheduled {timeLabel}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="px-3 pb-3 -mt-1">
+                    <p className="text-[12px] text-muted-foreground mb-2">
+                      The scheduled window has passed. Pick a gentle next step.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button onClick={() => onStart(ev)} className="pace-btn-primary pace-btn-sm">
+                        <Timer className="w-3.5 h-3.5" /> Start now
+                      </button>
+                      <button onClick={() => onReschedule(ev)} className="pace-btn pace-btn-sm">
+                        <MoveRight className="w-3.5 h-3.5" /> Reschedule
+                      </button>
+                      <button onClick={() => onReduce(ev)} className="pace-btn pace-btn-sm">
+                        Reduce to 10 min
+                      </button>
+                      <button onClick={() => onBlock(ev)} className="pace-btn pace-btn-sm">
+                        Mark blocked
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+
 export default function CalendarView() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
