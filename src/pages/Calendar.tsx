@@ -8,7 +8,7 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
 import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -85,6 +85,85 @@ function domainClass(domain: Domain | 'rest') {
 
 const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'personal', 'rest'];
 
+// Collapsible "Needs attention" panel for the day-view agenda. Each item
+// expands inline to surface neutral-toned recovery actions.
+function NeedsAttention({
+  items,
+  onReschedule,
+  onReduce,
+  onBlock,
+  onStart,
+}: {
+  items: CalEvent[];
+  onReschedule: (ev: CalEvent) => void;
+  onReduce: (ev: CalEvent) => void;
+  onBlock: (ev: CalEvent) => void;
+  onStart: (ev: CalEvent) => void;
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <div className="rounded-2xl border border-[hsl(var(--attention)/0.35)] bg-[hsl(var(--attention)/0.06)] p-3">
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-2 text-left">
+        <AlertTriangle className="w-4 h-4 text-[hsl(var(--attention))]" />
+        <span className="text-[13px] font-semibold text-[hsl(var(--attention))]">
+          Needs attention · {items.length}
+        </span>
+        <span className="ml-auto text-[11px] text-muted-foreground">
+          {collapsed ? 'Show' : 'Hide'}
+        </span>
+      </button>
+      {!collapsed && (
+        <ul className="mt-2 space-y-1.5">
+          {items.map(ev => {
+            const isOpen = openId === ev.id;
+            const h = Math.floor(ev.startMin / 60);
+            const timeLabel = `${((h + 11) % 12) + 1}${h < 12 ? 'a' : 'p'}`;
+            return (
+              <li key={ev.id} className="rounded-xl bg-card border border-border/50">
+                <button
+                  type="button"
+                  onClick={() => setOpenId(isOpen ? null : ev.id)}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2">
+                  <span className="text-[13px] font-medium truncate">{ev.title}</span>
+                  <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
+                    Scheduled {timeLabel}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="px-3 pb-3 -mt-1">
+                    <p className="text-[12px] text-muted-foreground mb-2">
+                      The scheduled window has passed. Pick a gentle next step.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button onClick={() => onStart(ev)} className="pace-btn-primary pace-btn-sm">
+                        <Timer className="w-3.5 h-3.5" /> Start now
+                      </button>
+                      <button onClick={() => onReschedule(ev)} className="pace-btn pace-btn-sm">
+                        <MoveRight className="w-3.5 h-3.5" /> Reschedule
+                      </button>
+                      <button onClick={() => onReduce(ev)} className="pace-btn pace-btn-sm">
+                        Reduce to 10 min
+                      </button>
+                      <button onClick={() => onBlock(ev)} className="pace-btn pace-btn-sm">
+                        Mark blocked
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+
 export default function CalendarView() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
@@ -92,7 +171,10 @@ export default function CalendarView() {
   const { update, insert } = useTaskMutations();
   const nav = useNavigate();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
+  // weekStart drives the 7-day window used by Day view's day picker.
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  // centerDate drives the 3-day sliding Week view (centerDate-1, centerDate, centerDate+1).
+  const [centerDate, setCenterDate] = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
   const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
   const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
@@ -130,13 +212,25 @@ export default function CalendarView() {
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
-  }), [weekStart]);
+  // In week (3-day sliding) view: [centerDate-1, centerDate, centerDate+1].
+  // In day view: full 7-day Mon-start window driven by weekStart, used by the
+  // day picker so the user can jump within the current week.
+  const days = useMemo(() => {
+    if (view === 'week') {
+      const start = new Date(centerDate); start.setDate(start.getDate() - 1);
+      return Array.from({ length: 3 }, (_, i) => {
+        const d = new Date(start); d.setDate(d.getDate() + i); return d;
+      });
+    }
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+    });
+  }, [view, centerDate, weekStart]);
 
   const weekRange = useMemo(() => {
     const start = toISODate(days[0]);
-    const end = new Date(days[6]); end.setDate(end.getDate() + 1);
+    const last = days[days.length - 1];
+    const end = new Date(last); end.setDate(end.getDate() + 1);
     return { start, endExclusive: toISODate(end) };
   }, [days]);
 
@@ -240,7 +334,16 @@ export default function CalendarView() {
   }
 
   function shiftWeek(delta: number) {
-    const d = new Date(weekStart); d.setDate(d.getDate() + delta * 7); setWeekStart(d);
+    if (view === 'week') {
+      const d = new Date(centerDate); d.setDate(d.getDate() + delta); setCenterDate(d);
+    } else {
+      const d = new Date(weekStart); d.setDate(d.getDate() + delta * 7); setWeekStart(d);
+    }
+  }
+  function resetCenter() {
+    const d = new Date(); d.setHours(0,0,0,0);
+    if (view === 'week') setCenterDate(d);
+    else setWeekStart(startOfWeek(d));
   }
 
   // Drag & drop reschedule
@@ -292,11 +395,13 @@ export default function CalendarView() {
       {/* Date nav */}
       {view !== 'month' ? (
         <div className="mt-3 flex items-center justify-between">
-          <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label="Previous week"><ChevronLeft className="w-5 h-5" /></button>
-          <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="pace-chip">
-            {days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString([], { month: 'short', day: 'numeric' })}
+          <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label={view === 'week' ? 'Previous day' : 'Previous week'}><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={resetCenter} className="pace-chip">
+            {view === 'week'
+              ? `${days[0].toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} – ${days[days.length - 1].toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`
+              : `${days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${days[days.length - 1].toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
           </button>
-          <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label="Next week"><ChevronRight className="w-5 h-5" /></button>
+          <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label={view === 'week' ? 'Next day' : 'Next week'}><ChevronRight className="w-5 h-5" /></button>
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-between">
@@ -327,37 +432,66 @@ export default function CalendarView() {
         </button>
       </div>
 
-      {/* Day picker for day view */}
+      {/* Day picker for day view — fixed 7 across, no horizontal scroll.
+          Each chip has a stable height: an always-present 6px indicator row
+          below the date number, so adding/removing a status dot never
+          changes the chip's overall size. */}
       {view === 'day' && (
-        <div className="mt-3 flex gap-1 overflow-x-auto -mx-1 px-1">
+        <div className="mt-3 flex gap-1">
           {days.map((d, i) => {
             const active = i === dayIdx;
             const summary = daySummary[i];
+            const dotClass =
+              summary.state === 'over' ? 'bg-[hsl(var(--attention))]' :
+              summary.state === 'close' ? 'bg-[hsl(var(--warning))]' :
+              'bg-transparent';
             return (
               <button key={i} onClick={() => setDayIdx(i)}
-                className={`shrink-0 px-3 py-2 rounded-2xl text-center min-w-[56px] ${active ? 'bg-primary text-primary-foreground' : 'bg-card border border-border/60'}`}>
-                <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{DAYS[i]}</div>
-                <div className="text-[15px] font-semibold">{d.getDate()}</div>
-                {summary.state !== 'balanced' && (
-                  <div className={`mt-0.5 inline-block w-1.5 h-1.5 rounded-full ${summary.state === 'over' ? 'bg-[hsl(var(--attention))]' : 'bg-[hsl(var(--warning))]'}`} />
-                )}
+                className={`flex-1 min-w-0 px-1 py-2 rounded-2xl text-center ${active ? 'bg-muted-foreground/15 border border-muted-foreground/40' : 'bg-card border border-border/60'}`}>
+                <div className="text-[9px] font-semibold uppercase tracking-wider opacity-80 truncate">{DAYS[i]}</div>
+                <div className="text-[14px] font-semibold leading-tight">{d.getDate()}</div>
+                <div className="h-1.5 mt-0.5 flex items-center justify-center" aria-hidden="true">
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                </div>
               </button>
             );
           })}
         </div>
       )}
 
-      {/* === DAY VIEW: to-do list style === */}
+      {/* === DAY VIEW: agenda layout ===
+          Rest blocks, focus blocks, and tasks all appear inline in chronological
+          order. A "Needs attention" section at the top surfaces tasks scheduled
+          today whose end time has already passed without completion, with
+          per-item Reschedule / Reduce / Block / Start now actions. */}
       {view === 'day' && (() => {
-        const dayEvs = visibleEvents.filter(e => e.day === dayIdx).sort((a, b) => a.startMin - b.startMin);
+        const dayEvs = visibleEvents.filter(e => e.day === dayIdx);
+        // Chronological agenda. Untimed events fall after timed ones because
+        // getScheduledEvents always assigns a synthetic startMin, but if any
+        // event happens to lack one we sort it last.
+        const agenda = [...dayEvs].sort((a, b) => {
+          const aHas = Number.isFinite(a.startMin) ? 0 : 1;
+          const bHas = Number.isFinite(b.startMin) ? 0 : 1;
+          if (aHas !== bHas) return aHas - bHas;
+          return a.startMin - b.startMin;
+        });
         const summary = daySummary[dayIdx];
         const stateLabel = summary.state === 'over' ? 'Needs adjustment' : summary.state === 'close' ? 'Close to capacity' : 'Balanced';
         const stateClass = summary.state === 'over' ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]' :
                            summary.state === 'close' ? 'bg-[hsl(var(--warning)/0.22)] text-[hsl(206_7%_20%)]' :
                            'bg-[hsl(var(--success)/0.18)] text-[hsl(var(--success))]';
-        const taskItems = dayEvs.filter(e => e.kind === 'task' || e.kind === 'focus');
-        const restItems = dayEvs.filter(e => e.kind !== 'task' && e.kind !== 'focus');
+        const taskItems = agenda.filter(e => e.kind === 'task' || e.kind === 'focus');
         const dateObj = days[dayIdx];
+        const isTodayView = dateObj.toDateString() === new Date().toDateString();
+        const taskById = new Map(tasks.map(t => [t.id, t] as const));
+
+        // Needs attention: tasks scheduled today whose end time is in the past
+        // and whose status is not done. Only meaningful for the "today" column.
+        const attentionItems = isTodayView
+          ? taskItems.filter(e => e.taskId && e.status !== 'done' && e.endMin <= nowMin)
+          : [];
+        const attentionIds = new Set(attentionItems.map(e => e.id));
+        const restAgenda = agenda.filter(e => !attentionIds.has(e.id));
 
         return (
           <div className="mt-4 space-y-4">
@@ -373,19 +507,62 @@ export default function CalendarView() {
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
             </div>
 
-            {/* To-do list */}
+            {/* Needs attention — collapsible, compact, action-led. */}
+            {attentionItems.length > 0 && (
+              <NeedsAttention
+                items={attentionItems}
+                onReschedule={(ev) => { setOpen(null); nav('/replan', { state: { taskId: ev.taskId } }); }}
+                onReduce={async (ev) => {
+                  if (!ev.taskId) return;
+                  try {
+                    await update.mutateAsync({ id: ev.taskId, patch: { duration_minutes: 10 } as any });
+                    toast.success('Reduced to 10 minutes.');
+                  } catch (err: any) { toast.error(err?.message ?? 'Could not update.'); }
+                }}
+                onBlock={async (ev) => {
+                  if (!ev.taskId) return;
+                  try {
+                    await update.mutateAsync({ id: ev.taskId, patch: { status: 'blocked' } as any });
+                    toast.success('Marked as blocked.');
+                  } catch (err: any) { toast.error(err?.message ?? 'Could not update.'); }
+                }}
+                onStart={(ev) => nav('/focus', { state: { taskId: ev.taskId } })}
+              />
+            )}
+
+            {/* Agenda */}
             <div>
-              <div className="pace-eyebrow mb-2">Your day</div>
-              {taskItems.length === 0 ? (
+              <div className="pace-eyebrow mb-2">Agenda</div>
+              {restAgenda.length === 0 ? (
                 <div className="pace-card text-center text-[14px] text-muted-foreground">
                   Nothing planned yet. Add an intention below to get started.
                 </div>
               ) : (
                 <ul className="space-y-2">
-                  {taskItems.map(ev => {
+                  {restAgenda.map(ev => {
                     const dc = domainClass(ev.domain);
                     const conflict = summary.conflictIds.has(ev.id);
                     const done = ev.status === 'done';
+                    const isRest = ev.kind !== 'task' && ev.kind !== 'focus';
+
+                    if (isRest) {
+                      // Inline rest block, full agenda width, distinct neutral
+                      // styling so it reads as protected time.
+                      return (
+                        <li key={ev.id}>
+                          <button onClick={() => setOpen(ev)}
+                            className={`w-full text-left rounded-2xl ${dc.bg} border border-border/30 px-3 py-2.5 flex items-center gap-2`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
+                            <span className="text-[13px] font-medium">{ev.title}</span>
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wider ml-1">Rest</span>
+                            <span className="ml-auto text-[12px] text-muted-foreground">{fmtRange(ev.startMin, ev.endMin)}</span>
+                          </button>
+                        </li>
+                      );
+                    }
+
+                    const t = ev.taskId ? taskById.get(ev.taskId) : undefined;
+                    const buf = t ? bufferMinutes(t) : 0;
                     return (
                       <li key={ev.id}>
                         <button onClick={() => setOpen(ev)}
@@ -398,7 +575,13 @@ export default function CalendarView() {
                           </button>
                           <span className={`w-1 self-stretch rounded-full ${dc.bar} shrink-0`} />
                           <div className="min-w-0 flex-1">
-                            <div className={`text-[15px] font-medium leading-snug ${done ? 'line-through' : ''}`}>{ev.title}</div>
+                            <div className="flex items-baseline gap-2">
+                              <div className={`text-[15px] font-medium leading-snug truncate ${done ? 'line-through' : ''}`}>{ev.title}</div>
+                              <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{fmtRange(ev.startMin, ev.endMin)}</span>
+                            </div>
+                            {buf > 0 && (
+                              <div className="mt-0.5 text-[11px] text-muted-foreground">+{fmtMin(buf)} buffer</div>
+                            )}
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
                               <span className={`inline-flex items-center gap-1 ${dc.text}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
@@ -423,27 +606,6 @@ export default function CalendarView() {
                 </ul>
               )}
             </div>
-
-            {/* Rest & care */}
-            {restItems.length > 0 && (
-              <div>
-                <div className="pace-eyebrow mb-2">Rest & care</div>
-                <ul className="space-y-1.5">
-                  {restItems.map(ev => {
-                    const dc = domainClass(ev.domain);
-                    return (
-                      <li key={ev.id}>
-                        <button onClick={() => setOpen(ev)} className={`w-full text-left rounded-2xl ${dc.bg} border border-border/30 px-3 py-2 flex items-center gap-2`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
-                          <span className="text-[14px] font-medium">{ev.title}</span>
-                          <span className="ml-auto text-[12px] text-muted-foreground">{fmtRange(ev.startMin, ev.endMin)}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
           </div>
         );
       })()}
@@ -461,15 +623,25 @@ export default function CalendarView() {
             const stateClass = s.state === 'over' ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]' :
                                s.state === 'close' ? 'bg-[hsl(var(--warning)/0.22)] text-[hsl(206_7%_20%)]' :
                                'bg-[hsl(var(--success)/0.18)] text-[hsl(var(--success))]';
+            const weekdayShort = d.toLocaleDateString([], { weekday: 'short' });
+            const goToDay = () => {
+              setWeekStart(startOfWeek(d));
+              setDayIdx((d.getDay() + 6) % 7);
+              setView('day');
+            };
             return (
               <div key={di} className="flex-1 min-w-0 px-1">
                 <div className={`text-center ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{DAYS[di]}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{weekdayShort}</div>
                   <div className="text-[15px] font-semibold">{d.getDate()}</div>
                 </div>
-                <div className={`mt-1 rounded-lg px-1.5 py-1 text-[10px] text-center ${stateClass}`}>
+                <button
+                  type="button"
+                  onClick={goToDay}
+                  className={`mt-1 w-full rounded-lg px-1.5 py-1 text-[10px] text-center ${stateClass} ${s.state !== 'balanced' ? 'hover:opacity-90 cursor-pointer' : 'cursor-default'}`}
+                  aria-label={s.state !== 'balanced' ? `${stateLabel} — open day view to see details` : stateLabel}>
                   {stateLabel}
-                </div>
+                </button>
                 <div className="text-[10px] text-muted-foreground text-center mt-0.5">
                   {fmtMin(s.planned)} / {fmtMin(s.capMin)}
                 </div>
@@ -592,6 +764,7 @@ export default function CalendarView() {
           if (!filter.has(dom)) return;
           (byDate[t.scheduled_date] ||= []).push(t);
         });
+        const DOMAIN_ORDER: Domain[] = ['academic', 'work', 'social', 'personal'];
         return (
           <div className="mt-4 pace-card !p-2">
             <div className="grid grid-cols-7 gap-1 mb-1">
@@ -603,20 +776,33 @@ export default function CalendarView() {
                 const isToday = d.toDateString() === todayStr;
                 const dateStr = toISODate(d);
                 const items = byDate[dateStr] || [];
+                // Per-domain presence: at most one dot per domain, fixed order.
+                const domainsPresent = new Set<Domain | 'rest'>();
+                items.forEach(t => {
+                  const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+                  domainsPresent.add(dom);
+                });
                 return (
                   <button key={i}
                     onClick={() => { setDayIdx((d.getDay() + 6) % 7); setWeekStart(startOfWeek(d)); setView('day'); }}
                     className={`aspect-square min-h-[54px] rounded-xl border text-left p-1 flex flex-col gap-0.5 transition hover:bg-muted/40
                       ${inMonth ? 'bg-card border-border/50' : 'bg-muted/30 border-transparent text-muted-foreground'}
-                      ${isToday ? '!border-primary border-2' : ''}`}>
-                    <div className={`text-[11px] font-semibold ${isToday ? 'text-primary' : ''}`}>{d.getDate()}</div>
-                    <div className="flex flex-wrap gap-0.5 mt-auto">
-                      {items.slice(0, 4).map((t, ti) => {
-                        const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+                      ${isToday ? '!bg-muted-foreground/15 !border-muted-foreground/50 border-2' : ''}`}>
+                    <div className={`text-[11px] ${isToday ? 'font-bold' : 'font-semibold'}`}>{d.getDate()}</div>
+                    {/* Fixed 4-slot domain dot row — Academic, Work, Social, Personal.
+                        Empty slots are rendered as transparent placeholders so the
+                        cell layout stays stable regardless of domain mix. */}
+                    <div className="flex gap-1 mt-auto" aria-hidden="true">
+                      {DOMAIN_ORDER.map(dom => {
+                        const present = domainsPresent.has(dom);
                         const dc = domainClass(dom);
-                        return <span key={ti} className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />;
+                        return (
+                          <span
+                            key={dom}
+                            className={`w-1.5 h-1.5 rounded-full ${present ? dc.bar : 'bg-transparent'}`}
+                          />
+                        );
                       })}
-                      {items.length > 4 && <span className="text-[9px] text-muted-foreground leading-none">+{items.length - 4}</span>}
                     </div>
                   </button>
                 );
