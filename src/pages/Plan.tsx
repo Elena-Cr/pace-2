@@ -86,13 +86,23 @@ export default function Plan() {
   }
 
 
-  async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
+  async function saveCapacity(partial: Partial<{
+    available_hours: number;
+    energy_level: string;
+    recovery_notes: string | null;
+    morning_energy: string | null;
+    afternoon_energy: string | null;
+    evening_energy: string | null;
+  }>) {
     if (!user || capacityMin == null) return;
     await upsertCapacity.mutateAsync({
       date: today,
       available_hours: capacityMin / 60,
       energy_level: energyLevel,
       recovery_notes: recoveryNotes || null,
+      morning_energy: morningEnergy,
+      afternoon_energy: afternoonEnergy,
+      evening_energy: eveningEnergy,
       ...partial,
     });
   }
