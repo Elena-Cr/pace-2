@@ -133,6 +133,27 @@ export default function Plan() {
     return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
   }, [tasks, userProfile, today]);
 
+  // Per-task energy hint: if a task has an `energy` value and the period
+  // override at its scheduled start_time matches, surface a soft hint.
+  // Informational only — no scheduling change.
+  const energyHintByTaskId = useMemo(() => {
+    const events = getScheduledEvents(tasks).filter(e => e.date === today && e.taskId);
+    const map = new Map<string, string>();
+    events.forEach(e => {
+      const t = tasks.find(x => x.id === e.taskId);
+      if (!t || !t.energy) return;
+      const h = Math.floor(e.startMin / 60);
+      const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+      const periodEnergy = period === 'morning' ? morningEnergy
+        : period === 'afternoon' ? afternoonEnergy
+        : eveningEnergy;
+      if (periodEnergy && periodEnergy === t.energy) {
+        map.set(t.id, `${t.energy} energy — good fit for ${period}`);
+      }
+    });
+    return map;
+  }, [tasks, today, morningEnergy, afternoonEnergy, eveningEnergy]);
+
 
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
