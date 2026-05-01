@@ -53,6 +53,18 @@ export default function Plan() {
   const [showPeriodEnergy, setShowPeriodEnergy] = useState(false);
   const hasCapacityRow = !!capacityRow;
 
+  // Scroll restoration: save Y on navigation away, restore on mount.
+  useEffect(() => {
+    const saved = sessionStorage.getItem('plan:scrollY');
+    if (saved) {
+      const y = Number(saved);
+      requestAnimationFrame(() => window.scrollTo(0, y));
+    }
+    const onScroll = () => sessionStorage.setItem('plan:scrollY', String(window.scrollY));
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
   // Seed slider with capacity row when present, otherwise from the user profile default.
