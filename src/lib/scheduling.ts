@@ -32,6 +32,7 @@ export type Task = {
   subtasks: Subtask[];
   replanning_reason: string | null;
   last_mood: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -112,11 +113,14 @@ export function getRestBlocksForDate(tasks: Task[], date: string): Task[] {
   );
 }
 
-// Tasks completed on the given day (uses updated_at as a proxy for completion time).
+// Tasks completed on the given day. Prefers completed_at (set when status
+// transitions to done) and falls back to updated_at for legacy rows.
 export function getDoneOnDate(tasks: Task[], date: string): Task[] {
-  return tasks.filter(
-    t => t.status === 'done' && (t.updated_at ?? '').slice(0, 10) === date
-  );
+  return tasks.filter(t => {
+    if (t.status !== 'done') return false;
+    const ts = t.completed_at ?? t.updated_at ?? '';
+    return ts.slice(0, 10) === date;
+  });
 }
 
 // ---------- Capacity helpers ----------
