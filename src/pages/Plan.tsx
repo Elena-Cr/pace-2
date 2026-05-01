@@ -57,7 +57,7 @@ export default function Plan() {
   const capacityMinutes = Math.round(capacityHours * 60 * energyMultiplier);
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
   const over = plannedMinutes > capacityMinutes;
-  const heavyTask = tasks.find(t => (t.difficulty ?? 0) >= 4 || t.effort_level === 'Heavy');
+  const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
 
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);

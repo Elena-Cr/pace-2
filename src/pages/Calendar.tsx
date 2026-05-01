@@ -19,7 +19,6 @@ type CalEvent = {
   duration_minutes?: number | null;
   effort_level?: string | null;
   energy?: string | null;
-  difficulty?: number | null;
   notes?: string | null;
   others_rely?: boolean;
   // time
@@ -154,7 +153,7 @@ export default function CalendarView() {
         kind: t.is_rest ? 'rest' : 'task',
         status: t.status, next_action: t.next_action,
         duration_minutes: t.duration_minutes, effort_level: t.effort_level,
-        energy: t.energy, difficulty: t.difficulty, notes: t.notes,
+        energy: t.energy, notes: t.notes,
         others_rely: t.others_rely,
         day: di, startMin, endMin,
       });
@@ -591,7 +590,6 @@ export default function CalendarView() {
               {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
               {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
               {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
-              {open.difficulty != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Difficulty</div>{open.difficulty}/5</div>}
             </div>
 
             {open.next_action && (

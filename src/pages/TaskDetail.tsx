@@ -176,7 +176,6 @@ export default function TaskDetail() {
           {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
           {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
           {task.energy && <span className="pace-chip">Energy · {task.energy}</span>}
-          {task.difficulty && <span className="pace-chip">Difficulty · {task.difficulty}/5</span>}
           {task.involves_others && <span className="pace-chip">Involves others</span>}
           {task.others_rely && <span className="pace-chip">Others rely</span>}
           {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
