@@ -46,6 +46,11 @@ export default function Plan() {
   const [capacityMin, setCapacityMin] = useState<number | null>(null);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
+  // Optional per-period overrides; null = inherit the daily energyLevel.
+  const [morningEnergy, setMorningEnergy] = useState<string | null>(null);
+  const [afternoonEnergy, setAfternoonEnergy] = useState<string | null>(null);
+  const [eveningEnergy, setEveningEnergy] = useState<string | null>(null);
+  const [showPeriodEnergy, setShowPeriodEnergy] = useState(false);
   const hasCapacityRow = !!capacityRow;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
@@ -56,6 +61,13 @@ export default function Plan() {
       setCapacityMin(Math.round(Number(capacityRow.available_hours) * 60));
       setEnergyLevel(capacityRow.energy_level);
       setRecoveryNotes(capacityRow.recovery_notes ?? '');
+      setMorningEnergy(capacityRow.morning_energy ?? null);
+      setAfternoonEnergy(capacityRow.afternoon_energy ?? null);
+      setEveningEnergy(capacityRow.evening_energy ?? null);
+      // Auto-expand the period section if the user has set any override.
+      if (capacityRow.morning_energy || capacityRow.afternoon_energy || capacityRow.evening_energy) {
+        setShowPeriodEnergy(true);
+      }
     } else if (userProfile) {
       setCapacityMin(userProfile.daily_capacity_minutes);
     }
