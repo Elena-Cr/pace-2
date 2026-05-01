@@ -268,6 +268,43 @@ export default function Focus() {
         </div>
       </div>
 
+      {/* Task picker — shown while idle so the user can switch what they're
+          focusing on without leaving Focus. While a session is running we
+          gate switches behind a confirm dialog (confirmSwitch). */}
+      {(isIdle || !task) && (
+        <div className="pace-card mb-3">
+          <div className="flex items-center justify-between">
+            <div className="pace-eyebrow">{task ? 'Switch task' : 'Pick a task'}</div>
+            <span className="pace-meta">{todayOpen.length} today</span>
+          </div>
+          {todayOpen.length === 0 ? (
+            <div className="mt-2 text-[13px] text-muted-foreground">
+              Nothing open on today's plan. Add an intention from Home.
+            </div>
+          ) : (
+            <ul className="mt-2 max-h-48 overflow-y-auto space-y-1 -mx-1 px-1">
+              {todayOpen.map(t => {
+                const dom = (t.domain || 'personal') as Domain;
+                const active = task?.id === t.id;
+                return (
+                  <li key={t.id}>
+                    <button
+                      onClick={() => chooseTask(t.id)}
+                      className={`w-full text-left flex items-center gap-2 px-2 py-2 rounded-xl border transition ${active ? 'border-primary/50 bg-primary/5' : 'border-border/40 hover:bg-muted/40'}`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
+                      <span className="text-[14px] truncate flex-1 min-w-0">{t.title}</span>
+                      {t.duration_minutes != null && (
+                        <span className="text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
       {interrupted && running && (
         <div className="pace-alert mb-3 animate-fade-in">
           <div className="text-[14px] font-medium">Welcome back.</div>
