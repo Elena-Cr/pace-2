@@ -208,7 +208,7 @@ export default function Home() {
             <span className="pace-meta">{formatDeadline(nextUp.deadline)}</span>
           </div>
           <div className="mt-1.5 flex items-start gap-2">
-            <span className={`w-1 self-stretch rounded-full ${DOMAIN_BAR[(nextUp.domain || 'personal') as Domain]}`} />
+            <span className="w-1 self-stretch rounded-full" style={{ background: DOMAIN_COLOR_VAR[(nextUp.domain || 'personal') as Domain] }} />
             <div className="min-w-0 flex-1">
               <div className="text-[16px] font-medium leading-snug truncate">{nextUp.title}</div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
