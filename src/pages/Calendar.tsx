@@ -801,6 +801,7 @@ export default function CalendarView() {
           </div>
         </div>
       </div>
+      </>
       )}
 
       {/* === MONTH VIEW === */}
