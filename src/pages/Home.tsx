@@ -6,6 +6,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
 
@@ -28,9 +29,9 @@ export default function Home() {
   const { user, profile, loading } = useAuth();
   const { profile: userProfile, loading: upLoading } = useUserProfile();
   const nav = useNavigate();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [missed, setMissed] = useState<any[]>([]);
-  const [doneToday, setDoneToday] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [missed, setMissed] = useState<Task[]>([]);
+  const [doneToday, setDoneToday] = useState<Task[]>([]);
   const [filter, setFilter] = useState<'all' | Status>('all');
   const [capacity, setCapacity] = useState<{ available_hours: number; energy_level: string } | null>(null);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });

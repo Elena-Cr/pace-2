@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
@@ -86,8 +87,8 @@ export default function CalendarView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
   const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
-  const [monthTasks, setMonthTasks] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [monthTasks, setMonthTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [capacities, setCapacities] = useState<Record<string, { available_hours: number; energy_level: string }>>({});
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
   const [showCompleted, setShowCompleted] = useState(false);

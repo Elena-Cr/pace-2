@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
 
@@ -20,8 +21,8 @@ export default function Plan() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [backlog, setBacklog] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [backlog, setBacklog] = useState<Task[]>([]);
   const [capacityHours, setCapacityHours] = useState(5.5);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
