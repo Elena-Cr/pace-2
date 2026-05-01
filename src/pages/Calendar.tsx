@@ -623,63 +623,65 @@ export default function CalendarView() {
         <Plus className="w-4 h-4" /> Add intention
       </button>
 
-      {/* Detail modal */}
-      {open && (
-        <div className="fixed inset-0 z-40 bg-foreground/30 flex items-end sm:items-center justify-center p-3" onClick={() => setOpen(null)}>
-          <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-2">
-              <div>
+      {/* Detail dialog — shadcn Dialog gives us focus trap + Escape for free. */}
+      <Dialog open={!!open} onOpenChange={(o) => { if (!o) setOpen(null); }}>
+        <DialogContent className="max-w-md rounded-3xl">
+          {open && (
+            <>
+              <DialogHeader>
                 <div className="pace-tag flex items-center">
                   <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${domainClass(open.domain).bar}`} />
                   {open.domain === 'rest' ? 'Rest / Recovery' : DOMAIN_LABEL[open.domain]} · {fmtRange(open.startMin, open.endMin)}
                 </div>
-                <div className="pace-title mt-1">{open.title}</div>
+                <DialogTitle className="pace-title mt-1 text-left">{open.title}</DialogTitle>
+                <DialogDescription className="sr-only">Event details</DialogDescription>
+              </DialogHeader>
+
+              {open.status && (
+                <div className="mt-1"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
+              )}
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+                {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
+                {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
+                {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
               </div>
-              <button onClick={() => setOpen(null)} className="p-1.5 rounded-full hover:bg-muted"><X className="w-4 h-4" /></button>
-            </div>
 
-            {open.status && (
-              <div className="mt-3"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
-            )}
+              {open.next_action && (
+                <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>
+              )}
+              {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-              {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
-              {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
-              {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
-            </div>
+              {open.taskId && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm">Edit</button>
+                  <button onClick={() => { setOpen(null); nav('/replan'); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
+                  <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
+                </div>
+              )}
+              {open.fixed && (
+                <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            {open.next_action && (
-              <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>
-            )}
-            {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
-
-            {open.taskId && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={() => { setOpen(null); nav(`/task/${open.taskId}`); }} className="pace-btn pace-btn-sm">Edit</button>
-                <button onClick={() => { setOpen(null); nav('/replan'); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
-                <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
-              </div>
-            )}
-            {open.fixed && (
-              <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
-            )}
+      {/* Replan reason dialog */}
+      <Dialog open={!!replanFor} onOpenChange={(o) => { if (!o) setReplanReason(null); }}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Task moved. What changed?</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              Optional — helps you spot patterns.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-1">
+            <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
           </div>
-        </div>
-      )}
-
-      {/* Replan reason prompt */}
-      {replanFor && (
-        <div className="fixed inset-0 z-50 bg-foreground/30 flex items-end sm:items-center justify-center p-3" onClick={() => setReplanReason(null)}>
-          <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="pace-title">Task moved. What changed?</div>
-            <div className="text-[13px] text-muted-foreground mt-1">Optional — helps you spot patterns.</div>
-            <div className="mt-3">
-              <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
-            </div>
-            <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
-          </div>
-        </div>
-      )}
+          <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 
