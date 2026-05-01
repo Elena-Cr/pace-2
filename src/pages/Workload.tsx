@@ -24,9 +24,12 @@ function startOfWeek(d = new Date()) {
 
 export default function Workload() {
   const { user, loading } = useAuth();
+  const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
   const [reflection, setReflection] = useState<number | null>(null);
+
+  const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
