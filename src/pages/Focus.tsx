@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { type Task, buildReschedulePatch } from '@/lib/scheduling';
+import { type Task, buildReschedulePatch, progressForStatus } from '@/lib/scheduling';
 import { todayISO } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
