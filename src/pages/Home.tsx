@@ -148,8 +148,16 @@ export default function Home() {
   return (
     <AppShell>
       {/* Greeting */}
-      <div className="pace-eyebrow">{dateStr}</div>
-      <h1 className="pace-screen-title mt-1">{greeting()}, {profile?.display_name ?? 'friend'}</h1>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="pace-eyebrow">{dateStr}</div>
+          <h1 className="pace-screen-title mt-1">{greeting()}, {profile?.display_name ?? 'friend'}</h1>
+        </div>
+        <button onClick={() => nav('/settings')} aria-label="Settings"
+          className="shrink-0 rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition">
+          <SettingsIcon className="w-5 h-5" />
+        </button>
+      </div>
       <p className="pace-meta mt-1">
         {real.length === 0
           ? 'A clear day. Add an intention when you are ready.'
