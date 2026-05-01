@@ -7,6 +7,7 @@ import AppShell from '@/components/AppShell';
 import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
 import { todayISO, DOMAIN_COLOR_VAR, type Domain, fmtMin } from '@/lib/pace';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import RescheduleDialog from '@/components/RescheduleDialog';
 
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
@@ -48,6 +49,9 @@ export default function Focus() {
   const [breakMode, setBreakMode] = useState(false);
   // Confirmation gate for switching tasks while a session is running.
   const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
+  // After "Needs more time" we prompt to optionally reschedule the remainder.
+  const [moreTimeReschedule, setMoreTimeReschedule] = useState(false);
+  const [rescheduleRemainderOpen, setRescheduleRemainderOpen] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
@@ -146,6 +150,11 @@ export default function Focus() {
       setSessionId(data.id);
     }
     setRunning(true);
+    if (dnd) {
+      toast('Tip: enable Do Not Disturb on your device for a cleaner session.', {
+        action: { label: 'Got it', onClick: () => {} },
+      });
+    }
   }
 
   async function pause() {
@@ -215,7 +224,9 @@ export default function Focus() {
         status: 'in_progress',
         progress: nextProgress,
       } as any });
-      nav('/');
+      // Don't navigate away yet — offer a reschedule prompt for the remainder.
+      setCompletionCheck(false);
+      setMoreTimeReschedule(true);
     } else if (outcome === 'blocked') {
       if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
       toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
@@ -335,8 +346,8 @@ export default function Focus() {
         <div className="space-y-3">
           <div className="pace-card flex items-center justify-between">
             <div>
-              <div className="pace-eyebrow"><span className="priority-dot should" />Do Not Disturb</div>
-              <div className="text-[12px] text-muted-foreground mt-1">Notifications paused while you focus.</div>
+              <div className="pace-eyebrow"><span className="priority-dot should" />Remind me to enable DND</div>
+              <div className="text-[12px] text-muted-foreground mt-1">We'll remind you to enable DND when you start.</div>
             </div>
             <button onClick={() => setDnd(d => !d)}
               className={`w-11 h-6 rounded-full relative transition ${dnd ? 'bg-primary' : 'bg-muted'}`}>
@@ -424,6 +435,30 @@ export default function Focus() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* "Needs more time" → optional reschedule of the remainder. */}
+      <Dialog open={moreTimeReschedule && !!task} onOpenChange={(o) => {
+        if (!o) { setMoreTimeReschedule(false); nav('/'); }
+      }}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Want to reschedule the remainder?</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              You made progress. Pick a day to pick this back up — or carry on as-is.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button onClick={() => { setMoreTimeReschedule(false); nav('/'); }} className="pace-btn">Not now</button>
+            <button onClick={() => { setMoreTimeReschedule(false); setRescheduleRemainderOpen(true); }} className="pace-btn-primary">Pick a day</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <RescheduleDialog
+        taskId={rescheduleRemainderOpen ? (task?.id ?? null) : null}
+        open={rescheduleRemainderOpen}
+        onClose={() => { setRescheduleRemainderOpen(false); nav('/'); }}
+      />
 
     </AppShell>
   );
