@@ -10,7 +10,6 @@ export type PastTask = {
   duration_minutes: number | null;
   energy: string | null;
   effort_level: string | null;
-  difficulty: number | null;
   next_action: string | null;
   involves_others: boolean;
   others_rely: boolean;
@@ -19,15 +18,14 @@ export type PastTask = {
 
 export type Suggestion = {
   source: 'similar' | 'repeating';
-  matches: number;            // how many past tasks back this
+  matches: number;
   confidence: 'high' | 'med' | 'low';
-  exampleTitle: string;       // representative past title
+  exampleTitle: string;
   domain: Domain | null;
   priority: Priority | null;
   duration_minutes: number | null;
   energy: string | null;
   effort_level: string | null;
-  difficulty: number | null;
   next_action: string | null;
   involves_others: boolean;
   others_rely: boolean;
@@ -91,7 +89,6 @@ function summarize(group: PastTask[], source: Suggestion['source']): Suggestion 
     duration_minutes: median(group.map(g => g.duration_minutes ?? NaN).filter(n => !isNaN(n))),
     energy: mode(group.map(g => g.energy)),
     effort_level: mode(group.map(g => g.effort_level)),
-    difficulty: median(group.map(g => g.difficulty ?? NaN).filter(n => !isNaN(n))),
     next_action: mode(group.map(g => g.next_action)),
     involves_others: group.filter(g => g.involves_others).length > group.length / 2,
     others_rely: group.filter(g => g.others_rely).length > group.length / 2,
@@ -106,7 +103,7 @@ export function useTaskSuggestions(userId: string | undefined) {
     if (!userId) return;
     setLoading(true);
     supabase.from('tasks')
-      .select('id,title,domain,priority,duration_minutes,energy,effort_level,difficulty,next_action,involves_others,others_rely,created_at')
+      .select('id,title,domain,priority,duration_minutes,energy,effort_level,next_action,involves_others,others_rely,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(200)
