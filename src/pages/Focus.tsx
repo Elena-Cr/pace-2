@@ -7,6 +7,7 @@ import AppShell from '@/components/AppShell';
 import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
 import { todayISO, DOMAIN_COLOR_VAR, type Domain, fmtMin } from '@/lib/pace';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import RescheduleDialog from '@/components/RescheduleDialog';
 
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
