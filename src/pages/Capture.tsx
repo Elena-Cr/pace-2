@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL } from '@/lib/pace';
+import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 import { X, Plus, Sparkles, Repeat } from 'lucide-react';
 import { useTaskSuggestions, Suggestion } from '@/hooks/useTaskSuggestions';
