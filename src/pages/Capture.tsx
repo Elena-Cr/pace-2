@@ -6,7 +6,7 @@ import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 import { X, Plus, Sparkles, Repeat } from 'lucide-react';
-import { useTaskSuggestions, Suggestion } from '@/hooks/useTaskSuggestions';
+import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
