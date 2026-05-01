@@ -278,16 +278,13 @@ export default function Capture() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setInvolvesOthers(v => !v)}
-                className={involvesOthers ? 'pace-chip-filled' : 'pace-chip'}>
-                Involves others
-              </button>
-              <button type="button" onClick={() => setOthersRely(v => !v)}
-                className={othersRely ? 'pace-chip-filled' : 'pace-chip'}>
-                Others rely on this
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setOthersInvolved(v => !v)}
+              className={`${othersInvolved ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
+            >
+              <Users className="w-3.5 h-3.5" /> Involves or relies on others
+            </button>
 
             <div>
               <label className="pace-field-label">Notes (optional)</label>
