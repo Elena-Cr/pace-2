@@ -682,7 +682,7 @@ export default function CalendarView() {
       scheduled_date: date, duration_minutes: 60,
     }).select().single();
     if (error) { toast.error(error.message); return; }
-    setTasks(arr => [...arr, data]);
+    setTasks(arr => [...arr, rowToTask(data)]);
     toast.success('Added to your plan.');
   }
 }
