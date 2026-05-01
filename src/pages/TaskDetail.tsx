@@ -14,7 +14,6 @@ import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users } from 'lucide-react';
 
 const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
-const ENERGIES = ['Low', 'Med', 'High'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
 // Convert an ISO timestamp into the value format expected by datetime-local
@@ -47,7 +46,6 @@ export default function TaskDetail() {
   const [ePriority, setEPriority] = useState<Priority>('should');
   const [eDeadline, setEDeadline] = useState('');
   const [eDuration, setEDuration] = useState<number | ''>('');
-  const [eEnergy, setEEnergy] = useState<string | null>(null);
   const [eEffort, setEEffort] = useState<string | null>(null);
   const [eScheduledDate, setEScheduledDate] = useState<string>('');
   const [eOthers, setEOthers] = useState(false);
