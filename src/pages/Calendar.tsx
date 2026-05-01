@@ -100,6 +100,9 @@ export default function CalendarView() {
   const [open, setOpen] = useState<CalEvent | null>(null);
   const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
+  // Tracks the event id currently being dropped so we can hide it from the
+  // source slot immediately, before the mutation round-trip completes.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   // Build the per-day fixed blocks from the user's preferences (sleep/meal/recovery).
@@ -224,6 +227,7 @@ export default function CalendarView() {
   });
 
   const visibleEvents = events.filter(e => {
+    if (draggingId && e.id === draggingId) return false;
     if (!filter.has(e.domain)) return false;
     if (!showCompleted && e.status === 'done') return false;
     return true;
@@ -248,11 +252,14 @@ export default function CalendarView() {
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
     if (!t) return;
+    setDraggingId(ev.id);
     try {
       await update.mutateAsync({ id: ev.taskId, patch: buildReschedulePatch(t, newDate) });
       setReplanFor({ taskId: ev.taskId, title: ev.title });
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
+    } finally {
+      setDraggingId(null);
     }
   }
 
