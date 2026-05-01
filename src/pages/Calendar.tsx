@@ -10,6 +10,7 @@ import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, R
 import type { Task } from '@/lib/scheduling';
 import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
+import ReplanReasonChips from '@/components/ReplanReasonChips';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
