@@ -201,11 +201,13 @@ export default function CalendarView() {
   const daySummary = days.map((d, di) => {
     const date = toISODate(d);
     const cap = capacities[date];
-    const profileCapH = (userProfile?.daily_capacity_minutes ?? 330) / 60;
-    const availH = cap ? Number(cap.available_hours) : profileCapH;
+    const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+    const capMin = effectiveCapacityMinutes(
+      cap ? { available_hours: Number(cap.available_hours), energy_level: cap.energy_level ?? 'Med' } : null,
+      profileCapMin,
+    );
+    const availH = capMin / 60;
     const energy = cap?.energy_level ?? 'Med';
-    const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
-    const capMin = Math.round(availH * 60 * mult);
     const taskEvents = events.filter(e => e.day === di && e.kind === 'task');
     const planned = taskEvents.reduce((s, e) => s + (e.endMin - e.startMin), 0);
     const restEvents = events.filter(e => e.day === di && e.kind !== 'task');
@@ -216,9 +218,7 @@ export default function CalendarView() {
         if (t.startMin < r.endMin && t.endMin > r.startMin) conflictIds.add(t.id);
       });
     });
-    const ratio = planned / Math.max(1, capMin);
-    let state: 'balanced' | 'close' | 'over' = 'balanced';
-    if (ratio > 1) state = 'over'; else if (ratio > 0.85) state = 'close';
+    const state = capacityState(planned, capMin);
     return { date, availH, energy, capMin, planned, conflictIds, state };
   });
 
