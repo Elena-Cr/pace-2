@@ -86,15 +86,6 @@ export default function Auth() {
             {busy ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
 
-          <div className="flex items-center gap-2 my-1">
-            <div className="flex-1 h-px bg-foreground/15" />
-            <span className="text-[12px] text-muted-foreground">or</span>
-            <div className="flex-1 h-px bg-foreground/15" />
-          </div>
-
-          <button type="button" onClick={google} disabled={busy} className="pace-btn w-full">
-            Continue with Google
-          </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
