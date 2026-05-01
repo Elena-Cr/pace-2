@@ -28,7 +28,7 @@ export default function Capture() {
   const [estimate, setEstimate] = useState<number | ''>('');
   const [energy, setEnergy] = useState<string | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<number | null>(null);
+  // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
   const [notes, setNotes] = useState('');
   const [involvesOthers, setInvolvesOthers] = useState(false);
@@ -73,7 +73,7 @@ export default function Capture() {
     setDismissed(prev => new Set(prev).add(debouncedTitle));
   }
 
-  const heavy = (difficulty ?? 0) >= 4 || (estimate || 0) >= 90 || effort === 'Heavy';
+  const heavy = (estimate || 0) >= 90 || effort === 'Heavy';
 
   function addSub() {
     const t = subInput.trim(); if (!t) return;
@@ -222,15 +222,6 @@ export default function Capture() {
                   {EFFORTS.map(e => (
                     <button key={e} onClick={() => setEffort(e === effort ? null : e)}
                       className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-3">
-                <div className="pace-field-label">Difficulty {difficulty ? `· ${difficulty}/5` : ''}</div>
-                <div className="flex gap-1.5">
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setDifficulty(n === difficulty ? null : n)}
-                      className={difficulty === n ? 'pace-chip-filled' : 'pace-chip'}>{n}</button>
                   ))}
                 </div>
               </div>
