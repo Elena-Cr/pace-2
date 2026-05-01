@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
 import {
   DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
-  formatDeadline, fmtMin, todayISO,
+  formatDeadline, fmtMin, todayISO, toISODate,
 } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Timer, Trash2 } from 'lucide-react';
