@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { DOMAIN_LABEL, Domain, fmtMin, todayISO } from '@/lib/pace';
+import { DOMAIN_LABEL, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 

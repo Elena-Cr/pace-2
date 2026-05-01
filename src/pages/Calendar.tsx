@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, X, MoveRi
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason } from '@/lib/pace';
+import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 
 type CalKind = 'task' | 'rest' | 'meal' | 'sleep' | 'recovery' | 'focus';

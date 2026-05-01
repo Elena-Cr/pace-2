@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO } from '@/lib/pace';
+import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];

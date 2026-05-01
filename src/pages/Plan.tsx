@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { todayISO, fmtMin } from '@/lib/pace';
+import { todayISO, fmtMin, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 
 const PROTECTED = [
