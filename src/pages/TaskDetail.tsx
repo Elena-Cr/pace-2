@@ -118,7 +118,12 @@ export default function TaskDetail() {
     const finalProgress = progressForStatusExplicit(s, task.progress || 0);
     await update({ status: s, progress: finalProgress });
     if (s === 'done') {
-      toast.success('Completed. That counts.');
+      const messages = [
+        'Done. That was real work.',
+        'Completed. Momentum is building.',
+        'One less thing. Nice pacing.',
+      ];
+      toast.success(messages[Math.floor(Math.random() * messages.length)]);
     } else {
       toast.success(`Marked ${STATUS_LABEL[s].toLowerCase()}.`);
     }
