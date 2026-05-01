@@ -38,10 +38,31 @@ export default function Home() {
   const nav = useNavigate();
   const { data: tasks = [] } = useTasks();
   const { update } = useTaskMutations();
-  const [filter, setFilter] = useState<'all' | Status>('all');
+  // Persist the active task filter in the URL so back-navigation from
+  // TaskDetail restores the same view. Only non-default filters are stored.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialFilter = (() => {
+    const f = searchParams.get('filter');
+    return (f === 'in_progress' || f === 'blocked' || f === 'nearly_done') ? (f as Status) : 'all';
+  })();
+  const [filter, setFilter] = useState<'all' | Status>(initialFilter);
+  // Inline-expand state for stat cards (D.2 / D.3).
+  const [showDone, setShowDone] = useState(false);
+  const [showTomorrow, setShowTomorrow] = useState(false);
   const todayStr = todayISO();
   const { data: capacity = null } = useDailyCapacity(todayStr);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
+
+  // Sync filter ↔ URL.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (filter === 'all') next.delete('filter');
+    else next.set('filter', filter);
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
   useEffect(() => {
