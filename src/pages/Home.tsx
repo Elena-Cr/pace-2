@@ -7,7 +7,7 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
-import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
+import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
   getTomorrowTasks,
@@ -16,6 +16,7 @@ import {
   getRestBlocksForDate,
   effectiveCapacityMinutes,
   capacityState,
+  buildReschedulePatch,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
@@ -26,14 +27,6 @@ const FILTERS: { k: 'all' | Status; label: string }[] = [
   { k: 'blocked', label: STATUS_LABEL.blocked },
   { k: 'nearly_done', label: STATUS_LABEL.nearly_done },
 ];
-
-const DOMAIN_BAR: Record<Domain | 'rest', string> = {
-  academic: 'bg-[hsl(var(--domain-academic))]',
-  work: 'bg-[hsl(var(--domain-work))]',
-  social: 'bg-[hsl(var(--domain-social))]',
-  personal: 'bg-[hsl(var(--domain-personal))]',
-  rest: 'bg-[hsl(var(--domain-rest))]',
-};
 
 export default function Home() {
   const { user, profile, loading } = useAuth();
