@@ -15,7 +15,6 @@ const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'personal', label: 'Personal' },
 ];
 
-const ENERGIES = ['Low', 'Med', 'High'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
 export default function Capture() {
@@ -28,7 +27,6 @@ export default function Capture() {
   const [deadline, setDeadline] = useState('');
   const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog'>('backlog');
   const [estimate, setEstimate] = useState<number | ''>('');
-  const [energy, setEnergy] = useState<string | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
