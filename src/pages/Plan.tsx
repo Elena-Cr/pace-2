@@ -11,6 +11,7 @@ import {
   getBacklog,
   calculateDailyWorkload,
   effectiveCapacityMinutes,
+  buildReschedulePatch,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
