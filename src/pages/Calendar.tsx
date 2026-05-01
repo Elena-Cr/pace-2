@@ -230,6 +230,25 @@ export default function CalendarView() {
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
+  // Sync URL ↔ state. Use replace so we don't pollute the history stack as
+  // the user pages through days. Returning to /calendar from TaskDetail will
+  // restore the same view + focused date.
+  useEffect(() => {
+    const focus =
+      view === 'day' ? (() => { const d = new Date(weekStart); d.setDate(d.getDate() + dayIdx); return d; })() :
+      view === 'week' ? centerDate :
+      monthAnchor;
+    const next = new URLSearchParams(searchParams);
+    next.set('view', view);
+    next.set('date', toISODate(focus));
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // We intentionally read the latest searchParams via setSearchParams' input,
+    // and depend only on the underlying state values to drive updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, centerDate, dayIdx, weekStart, monthAnchor]);
+
   // In week (3-day sliding) view: [centerDate-1, centerDate, centerDate+1].
   // In day view: full 7-day Mon-start window driven by weekStart, used by the
   // day picker so the user can jump within the current week.
