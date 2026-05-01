@@ -48,6 +48,8 @@ export default function Focus() {
   const [breakMode, setBreakMode] = useState(false);
   // Confirmation gate for switching tasks while a session is running.
   const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
+  // After "Needs more time" we prompt to optionally reschedule the remainder.
+  const [moreTimeReschedule, setMoreTimeReschedule] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
