@@ -14,6 +14,8 @@ import {
   getMissed,
   getDoneOnDate,
   getRestBlocksForDate,
+  effectiveCapacityMinutes,
+  capacityState,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
