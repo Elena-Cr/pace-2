@@ -70,13 +70,13 @@ export default function Onboarding() {
             <div className="pace-meta">per day</div>
           </div>
           <input
-            type="range" min={60} max={600} step={30}
+            type="range" min={60} max={720} step={30}
             value={capacityMin}
             onChange={e => setCapacityMin(Number(e.target.value))}
             className="w-full accent-primary"
           />
           <div className="flex justify-between text-[12px] text-muted-foreground">
-            <span>1h</span><span>5h</span><span>10h</span>
+            <span>1h</span><span>6h</span><span>12h</span>
           </div>
         </div>
       ),

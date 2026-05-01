@@ -37,7 +37,8 @@ export default function Plan() {
   const tasks = useMemo(() => getTodayTasks(allTasks, today), [allTasks, today]);
   const backlog = useMemo(() => getBacklog(allTasks), [allTasks]);
 
-  const [capacityHours, setCapacityHours] = useState(5.5);
+  // Slider value in minutes; null while we don't yet know the user's default.
+  const [capacityMin, setCapacityMin] = useState<number | null>(null);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
   const hasCapacityRow = !!capacityRow;
@@ -47,11 +48,11 @@ export default function Plan() {
   // Seed slider with capacity row when present, otherwise from the user profile default.
   useEffect(() => {
     if (capacityRow) {
-      setCapacityHours(Number(capacityRow.available_hours));
+      setCapacityMin(Math.round(Number(capacityRow.available_hours) * 60));
       setEnergyLevel(capacityRow.energy_level);
       setRecoveryNotes(capacityRow.recovery_notes ?? '');
     } else if (userProfile) {
-      setCapacityHours(userProfile.daily_capacity_minutes / 60);
+      setCapacityMin(userProfile.daily_capacity_minutes);
     }
   }, [capacityRow, userProfile]);
 
@@ -69,10 +70,10 @@ export default function Plan() {
 
 
   async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
-    if (!user) return;
+    if (!user || capacityMin == null) return;
     await upsertCapacity.mutateAsync({
       date: today,
-      available_hours: capacityHours,
+      available_hours: capacityMin / 60,
       energy_level: energyLevel,
       recovery_notes: recoveryNotes || null,
       ...partial,
@@ -81,13 +82,16 @@ export default function Plan() {
 
   const plannedMinutes = calculateDailyWorkload(tasks);
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+  const capacityReady = capacityMin != null;
   const capacityMinutes = effectiveCapacityMinutes(
-    { available_hours: capacityHours, energy_level: energyLevel },
+    capacityReady ? { available_hours: (capacityMin as number) / 60, energy_level: energyLevel } : null,
     profileCapMin,
   );
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
-  const over = plannedMinutes > capacityMinutes;
+  const over = capacityReady && plannedMinutes > capacityMinutes;
   const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
+  const preferredCount = userProfile?.preferred_tasks_per_day ?? null;
+  const showPaceHint = preferredCount != null && tasks.length > preferredCount;
 
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
@@ -104,17 +108,26 @@ export default function Plan() {
   return (
     <AppShell>
       <h1 className="pace-screen-title">Today's plan</h1>
-      <div className="pace-eyebrow mt-1">{new Date().toLocaleDateString([], { weekday: 'long' })} · capacity {fmtMin(capacityMinutes)}</div>
+      <div className="pace-eyebrow mt-1">{new Date().toLocaleDateString([], { weekday: 'long' })}{capacityReady ? ` · capacity ${fmtMin(capacityMinutes)}` : ''}</div>
 
       <div className="mt-5 pace-card">
         <div className="pace-eyebrow">Capacity for today</div>
         <div className="mt-3">
-          <label className="pace-field-label">Hours available · {capacityHours}h</label>
-          <input type="range" min={1} max={12} step={0.5} value={capacityHours}
-            onChange={e => setCapacityHours(Number(e.target.value))}
-            onMouseUp={() => saveCapacity({ available_hours: capacityHours })}
-            onTouchEnd={() => saveCapacity({ available_hours: capacityHours })}
-            className="w-full accent-primary" />
+          {capacityReady ? (
+            <>
+              <label className="pace-field-label">Hours available · {((capacityMin as number) / 60).toFixed(1)}h</label>
+              <input type="range" min={60} max={720} step={30} value={capacityMin as number}
+                onChange={e => setCapacityMin(Number(e.target.value))}
+                onMouseUp={() => saveCapacity({ available_hours: (capacityMin as number) / 60 })}
+                onTouchEnd={() => saveCapacity({ available_hours: (capacityMin as number) / 60 })}
+                className="w-full accent-primary" />
+            </>
+          ) : (
+            <>
+              <div className="pace-field-label">Hours available</div>
+              <div className="h-2 rounded-full bg-muted animate-pulse" />
+            </>
+          )}
         </div>
         <div className="mt-3">
           <label className="pace-field-label">Energy</label>
@@ -138,8 +151,14 @@ export default function Plan() {
       <div className={`pace-capacity ${over ? 'over' : ''}`}><i style={{ width: `${pct}%` }} /></div>
       <div className="mt-1.5 flex justify-between text-[12px] text-muted-foreground">
         <span>{fmtMin(plannedMinutes)} planned</span>
-        <span>{fmtMin(capacityMinutes)} available</span>
+        <span>{capacityReady ? `${fmtMin(capacityMinutes)} available` : '— available'}</span>
       </div>
+
+      {showPaceHint && (
+        <div className="pace-card-soft mt-3 animate-fade-in text-[13px] text-muted-foreground">
+          Today has {tasks.length} intentions; your usual rhythm is {preferredCount}. Want to move some to backlog?
+        </div>
+      )}
 
       {over && (
         <div className="pace-alert mt-3 animate-fade-in">

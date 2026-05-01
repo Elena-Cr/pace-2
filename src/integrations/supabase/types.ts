@@ -131,7 +131,6 @@ export type Database = {
           next_action: string | null
           notes: string | null
           others_rely: boolean
-          parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           progress: number
           replanning_reason: Database["public"]["Enums"]["replan_reason"] | null
@@ -159,7 +158,6 @@ export type Database = {
           next_action?: string | null
           notes?: string | null
           others_rely?: boolean
-          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress?: number
           replanning_reason?:
@@ -189,7 +187,6 @@ export type Database = {
           next_action?: string | null
           notes?: string | null
           others_rely?: boolean
-          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress?: number
           replanning_reason?:
@@ -204,15 +201,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_profiles: {
         Row: {

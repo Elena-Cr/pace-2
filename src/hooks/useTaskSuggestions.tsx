@@ -43,7 +43,7 @@ function tokenize(s: string): string[] {
 }
 
 // Strip trailing numbers/parts so "stats problem set 4" → "stats problem set"
-function stem(s: string): string {
+export function stem(s: string): string {
   return s.toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\b(part|week|day|chapter|ch|set|n|no|num|number|wk)?\s*\d+\b/g, '')

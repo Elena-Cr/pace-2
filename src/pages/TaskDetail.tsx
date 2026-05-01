@@ -20,6 +20,10 @@ export default function TaskDetail() {
   const { data: task } = useTask(id);
   const { update: updateMut, remove: removeMut } = useTaskMutations();
   const [subInput, setSubInput] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [editingNext, setEditingNext] = useState(false);
+  const [nextDraft, setNextDraft] = useState('');
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
@@ -107,8 +111,31 @@ export default function TaskDetail() {
       </div>
 
       <h1 className="pace-screen-title mt-2">{task.title}</h1>
-      {task.next_action && (
-        <div className="pace-meta mt-1">→ {task.next_action}</div>
+      {editingNext ? (
+        <div className="mt-2 flex gap-2">
+          <input
+            autoFocus
+            className="pace-field"
+            value={nextDraft}
+            onChange={e => setNextDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); update({ next_action: nextDraft.trim() || null }); setEditingNext(false); }
+              if (e.key === 'Escape') setEditingNext(false);
+            }}
+            placeholder="Smallest next action"
+          />
+          <button
+            onClick={() => { update({ next_action: nextDraft.trim() || null }); setEditingNext(false); }}
+            className="pace-btn pace-btn-sm"
+          >Save</button>
+        </div>
+      ) : (
+        <button
+          onClick={() => { setNextDraft(task.next_action ?? ''); setEditingNext(true); }}
+          className="pace-meta mt-1 text-left hover:text-foreground transition"
+        >
+          {task.next_action ? `→ ${task.next_action}` : '→ Add a smallest next action'}
+        </button>
       )}
 
       {/* Status flow */}
@@ -171,9 +198,36 @@ export default function TaskDetail() {
           {task.others_rely && <span className="pace-chip">Others rely</span>}
           {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
         </div>
-        {task.notes && (
-          <div className="mt-3 text-[14px] text-muted-foreground whitespace-pre-wrap">{task.notes}</div>
-        )}
+        <div className="mt-3">
+          {editingNotes ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                className="pace-field min-h-[88px] py-3"
+                value={notesDraft}
+                onChange={e => setNotesDraft(e.target.value)}
+                placeholder="Anything that helps future-you"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { update({ notes: notesDraft.trim() || null }); setEditingNotes(false); }}
+                  className="pace-btn-primary pace-btn-sm"
+                >Save</button>
+                <button
+                  onClick={() => setEditingNotes(false)}
+                  className="pace-btn-ghost pace-btn-sm"
+                >Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setNotesDraft(task.notes ?? ''); setEditingNotes(true); }}
+              className="text-left text-[14px] text-muted-foreground whitespace-pre-wrap w-full hover:text-foreground transition"
+            >
+              {task.notes || 'Add notes'}
+            </button>
+          )}
+        </div>
       </div>
 
       {(task.reschedule_count ?? 0) >= 2 && (

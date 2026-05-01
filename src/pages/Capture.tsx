@@ -6,7 +6,7 @@ import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 import { X, Plus, Sparkles, Repeat } from 'lucide-react';
-import { useTaskSuggestions, Suggestion } from '@/hooks/useTaskSuggestions';
+import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
@@ -52,7 +52,8 @@ export default function Capture() {
   }, [title]);
 
   const suggestion = useMemo(() => suggestFor(debouncedTitle), [debouncedTitle, suggestFor]);
-  const showSuggestion = suggestion && appliedFor !== debouncedTitle && !dismissed.has(debouncedTitle);
+  const debouncedStem = useMemo(() => stem(debouncedTitle), [debouncedTitle]);
+  const showSuggestion = !!(suggestion && appliedFor !== debouncedStem && !dismissed.has(debouncedStem));
 
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
@@ -65,12 +66,12 @@ export default function Capture() {
     if (!involvesOthers && s.involves_others) setInvolvesOthers(true);
     if (!othersRely && s.others_rely) setOthersRely(true);
     setShowAdvanced(true);
-    setAppliedFor(presetTitle ?? debouncedTitle);
+    setAppliedFor(stem(presetTitle ?? debouncedTitle));
     toast.success('Pre-filled from your past intentions.');
   }
 
   function dismissSuggestion() {
-    setDismissed(prev => new Set(prev).add(debouncedTitle));
+    setDismissed(prev => new Set(prev).add(debouncedStem));
   }
 
   const heavy = (estimate || 0) >= 90 || effort === 'Heavy';

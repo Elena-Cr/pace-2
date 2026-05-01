@@ -90,7 +90,7 @@ export default function Settings() {
             <span className="pace-meta">per day</span>
           </div>
           <input
-            type="range" min={60} max={600} step={30}
+            type="range" min={60} max={720} step={30}
             value={capacityMin}
             onChange={e => setCapacityMin(Number(e.target.value))}
             className="w-full accent-primary mt-2"
