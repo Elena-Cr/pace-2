@@ -103,15 +103,10 @@ export default function Replan() {
 
                 <div className="mt-3">
                   <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {(Object.keys(REPLAN_REASON_LABEL) as ReplanReason[]).map(r => (
-                      <button key={r}
-                        onClick={() => setReasonByTask(s => ({ ...s, [t.id]: r }))}
-                        className={reason === r ? 'pace-chip-filled' : 'pace-chip'}>
-                        {REPLAN_REASON_LABEL[r]}
-                      </button>
-                    ))}
-                  </div>
+                  <ReplanReasonChips
+                    selected={reason}
+                    onSelect={(r) => setReasonByTask(s => ({ ...s, [t.id]: r }))}
+                  />
                 </div>
 
                 <div className="mt-3 flex gap-1.5 flex-wrap">
