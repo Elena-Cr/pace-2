@@ -22,7 +22,6 @@ export type Task = {
   end_time: string | null;
   is_rest: boolean;
   effort_level: string | null;
-  energy: string | null;
   next_action: string | null;
   notes: string | null;
   progress: number;                       // 0..100
@@ -124,18 +123,30 @@ export function getDoneOnDate(tasks: Task[], date: string): Task[] {
 }
 
 // ---------- Capacity helpers ----------
-export const ENERGY_MULTIPLIER = { Low: 0.75, Med: 1, High: 1.1 } as const;
-export type EnergyLevel = keyof typeof ENERGY_MULTIPLIER;
+// Energy multiplier is now configurable per-user. `pct` is the percentage
+// (e.g. 10 → ±10%). High adds, Low subtracts, Med = 1.0.
+export type EnergyLevel = 'Low' | 'Med' | 'High';
+
+export function energyMultiplier(level: string | null | undefined, pct = 10): number {
+  if (level === 'High') return 1 + pct / 100;
+  if (level === 'Low') return 1 - pct / 100;
+  return 1;
+}
+
+// Backwards-compatible default multipliers (pct = 10).
+export const ENERGY_MULTIPLIER = { Low: 0.9, Med: 1, High: 1.1 } as const;
 
 export function effectiveCapacityMinutes(
   dailyOverride: { available_hours: number; energy_level: string } | null,
   profileDefaultMinutes: number,
+  opts: { affects?: boolean; pct?: number } = {},
 ): number {
   const baseMin = dailyOverride
     ? Number(dailyOverride.available_hours) * 60
     : profileDefaultMinutes;
-  const energyKey = (dailyOverride?.energy_level ?? 'Med') as EnergyLevel;
-  const mult = ENERGY_MULTIPLIER[energyKey] ?? 1;
+  const affects = opts.affects ?? true;
+  if (!affects) return Math.round(baseMin);
+  const mult = energyMultiplier(dailyOverride?.energy_level ?? 'Med', opts.pct ?? 10);
   return Math.round(baseMin * mult);
 }
 
