@@ -275,10 +275,19 @@ export default function Focus() {
         </div>
       )}
 
-      {running && !overrunPrompt && (
+      {running && !overrunPrompt && !breakMode && (
         <div className="grid grid-cols-2 gap-2">
           <button onClick={pause} className="pace-btn">Pause</button>
           <button onClick={() => setCompletionCheck(true)} className="pace-btn-primary">Finish session</button>
+        </div>
+      )}
+
+      {breakMode && running && (
+        <div className="pace-card animate-fade-in">
+          <div className="pace-section">On a 5-minute break</div>
+          <div className="text-[13px] text-muted-foreground mt-1">Stand up, drink water. We'll come back to {task?.title ?? 'your task'} after.</div>
+          <button onClick={() => { setRunning(false); setBreakMode(false); setSecondsLeft(planned * 60); }}
+            className="pace-btn pace-btn-sm mt-3">Skip break</button>
         </div>
       )}
 
