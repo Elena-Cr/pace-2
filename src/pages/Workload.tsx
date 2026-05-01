@@ -4,17 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTasks } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { DOMAIN_LABEL, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
+import { DOMAIN_LABEL, DOMAIN_COLOR_VAR, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 import { workloadByDate } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
-
-const DOMAIN_HUE: Record<Domain, string> = {
-  academic: 'hsl(var(--secondary))',
-  work: 'hsl(var(--primary))',
-  social: 'hsl(var(--warning))',
-  personal: 'hsl(var(--success))',
-};
 
 function startOfWeek(d = new Date()) {
   const day = d.getDay(); // 0 Sun
