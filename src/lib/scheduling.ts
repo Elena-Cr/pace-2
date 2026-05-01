@@ -232,7 +232,7 @@ export function progressForStatus(status: string, current = 0): number {
   const target = STATUS_PROGRESS[status];
   if (target === undefined) return current;
   // Don't decrease user-recorded progress when moving forward
-  return target;
+  return Math.max(target, current);
 }
 
 // ---------- Reschedule patch ----------
