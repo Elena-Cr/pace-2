@@ -166,8 +166,14 @@ export default function Plan() {
 
       <div className="pace-eyebrow mt-6 mb-2">Protected blocks</div>
       <div className="space-y-1.5">
-        {PROTECTED.map(p => (
-          <div key={p.label} className="pace-rest"><span>◯ {p.label}</span><span>{p.when}</span></div>
+        {(userProfile?.default_time_blocks ?? []).length === 0 && (
+          <div className="text-sm text-muted-foreground">No protected time set. Add some in Settings.</div>
+        )}
+        {(userProfile?.default_time_blocks ?? []).map((p, i) => (
+          <div key={`${p.label}-${i}`} className="pace-rest">
+            <span>◯ {p.label}</span>
+            <span>{fmtBlockTime(p.start)} – {fmtBlockTime(p.end)}</span>
+          </div>
         ))}
       </div>
 
@@ -182,6 +188,37 @@ export default function Plan() {
             </div>
             {t.duration_minutes && <span className="pace-chip">+{Math.ceil(t.duration_minutes * 0.15)}m buffer</span>}
           </button>
+        ))}
+      </div>
+
+      {/* Backlog */}
+      <div className="mt-6 flex items-center justify-between">
+        <div className="pace-eyebrow">Backlog</div>
+        <span className="pace-meta">{backlog.length} unscheduled</span>
+      </div>
+      <div className="mt-2 space-y-2">
+        {backlog.length === 0 && (
+          <div className="text-sm text-muted-foreground">Nothing waiting. Everything captured has a day.</div>
+        )}
+        {backlog.map(t => (
+          <div key={t.id} className="pace-card">
+            <button onClick={() => nav(`/task/${t.id}`)} className="w-full text-left">
+              <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
+              <div className="text-[12px] mt-0.5 text-muted-foreground">
+                {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
+                {t.effort_level ? ` · ${t.effort_level}` : ''}
+                {t.deadline ? ` · due ${new Date(t.deadline).toLocaleDateString()}` : ''}
+              </div>
+            </button>
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">
+                <CalIcon className="w-3.5 h-3.5" /> Today
+              </button>
+              <button onClick={() => scheduleFromBacklog(t.id, 'tomorrow')} className="pace-btn pace-btn-sm">
+                Tomorrow
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     </AppShell>
