@@ -62,7 +62,7 @@ export default function Workload() {
     });
   }, [tasks]);
 
-  const maxMin = Math.max(60, ...week.map(d => d.total));
+  const maxMin = Math.max(60, dailyCapMin, ...week.map(d => d.total));
   const totalsByDomain = DOMAINS.reduce((acc, d) => {
     acc[d] = week.reduce((s, w) => s + w.totals[d], 0);
     return acc;
