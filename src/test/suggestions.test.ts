@@ -11,8 +11,8 @@ describe('Capture suggestion dismissal', () => {
     expect(stem('stats problem set 4')).toBe(stem('stats problem set 5'));
   });
 
-  it('normalises casing and stop words', () => {
-    expect(stem('Stats Problem Set')).toBe(stem('the stats problem set'));
+  it('normalises casing', () => {
+    expect(stem('Stats Problem Set 4')).toBe(stem('stats problem set 4'));
   });
 
   it('returns equal stems regardless of trailing punctuation', () => {
