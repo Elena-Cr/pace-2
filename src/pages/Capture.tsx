@@ -157,10 +157,9 @@ export default function Capture() {
             <div className="mt-2 flex gap-1 flex-wrap text-[12px]">
               {suggestion.domain && <span className="pace-chip">Domain · {DOMAIN_LABEL[suggestion.domain]}</span>}
               {suggestion.priority && <span className="pace-chip">Priority · {PRIORITY_LABEL[suggestion.priority]}</span>}
-              {suggestion.estimated_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.estimated_minutes)}</span>}
+              {suggestion.duration_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.duration_minutes)}</span>}
               {suggestion.energy && <span className="pace-chip">Energy · {suggestion.energy}</span>}
               {suggestion.effort_level && <span className="pace-chip">Effort · {suggestion.effort_level}</span>}
-              {suggestion.difficulty != null && <span className="pace-chip">Difficulty · {suggestion.difficulty}/5</span>}
             </div>
             <div className="mt-3 flex gap-2">
               <button onClick={() => applySuggestion(suggestion)} className="pace-btn-primary pace-btn-sm">Use these</button>
