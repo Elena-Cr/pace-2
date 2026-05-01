@@ -41,7 +41,7 @@ export default function Replan() {
 
   async function action(
     id: string,
-    kind: 'start' | 'reschedule' | 'remove' | 'tiny' | 'block' | 'tomorrow_morning' | 'rest_first',
+    kind: 'start' | 'reschedule' | 'remove' | 'reduce' | 'block' | 'tomorrow_morning' | 'rest_first',
   ) {
     const t = carry.find(x => x.id === id); if (!t) return;
     const reason = reasonByTask[id];
@@ -61,7 +61,7 @@ export default function Replan() {
       setRescheduleId(id);
       return;
     }
-    if (kind === 'tiny') {
+    if (kind === 'reduce') {
       await update.mutateAsync({ id, patch: {
         duration_minutes: 10,
         scheduled_date: todayISO(),
@@ -152,7 +152,7 @@ export default function Replan() {
                   <div className="mt-3 pace-alert">
                     <div className="text-[13px] mb-2">A smaller scope often helps.</div>
                     <div className="flex gap-1.5 flex-wrap">
-                      <button onClick={() => action(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Try just 10 minutes</button>
+                      <button onClick={() => action(t.id, 'reduce')} className="pace-btn-primary pace-btn-sm">Try just 10 minutes</button>
                       <button onClick={() => action(t.id, 'rest_first')} className="pace-btn pace-btn-sm">Rest first, then decide</button>
                     </div>
                   </div>
@@ -161,7 +161,7 @@ export default function Replan() {
                   <div className="mt-3 pace-alert">
                     <div className="text-[13px] mb-2">Lower the bar — fresher energy tomorrow.</div>
                     <div className="flex gap-1.5 flex-wrap">
-                      <button onClick={() => action(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Reduce to 10m</button>
+                      <button onClick={() => action(t.id, 'reduce')} className="pace-btn-primary pace-btn-sm">Reduce to 10m</button>
                       <button onClick={() => action(t.id, 'tomorrow_morning')} className="pace-btn pace-btn-sm">Move to tomorrow morning</button>
                     </div>
                   </div>
@@ -178,7 +178,7 @@ export default function Replan() {
 
                 <div className="mt-3 flex gap-1.5 flex-wrap">
                   <button onClick={() => action(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now (15m)</button>
-                  <button onClick={() => action(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10m</button>
+                  <button onClick={() => action(t.id, 'reduce')} className="pace-btn pace-btn-sm">Reduce to 10m</button>
                   <button onClick={() => action(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
                   <button onClick={() => action(t.id, 'block')} className="pace-btn pace-btn-sm">Blocked</button>
                   <button onClick={() => action(t.id, 'remove')} className="pace-btn-ghost pace-btn-sm">Remove</button>
