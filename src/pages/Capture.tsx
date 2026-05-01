@@ -83,7 +83,7 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
-    const { toISODate } = await import('@/lib/pace');
+    
     const { error } = await supabase.from('tasks').insert({
       user_id: user.id,
       title: title.trim(),
