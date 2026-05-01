@@ -232,7 +232,7 @@ export default function Home() {
         <div className="mt-3 flex gap-1.5 flex-wrap">
           {(Object.keys(domainCounts) as Array<Domain>).map(d => (
             <span key={d} className="pace-chip">
-              <span className={`w-1.5 h-1.5 rounded-full ${DOMAIN_BAR[d]}`} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: DOMAIN_COLOR_VAR[d] }} />
               {DOMAIN_LABEL[d] ?? d} · {domainCounts[d]}
             </span>
           ))}
