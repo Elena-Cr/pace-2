@@ -68,7 +68,7 @@ export default function Focus() {
   async function start() {
     if (!user) return;
     if (task && task.status === 'not_started') {
-      await supabase.from('tasks').update({ status: 'started' }).eq('id', task.id);
+      await update.mutateAsync({ id: task.id, patch: { status: 'started' } as any });
     }
     const { data, error } = await supabase.from('focus_sessions').insert({
       user_id: user.id, task_id: task?.id ?? null, planned_minutes: planned,
@@ -84,16 +84,16 @@ export default function Focus() {
 
   async function reschedule() {
     if (task) {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id: task.id, patch: {
         status: 'rescheduled',
         reschedule_count: (task.reschedule_count || 0) + 1,
-      }).eq('id', task.id);
+      } as any });
     }
     nav('/replan');
   }
 
   async function markBlocked() {
-    if (task) await supabase.from('tasks').update({ status: 'blocked' }).eq('id', task.id);
+    if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
     if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'replan' }).eq('id', sessionId);
     toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
     nav('/');
@@ -101,9 +101,9 @@ export default function Focus() {
 
   async function reduceScope() {
     if (task) {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id: task.id, patch: {
         duration_minutes: Math.max(10, Math.round((task.duration_minutes || 30) / 2)),
-      }).eq('id', task.id);
+      } as any });
       toast.success('Scope reduced. Smaller is still real.');
     }
     setOverrunPrompt(false);
@@ -140,14 +140,14 @@ export default function Focus() {
       }).eq('id', sessionId);
     }
     if (outcome === 'completed' && task) {
-      await supabase.from('tasks').update({ status: 'done', progress: 100 }).eq('id', task.id);
+      await update.mutateAsync({ id: task.id, patch: { status: 'done', progress: 100 } as any });
       toast.success('Done. That was real work.');
       nav('/');
     } else if (outcome === 'more_time' && task) {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id: task.id, patch: {
         status: 'in_progress',
         progress: Math.min(80, (task.progress || 0) + 25),
-      }).eq('id', task.id);
+      } as any });
       nav('/');
     } else if (outcome === 'blocked') {
       await markBlocked();
