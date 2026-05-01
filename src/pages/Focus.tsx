@@ -241,6 +241,7 @@ export default function Focus() {
   const ringSize = 220;
   const stroke = 6;
   const r = (ringSize - stroke) / 2;
+  const ringStyle = { width: 'min(220px, 80vw)', aspectRatio: '1 / 1' } as const;
   const c = 2 * Math.PI * r;
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
@@ -258,12 +259,12 @@ export default function Focus() {
       )}
 
       <div className="my-8 flex justify-center">
-        <div className="relative" style={{ width: ringSize, height: ringSize }}
+        <div className="relative" style={ringStyle}
           role="timer"
           aria-live="polite"
           aria-atomic="true"
           aria-label={`${mins} minutes ${secs} seconds remaining of ${planned} minute ${breakMode ? 'break' : 'focus session'}`}>
-          <svg width={ringSize} height={ringSize} className="-rotate-90" aria-hidden="true">
+          <svg viewBox={`0 0 ${ringSize} ${ringSize}`} className="-rotate-90 w-full h-full" aria-hidden="true">
             <circle cx={ringSize/2} cy={ringSize/2} r={r} stroke="hsl(var(--foreground))" strokeOpacity="0.1" strokeWidth={stroke} fill="none" />
             <circle cx={ringSize/2} cy={ringSize/2} r={r}
               stroke={ringColor} strokeWidth={stroke} fill="none"
