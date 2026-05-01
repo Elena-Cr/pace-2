@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee } from 'lucide-react';
+import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
 
 const FILTERS: { k: 'all' | Status; label: string }[] = [
   { k: 'all', label: 'All' },
@@ -25,6 +26,7 @@ const DOMAIN_BAR: Record<Domain | 'rest', string> = {
 
 export default function Home() {
   const { user, profile, loading } = useAuth();
+  const { profile: userProfile, loading: upLoading } = useUserProfile();
   const nav = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
   const [missed, setMissed] = useState<any[]>([]);
@@ -35,6 +37,11 @@ export default function Home() {
   const [tomorrowCount, setTomorrowCount] = useState(0);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+  useEffect(() => {
+    if (!upLoading && user && userProfile && !userProfile.onboarding_completed) {
+      nav('/onboarding', { replace: true });
+    }
+  }, [upLoading, user, userProfile, nav]);
   useEffect(() => { if (user) load(); }, [user]);
 
   async function load() {
