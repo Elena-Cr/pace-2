@@ -18,21 +18,20 @@ export default function Replan() {
   const preselectId: string | undefined = loc.state?.taskId;
   const { data: tasks = [] } = useTasks();
   const { update, remove } = useTaskMutations();
-  const [mood, setMood] = useState<Mood | null>(null);
+  const [moodByTask, setMoodByTask] = useState<Record<string, Mood>>({});
+  const [moodOpen, setMoodOpen] = useState<Record<string, boolean>>({});
   const [reasonByTask, setReasonByTask] = useState<Record<string, ReplanReason>>({});
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const openedFromState = useRef(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  // Pull missed tasks via shared helper, then sort by reschedule_count desc.
   const carry = useMemo(() => {
     return getMissed(tasks, todayISO())
       .slice()
       .sort((a, b) => (b.reschedule_count ?? 0) - (a.reschedule_count ?? 0));
   }, [tasks]);
 
-  // When arriving from Focus with a pre-selected task, open the dialog once.
   useEffect(() => {
     if (preselectId && !openedFromState.current) {
       openedFromState.current = true;
@@ -40,10 +39,14 @@ export default function Replan() {
     }
   }, [preselectId]);
 
-  async function action(id: string, kind: 'start' | 'reschedule' | 'remove' | 'tiny' | 'block') {
+  async function action(
+    id: string,
+    kind: 'start' | 'reschedule' | 'remove' | 'tiny' | 'block' | 'tomorrow_morning' | 'rest_first',
+  ) {
     const t = carry.find(x => x.id === id); if (!t) return;
     const reason = reasonByTask[id];
-    if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
+    const mood = moodByTask[id] ?? null;
+    if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 10 } }); return; }
     if (kind === 'remove') {
       await remove.mutateAsync(id);
       toast.success('Removed. That counts as a decision.');
@@ -55,8 +58,6 @@ export default function Replan() {
       return;
     }
     if (kind === 'reschedule') {
-      // Open the shared date-picker dialog. The dialog applies the update
-      // via buildReschedulePatch so it stays consistent with TaskDetail.
       setRescheduleId(id);
       return;
     }
@@ -69,6 +70,28 @@ export default function Replan() {
         replanning_reason: reason,
       } as any });
       toast.success('Made it tiny. Ten minutes is a real start.');
+      return;
+    }
+    if (kind === 'tomorrow_morning') {
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      const iso = d.toISOString().slice(0, 10);
+      await update.mutateAsync({ id, patch: {
+        scheduled_date: iso,
+        start_time: '09:00',
+        last_mood: mood,
+        replanning_reason: reason,
+      } as any });
+      toast.success('Moved to tomorrow morning.');
+      return;
+    }
+    if (kind === 'rest_first') {
+      await update.mutateAsync({ id, patch: {
+        scheduled_date: todayISO(),
+        last_mood: mood,
+        replanning_reason: reason,
+      } as any });
+      toast('Rest first. Decide after.');
+      return;
     }
   }
 
@@ -76,23 +99,6 @@ export default function Replan() {
     <AppShell>
       <h1 className="pace-screen-title">Replanning</h1>
       <div className="pace-eyebrow mt-1">From earlier · {carry.length} {carry.length === 1 ? 'task' : 'tasks'} to look at</div>
-
-      {/* Mood check-in */}
-      <div className="mt-5 pace-card">
-        <div className="pace-section">How are you feeling?</div>
-        <div className="text-[13px] text-muted-foreground mt-1">No wrong answer — it just helps shape what we suggest.</div>
-        <div className="mt-3 flex gap-1.5 flex-wrap">
-          {MOODS.map(m => (
-            <button key={m} onClick={() => setMood(m)}
-              className={mood === m ? 'pace-chip-filled' : 'pace-chip'}>{MOOD_LABEL[m]}</button>
-          ))}
-        </div>
-        {mood && (mood === 'overwhelmed' || mood === 'tired') && (
-          <div className="mt-3 pace-alert">
-            That's real. Try one of these: break a task into a 10-minute first step, take a short rest, or move the heaviest thing to a fresher time.
-          </div>
-        )}
-      </div>
 
       <div className="mt-5 space-y-3">
         {carry.length === 0 && (
@@ -103,6 +109,8 @@ export default function Replan() {
 
         {carry.map(t => {
           const reason = reasonByTask[t.id];
+          const mood = moodByTask[t.id] ?? null;
+          const open = !!moodOpen[t.id];
           return (
             <div key={t.id} className="space-y-2.5">
               <div className="pace-card">
@@ -110,6 +118,26 @@ export default function Replan() {
                   <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
                 </div>
                 <div className="text-[13px] text-muted-foreground mt-1">Needs attention. What would help?</div>
+
+                {/* Per-task mood check-in */}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setMoodOpen(s => ({ ...s, [t.id]: !s[t.id] }))}
+                    className="text-[12px] text-primary font-medium"
+                  >
+                    {open ? 'Hide' : 'How are you feeling about this one?'}
+                    {!open && mood && <span className="text-muted-foreground font-normal"> · {MOOD_LABEL[mood]}</span>}
+                  </button>
+                  {open && (
+                    <div className="mt-2 flex gap-1.5 flex-wrap">
+                      {MOODS.map(m => (
+                        <button key={m} onClick={() => setMoodByTask(s => ({ ...s, [t.id]: m }))}
+                          className={mood === m ? 'pace-chip-filled' : 'pace-chip'}>{MOOD_LABEL[m]}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="mt-3">
                   <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
@@ -119,6 +147,35 @@ export default function Replan() {
                   />
                 </div>
 
+                {/* Mood-adapted coping suggestions */}
+                {mood === 'overwhelmed' && (
+                  <div className="mt-3 pace-alert">
+                    <div className="text-[13px] mb-2">A smaller scope often helps.</div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      <button onClick={() => action(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Try just 10 minutes</button>
+                      <button onClick={() => action(t.id, 'rest_first')} className="pace-btn pace-btn-sm">Rest first, then decide</button>
+                    </div>
+                  </div>
+                )}
+                {mood === 'tired' && (
+                  <div className="mt-3 pace-alert">
+                    <div className="text-[13px] mb-2">Lower the bar — fresher energy tomorrow.</div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      <button onClick={() => action(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Reduce to 10m</button>
+                      <button onClick={() => action(t.id, 'tomorrow_morning')} className="pace-btn pace-btn-sm">Move to tomorrow morning</button>
+                    </div>
+                  </div>
+                )}
+                {mood === 'frustrated' && (
+                  <div className="mt-3 pace-alert">
+                    <div className="text-[13px] mb-2">When you're stuck, smaller steps or a second pair of eyes can unblock things.</div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-primary pace-btn-sm">Break into smaller steps</button>
+                      <button onClick={() => action(t.id, 'block')} className="pace-btn pace-btn-sm">Talk to someone who might unblock this</button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-3 flex gap-1.5 flex-wrap">
                   <button onClick={() => action(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now (15m)</button>
                   <button onClick={() => action(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10m</button>
@@ -126,6 +183,19 @@ export default function Replan() {
                   <button onClick={() => action(t.id, 'block')} className="pace-btn pace-btn-sm">Blocked</button>
                   <button onClick={() => action(t.id, 'remove')} className="pace-btn-ghost pace-btn-sm">Remove</button>
                 </div>
+
+                {/* First-step prompt for tasks that have moved without a next action. */}
+                {!t.next_action && (t.reschedule_count ?? 0) >= 1 && (
+                  <div className="mt-3 pace-card-soft">
+                    <div className="text-[13px]">What's the smallest thing you could do first?</div>
+                    <FirstStepInput
+                      onSave={async (v) => {
+                        await update.mutateAsync({ id: t.id, patch: { next_action: v } as any });
+                        toast.success('Saved a first step.');
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               {(t.reschedule_count ?? 0) >= 2 && (
@@ -145,8 +215,26 @@ export default function Replan() {
         taskId={rescheduleId}
         open={!!rescheduleId}
         onClose={() => setRescheduleId(null)}
-        mood={mood}
+        mood={rescheduleId ? (moodByTask[rescheduleId] ?? null) : null}
       />
     </AppShell>
+  );
+}
+
+function FirstStepInput({ onSave }: { onSave: (v: string) => void | Promise<void> }) {
+  const [v, setV] = useState('');
+  return (
+    <div className="mt-2 flex gap-2">
+      <input
+        className="pace-field"
+        placeholder="e.g. Open the doc"
+        value={v}
+        onChange={e => setV(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); const t = v.trim(); if (t) { onSave(t); setV(''); } }
+        }}
+      />
+      <button onClick={() => { const t = v.trim(); if (t) { onSave(t); setV(''); } }} className="pace-btn pace-btn-sm">Save</button>
+    </div>
   );
 }
