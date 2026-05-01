@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
+import type { Task } from '@/lib/scheduling';
+import { rowToTask } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
 
@@ -13,7 +15,7 @@ export default function Focus() {
   const initialMinutes: number = loc.state?.minutes ?? 25;
   const taskIdHint: string | undefined = loc.state?.taskId;
 
-  const [task, setTask] = useState<any>(null);
+  const [task, setTask] = useState<Task | null>(null);
   const [planned, setPlanned] = useState(initialMinutes);
   const [secondsLeft, setSecondsLeft] = useState(initialMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -33,7 +35,7 @@ export default function Focus() {
     (taskIdHint
       ? q.eq('id', taskIdHint).maybeSingle()
       : q.order('priority', { ascending: true }).order('deadline', { ascending: true, nullsFirst: false }).limit(1).maybeSingle()
-    ).then(({ data }) => setTask(data));
+    ).then(({ data }) => setTask(data ? rowToTask(data) : null));
   }, [user, taskIdHint]);
 
   useEffect(() => {
