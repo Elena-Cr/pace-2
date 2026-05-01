@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
-import { todayISO, fmtMin, toISODate } from '@/lib/pace';
+import { todayISO, fmtMin, toISODate, formatDeadline } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
 import {
   rowsToTasks,
   getTodayTasks,
   getBacklog,
   calculateDailyWorkload,
+  effectiveCapacityMinutes,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
