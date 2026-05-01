@@ -91,7 +91,6 @@ export default function Home() {
 
   const today = new Date();
   const dateStr = today.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
-  const todayStr = todayISO();
 
   const todayTasks = useMemo(() => getTodayTasks(tasks, todayStr), [tasks, todayStr]);
   const restBlocks = useMemo(() => getRestBlocksForDate(tasks, todayStr), [tasks, todayStr]);
