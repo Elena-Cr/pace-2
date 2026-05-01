@@ -3,9 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, X, MoveRight } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
+
+function timeStrToMin(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
 
 type CalKind = 'task' | 'rest' | 'meal' | 'sleep' | 'recovery' | 'focus';
 
