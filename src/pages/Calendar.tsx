@@ -133,13 +133,25 @@ export default function CalendarView() {
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
-  }), [weekStart]);
+  // In week (3-day sliding) view: [centerDate-1, centerDate, centerDate+1].
+  // In day view: full 7-day Mon-start window driven by weekStart, used by the
+  // day picker so the user can jump within the current week.
+  const days = useMemo(() => {
+    if (view === 'week') {
+      const start = new Date(centerDate); start.setDate(start.getDate() - 1);
+      return Array.from({ length: 3 }, (_, i) => {
+        const d = new Date(start); d.setDate(d.getDate() + i); return d;
+      });
+    }
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+    });
+  }, [view, centerDate, weekStart]);
 
   const weekRange = useMemo(() => {
     const start = toISODate(days[0]);
-    const end = new Date(days[6]); end.setDate(end.getDate() + 1);
+    const last = days[days.length - 1];
+    const end = new Date(last); end.setDate(end.getDate() + 1);
     return { start, endExclusive: toISODate(end) };
   }, [days]);
 
