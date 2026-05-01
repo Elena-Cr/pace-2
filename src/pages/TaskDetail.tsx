@@ -362,7 +362,7 @@ export default function TaskDetail() {
         <div className="flex flex-wrap gap-1.5 text-[13px]">
           {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
           {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
-          {task.energy && <span className="pace-chip">Energy · {task.energy}</span>}
+          
           {(task.involves_others || task.others_rely) && (
             <span className="pace-chip"><Users className="w-3 h-3" /> Others involved</span>
           )}
