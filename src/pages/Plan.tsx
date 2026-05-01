@@ -70,10 +70,10 @@ export default function Plan() {
 
 
   async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
-    if (!user) return;
+    if (!user || capacityMin == null) return;
     await upsertCapacity.mutateAsync({
       date: today,
-      available_hours: capacityHours,
+      available_hours: capacityMin / 60,
       energy_level: energyLevel,
       recovery_notes: recoveryNotes || null,
       ...partial,
@@ -82,13 +82,16 @@ export default function Plan() {
 
   const plannedMinutes = calculateDailyWorkload(tasks);
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+  const capacityReady = capacityMin != null;
   const capacityMinutes = effectiveCapacityMinutes(
-    { available_hours: capacityHours, energy_level: energyLevel },
+    capacityReady ? { available_hours: (capacityMin as number) / 60, energy_level: energyLevel } : null,
     profileCapMin,
   );
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
-  const over = plannedMinutes > capacityMinutes;
+  const over = capacityReady && plannedMinutes > capacityMinutes;
   const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
+  const preferredCount = userProfile?.preferred_tasks_per_day ?? null;
+  const showPaceHint = preferredCount != null && tasks.length > preferredCount;
 
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
