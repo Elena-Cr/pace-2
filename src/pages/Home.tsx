@@ -7,6 +7,7 @@ import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
+import { rowsToTasks } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
 
@@ -56,7 +57,7 @@ export default function Home() {
       .order('deadline', { ascending: true, nullsFirst: false })
       .limit(100);
     if (error) { toast.error(error.message); return; }
-    const all = data ?? [];
+    const all = rowsToTasks(data);
 
     const open = all.filter(t => t.status !== 'done');
     setTasks(open.filter(t => !t.scheduled_date || t.scheduled_date >= today));

@@ -7,6 +7,7 @@ import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
+import { rowsToTasks, rowToTask } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
@@ -133,7 +134,7 @@ export default function CalendarView() {
     const endIso = toISODate(end);
     supabase.from('tasks').select('*')
       .gte('scheduled_date', start).lt('scheduled_date', endIso)
-      .then(({ data }) => setTasks(data ?? []));
+      .then(({ data }) => setTasks(rowsToTasks(data)));
     supabase.from('daily_capacity').select('*').gte('date', start).lt('date', endIso)
       .then(({ data }) => {
         const map: Record<string, any> = {};
@@ -157,7 +158,7 @@ export default function CalendarView() {
     const end = new Date(monthGrid[41]); end.setDate(end.getDate() + 1);
     supabase.from('tasks').select('*')
       .gte('scheduled_date', start).lt('scheduled_date', toISODate(end))
-      .then(({ data }) => setMonthTasks(data ?? []));
+      .then(({ data }) => setMonthTasks(rowsToTasks(data)));
   }, [user, monthAnchor, view]);
 
   // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day

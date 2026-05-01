@@ -6,6 +6,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
+import { rowsToTasks } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
 
@@ -44,13 +45,13 @@ export default function Plan() {
       .eq('scheduled_date', todayISO())
       .neq('status', 'done').eq('is_rest', false)
       .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setTasks(data ?? []));
+      .then(({ data }) => setTasks(rowsToTasks(data)));
     // Backlog: unscheduled, open
     supabase.from('tasks').select('*')
       .is('scheduled_date', null).neq('status', 'done').eq('is_rest', false)
       .order('priority', { ascending: true })
       .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setBacklog(data ?? []));
+      .then(({ data }) => setBacklog(rowsToTasks(data)));
     supabase.from('daily_capacity').select('*').eq('date', todayISO()).maybeSingle()
       .then(({ data }) => {
         if (data) {

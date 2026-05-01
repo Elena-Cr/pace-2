@@ -6,6 +6,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
+import { rowsToTasks } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 
@@ -41,7 +42,7 @@ export default function Workload() {
     supabase.from('tasks').select('*')
       .gte('scheduled_date', start)
       .lte('scheduled_date', toISODate(end))
-      .then(({ data }) => setTasks(data ?? []));
+      .then(({ data }) => setTasks(rowsToTasks(data)));
   }, [user]);
 
   const week = useMemo(() => {
