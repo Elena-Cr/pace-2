@@ -117,6 +117,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          completed_at: string | null
           created_at: string
           deadline: string | null
           domain: Database["public"]["Enums"]["task_domain"] | null
@@ -144,6 +145,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           deadline?: string | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
@@ -173,6 +175,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           deadline?: string | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
