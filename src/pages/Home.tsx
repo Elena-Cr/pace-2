@@ -70,11 +70,7 @@ export default function Home() {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
     if (kind === 'reschedule') {
-      await update.mutateAsync({ id, patch: {
-        scheduled_date: todayISO(),
-        reschedule_count: (t.reschedule_count || 0) + 1,
-        status: 'rescheduled',
-      } as any });
+      await update.mutateAsync({ id, patch: buildReschedulePatch(t, todayISO()) });
       toast.success('Carried to today.');
     } else {
       await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
