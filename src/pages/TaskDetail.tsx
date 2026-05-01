@@ -20,6 +20,10 @@ export default function TaskDetail() {
   const { data: task } = useTask(id);
   const { update: updateMut, remove: removeMut } = useTaskMutations();
   const [subInput, setSubInput] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [editingNext, setEditingNext] = useState(false);
+  const [nextDraft, setNextDraft] = useState('');
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
