@@ -635,6 +635,7 @@ export default function CalendarView() {
           if (!filter.has(dom)) return;
           (byDate[t.scheduled_date] ||= []).push(t);
         });
+        const DOMAIN_ORDER: Domain[] = ['academic', 'work', 'social', 'personal'];
         return (
           <div className="mt-4 pace-card !p-2">
             <div className="grid grid-cols-7 gap-1 mb-1">
@@ -646,20 +647,33 @@ export default function CalendarView() {
                 const isToday = d.toDateString() === todayStr;
                 const dateStr = toISODate(d);
                 const items = byDate[dateStr] || [];
+                // Per-domain presence: at most one dot per domain, fixed order.
+                const domainsPresent = new Set<Domain | 'rest'>();
+                items.forEach(t => {
+                  const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+                  domainsPresent.add(dom);
+                });
                 return (
                   <button key={i}
                     onClick={() => { setDayIdx((d.getDay() + 6) % 7); setWeekStart(startOfWeek(d)); setView('day'); }}
                     className={`aspect-square min-h-[54px] rounded-xl border text-left p-1 flex flex-col gap-0.5 transition hover:bg-muted/40
                       ${inMonth ? 'bg-card border-border/50' : 'bg-muted/30 border-transparent text-muted-foreground'}
-                      ${isToday ? '!border-primary border-2' : ''}`}>
-                    <div className={`text-[11px] font-semibold ${isToday ? 'text-primary' : ''}`}>{d.getDate()}</div>
-                    <div className="flex flex-wrap gap-0.5 mt-auto">
-                      {items.slice(0, 4).map((t, ti) => {
-                        const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+                      ${isToday ? '!bg-muted-foreground/15 !border-muted-foreground/50 border-2' : ''}`}>
+                    <div className={`text-[11px] ${isToday ? 'font-bold' : 'font-semibold'}`}>{d.getDate()}</div>
+                    {/* Fixed 4-slot domain dot row — Academic, Work, Social, Personal.
+                        Empty slots are rendered as transparent placeholders so the
+                        cell layout stays stable regardless of domain mix. */}
+                    <div className="flex gap-1 mt-auto" aria-hidden="true">
+                      {DOMAIN_ORDER.map(dom => {
+                        const present = domainsPresent.has(dom);
                         const dc = domainClass(dom);
-                        return <span key={ti} className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />;
+                        return (
+                          <span
+                            key={dom}
+                            className={`w-1.5 h-1.5 rounded-full ${present ? dc.bar : 'bg-transparent'}`}
+                          />
+                        );
                       })}
-                      {items.length > 4 && <span className="text-[9px] text-muted-foreground leading-none">+{items.length - 4}</span>}
                     </div>
                   </button>
                 );
