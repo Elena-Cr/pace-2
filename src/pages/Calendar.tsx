@@ -29,7 +29,6 @@ type CalEvent = {
   next_action?: string | null;
   duration_minutes?: number | null;
   effort_level?: string | null;
-  energy?: string | null;
   notes?: string | null;
   others_rely?: boolean;
   reschedule_count?: number;
@@ -332,7 +331,6 @@ export default function CalendarView() {
         next_action: t.next_action,
         duration_minutes: t.duration_minutes,
         effort_level: t.effort_level,
-        energy: t.energy,
         notes: t.notes,
         others_rely: t.others_rely,
         reschedule_count: t.reschedule_count,
