@@ -42,7 +42,6 @@ export default function TaskDetail() {
   }
 
   async function setStatus(s: Status) {
-    const { progressForStatus } = await import('@/lib/scheduling');
     const target = progressForStatus(s, task.progress || 0);
     // Don't drop existing progress when moving forward; honor it when status implies more.
     const nextProgress = s === 'done' ? 100 : Math.max(task.progress || 0, target);
