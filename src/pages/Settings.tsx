@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
+import { useUserProfile, TimeBlock, EnergyPattern, EnergyLevel, DEFAULT_ENERGY_PATTERN } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { fmtMin } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowLeft, LogOut, Plus, X } from 'lucide-react';
+
+const ENERGY_LEVELS: EnergyLevel[] = ['Low', 'Med', 'High'];
 
 export default function Settings() {
   const { user, profile: authProfile, signOut } = useAuth();
@@ -16,6 +18,9 @@ export default function Settings() {
   const [capacityMin, setCapacityMin] = useState(330);
   const [tasksPerDay, setTasksPerDay] = useState(4);
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
+  const [energyPattern, setEnergyPattern] = useState<EnergyPattern>(DEFAULT_ENERGY_PATTERN);
+  const [energyAffects, setEnergyAffects] = useState(true);
+  const [energyPct, setEnergyPct] = useState(10);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (!user) nav('/auth', { replace: true }); }, [user, nav]);
@@ -29,10 +34,17 @@ export default function Settings() {
       setCapacityMin(profile.daily_capacity_minutes);
       setTasksPerDay(profile.preferred_tasks_per_day);
       setBlocks(profile.default_time_blocks ?? []);
+      setEnergyPattern(profile.energy_pattern ?? DEFAULT_ENERGY_PATTERN);
+      setEnergyAffects(profile.energy_affects_capacity ?? true);
+      setEnergyPct(profile.energy_capacity_pct ?? 10);
     }
   }, [profile]);
 
   if (loading || !profile) return null;
+
+  function patchPattern(p: Partial<EnergyPattern>) {
+    setEnergyPattern(prev => ({ ...prev, ...p }));
+  }
 
   function setBlock(i: number, patch: Partial<TimeBlock>) {
     setBlocks(b => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
