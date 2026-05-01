@@ -90,6 +90,36 @@ export default function Home() {
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
 
+  // Conflict detection: build today's full event picture (tasks + protected
+  // time blocks from the user profile) and ask the shared helper which task
+  // event ids overlap rest. Use the *unfiltered* event set so a hidden filter
+  // never makes a real conflict invisible.
+  const conflictTaskIds = useMemo(() => {
+    const taskEvents = getScheduledEvents(tasks).filter(e => e.date === todayStr);
+    const blocks = (userProfile?.default_time_blocks ?? []).map(b => ({
+      label: b.label, start: b.start, end: b.end, kind: b.kind as any,
+    }));
+    const blockEvents = expandTimeBlocks(blocks, todayStr);
+    const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
+    // ids are like "task-<uuid>"; map back to task ids
+    return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
+  }, [tasks, userProfile, todayStr]);
+
+  // Important without a deadline (recurring or must-priority).
+  const { templates } = useTaskSuggestions(user?.id);
+  const recurringStems = useMemo(
+    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
+    [templates],
+  );
+  const noDeadlineHighValue = useMemo(
+    () => tasks.filter(t =>
+      !t.deadline
+      && t.status !== 'done'
+      && (t.priority === 'must' || recurringStems.has(stem(t.title)))
+    ),
+    [tasks, recurringStems],
+  );
+
   // Capacity math — daily override (daily_capacity row) takes precedence,
   // otherwise fall back to user's profile default.
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
