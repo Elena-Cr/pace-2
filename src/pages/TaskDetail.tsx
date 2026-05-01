@@ -58,11 +58,11 @@ export default function TaskDetail() {
   async function toggleSub(sid: string) {
     const next = subtasks.map(s => s.id === sid ? { ...s, done: !s.done } : s);
     const progress = next.length ? Math.round((next.filter(s => s.done).length / next.length) * 100) : task.progress;
-    let status = task.status;
-    if (progress === 100) status = 'done';
-    else if (progress >= 75 && status === 'in_progress') status = 'nearly_done';
-    else if (progress > 0 && status === 'not_started') status = 'in_progress';
-    await update({ subtasks: next, progress, status });
+    let nextStatus: Status = task.status;
+    if (progress === 100) nextStatus = 'done';
+    else if (progress >= 75 && nextStatus === 'in_progress') nextStatus = 'nearly_done';
+    else if (progress > 0 && nextStatus === 'not_started') nextStatus = 'in_progress';
+    await update({ subtasks: next, progress, status: nextStatus });
   }
 
   async function addSub() {
