@@ -399,6 +399,7 @@ export default function CalendarView() {
                               {ev.duration_minutes != null && <span>· {fmtMin(ev.duration_minutes)}</span>}
                               {ev.energy && <span>· {ev.energy} energy</span>}
                               {ev.others_rely && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> shared</span>}
+                              {(ev.reschedule_count ?? 0) >= 2 && <span className="pace-chip !py-0.5 !px-1.5 !text-[11px]">Rescheduled {ev.reschedule_count}×</span>}
                               {conflict && <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]"><AlertTriangle className="w-3 h-3" /> overlaps rest</span>}
                             </div>
                             {ev.next_action && (
