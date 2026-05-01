@@ -528,8 +528,11 @@ export default function CalendarView() {
                           <div className="min-w-0 flex-1">
                             <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
                             <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
-                            <div className="flex gap-1 mt-0.5 flex-wrap">
+                            <div className="flex gap-1 mt-0.5 flex-wrap items-center">
                               {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" />}
+                              {(ev.reschedule_count ?? 0) >= 2 && (
+                                <span className="text-[9px] text-muted-foreground" aria-label={`Rescheduled ${ev.reschedule_count} times`}>↻{ev.reschedule_count}</span>
+                              )}
                               {conflict && <AlertTriangle className="w-2.5 h-2.5 text-[hsl(var(--attention))]" aria-label="Conflict with rest" />}
                             </div>
                           </div>
