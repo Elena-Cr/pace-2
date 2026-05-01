@@ -47,14 +47,21 @@ export default function Focus() {
       setSecondsLeft(s => {
         if (s <= 1) {
           clearInterval(tick.current!); setRunning(false);
-          setOverrunPrompt(true);
+          if (breakMode) {
+            // Break finished — return to idle, ready to start another focus.
+            setBreakMode(false);
+            setSecondsLeft(planned * 60);
+            toast('Break done. Ready when you are.');
+          } else {
+            setOverrunPrompt(true);
+          }
           return 0;
         }
         return s - 1;
       });
     }, 1000);
     return () => { if (tick.current) clearInterval(tick.current); };
-  }, [running]);
+  }, [running, breakMode, planned]);
 
   // Distraction recovery — when tab hidden during a running session
   useEffect(() => {
