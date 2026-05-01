@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import type { Task } from '@/lib/scheduling';
-import { rowToTask } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
 
