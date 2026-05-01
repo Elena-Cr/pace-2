@@ -668,9 +668,11 @@ export default function CalendarView() {
   async function toggleDone(ev: CalEvent) {
     if (!ev.taskId) return;
     const newStatus: Status = ev.status === 'done' ? 'in_progress' : 'done';
-    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', ev.taskId);
-    if (error) { toast.error(error.message); return; }
-    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, status: newStatus } : x));
+    try {
+      await update.mutateAsync({ id: ev.taskId, patch: { status: newStatus } as any });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
   }
 
   async function createAt(dayI: number, hour: number) {
@@ -678,13 +680,15 @@ export default function CalendarView() {
     const title = window.prompt('New intention');
     if (!title?.trim()) return;
     const date = toISODate(days[dayI]);
-    const { data, error } = await supabase.from('tasks').insert({
-      user_id: user.id, title: title.trim(),
-      domain: 'personal', priority: 'should', status: 'not_started',
-      scheduled_date: date, duration_minutes: 60,
-    }).select().single();
-    if (error) { toast.error(error.message); return; }
-    setTasks(arr => [...arr, rowToTask(data)]);
-    toast.success('Added to your plan.');
+    try {
+      await insert.mutateAsync({
+        title: title.trim(),
+        domain: 'personal', priority: 'should', status: 'not_started',
+        scheduled_date: date, duration_minutes: 60,
+      } as any);
+      toast.success('Added to your plan.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not add.');
+    }
   }
 }
