@@ -316,11 +316,13 @@ export default function CalendarView() {
       {/* Date nav */}
       {view !== 'month' ? (
         <div className="mt-3 flex items-center justify-between">
-          <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label="Previous week"><ChevronLeft className="w-5 h-5" /></button>
-          <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="pace-chip">
-            {days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString([], { month: 'short', day: 'numeric' })}
+          <button onClick={() => shiftWeek(-1)} className="p-2 rounded-full hover:bg-muted" aria-label={view === 'week' ? 'Previous day' : 'Previous week'}><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={resetCenter} className="pace-chip">
+            {view === 'week'
+              ? `${days[0].toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} – ${days[days.length - 1].toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`
+              : `${days[0].toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${days[days.length - 1].toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
           </button>
-          <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label="Next week"><ChevronRight className="w-5 h-5" /></button>
+          <button onClick={() => shiftWeek(1)} className="p-2 rounded-full hover:bg-muted" aria-label={view === 'week' ? 'Next day' : 'Next week'}><ChevronRight className="w-5 h-5" /></button>
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-between">
