@@ -264,11 +264,21 @@ export const STATUS_PROGRESS: Record<string, number> = {
   done: 100,
 };
 
+// Used by automated transitions (subtask completion, tab visibility, etc.)
+// where we want to preserve recorded forward progress.
 export function progressForStatus(status: string, current = 0): number {
   const target = STATUS_PROGRESS[status];
   if (target === undefined) return current;
-  // Don't decrease user-recorded progress when moving forward
   return Math.max(target, current);
+}
+
+// Used when the user explicitly selects a status. Returns the canonical
+// target value so progress can decrease (e.g. Done → Nearly done drops
+// 100 → 80). Statuses outside STATUS_PROGRESS preserve current progress.
+export function progressForStatusExplicit(status: string, current = 0): number {
+  const target = STATUS_PROGRESS[status];
+  if (target === undefined) return current;
+  return target;
 }
 
 // ---------- Reschedule patch ----------
