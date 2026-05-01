@@ -92,7 +92,7 @@ export default function Workload() {
                     {DOMAINS.map(d => {
                       const h = (w.totals[d] / maxMin) * 100;
                       if (h <= 0) return null;
-                      return <div key={d} style={{ height: `${h}%`, background: DOMAIN_HUE[d], minHeight: 2 }} />;
+                      return <div key={d} style={{ height: `${h}%`, background: DOMAIN_COLOR_VAR[d], minHeight: 2 }} />;
                     })}
                     {w.total === 0 && <div className="h-1 rounded-t-lg bg-muted" />}
                   </div>
@@ -108,7 +108,7 @@ export default function Workload() {
         <div className="mt-3 flex flex-wrap gap-2 text-[12px]">
           {DOMAINS.map(d => (
             <span key={d} className="inline-flex items-center gap-1.5 text-muted-foreground">
-              <span className="w-3 h-3 rounded-sm" style={{ background: DOMAIN_HUE[d] }} />
+              <span className="w-3 h-3 rounded-sm" style={{ background: DOMAIN_COLOR_VAR[d] }} />
               {DOMAIN_LABEL[d]} · {fmtMin(totalsByDomain[d])}
             </span>
           ))}
@@ -131,7 +131,7 @@ export default function Workload() {
                     <span className="text-muted-foreground">{pct}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden mt-1">
-                    <div style={{ width: `${pct}%`, background: DOMAIN_HUE[d] }} className="h-full rounded-full" />
+                    <div style={{ width: `${pct}%`, background: DOMAIN_COLOR_VAR[d] }} className="h-full rounded-full" />
                   </div>
                 </div>
               );
