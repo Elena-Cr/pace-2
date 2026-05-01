@@ -133,7 +133,6 @@ export type Database = {
           duration_minutes: number | null
           effort_level: string | null
           end_time: string | null
-          energy: string | null
           id: string
           involves_others: boolean
           is_rest: boolean
@@ -161,7 +160,6 @@ export type Database = {
           duration_minutes?: number | null
           effort_level?: string | null
           end_time?: string | null
-          energy?: string | null
           id?: string
           involves_others?: boolean
           is_rest?: boolean
@@ -191,7 +189,6 @@ export type Database = {
           duration_minutes?: number | null
           effort_level?: string | null
           end_time?: string | null
-          energy?: string | null
           id?: string
           involves_others?: boolean
           is_rest?: boolean
@@ -220,6 +217,9 @@ export type Database = {
           created_at: string
           daily_capacity_minutes: number
           default_time_blocks: Json
+          energy_affects_capacity: boolean
+          energy_capacity_pct: number
+          energy_pattern: Json
           id: string
           onboarding_completed: boolean
           preferred_tasks_per_day: number
@@ -230,6 +230,9 @@ export type Database = {
           created_at?: string
           daily_capacity_minutes?: number
           default_time_blocks?: Json
+          energy_affects_capacity?: boolean
+          energy_capacity_pct?: number
+          energy_pattern?: Json
           id?: string
           onboarding_completed?: boolean
           preferred_tasks_per_day?: number
@@ -240,6 +243,9 @@ export type Database = {
           created_at?: string
           daily_capacity_minutes?: number
           default_time_blocks?: Json
+          energy_affects_capacity?: boolean
+          energy_capacity_pct?: number
+          energy_pattern?: Json
           id?: string
           onboarding_completed?: boolean
           preferred_tasks_per_day?: number
