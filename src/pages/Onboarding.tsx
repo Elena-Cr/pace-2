@@ -114,7 +114,51 @@ export default function Onboarding() {
       canNext: true,
     },
     {
-      eyebrow: '04 · Protected time',
+      eyebrow: '04 · Energy (optional)',
+      title: 'When do you usually have the most energy?',
+      sub: 'You can skip this and set it later in Settings.',
+      body: (
+        <div className="space-y-3">
+          <div className="flex gap-1.5 justify-center">
+            <button onClick={() => patchPattern({ mode: 'whole' })}
+              className={energyPattern.mode === 'whole' ? 'pace-chip-filled' : 'pace-chip'}>Whole day</button>
+            <button onClick={() => patchPattern({ mode: 'period' })}
+              className={energyPattern.mode === 'period' ? 'pace-chip-filled' : 'pace-chip'}>By time of day</button>
+          </div>
+          {energyPattern.mode === 'whole' ? (
+            <div className="flex gap-1.5 justify-center">
+              {ENERGY_LEVELS.map(e => (
+                <button key={e} onClick={() => patchPattern({ whole: e })}
+                  className={energyPattern.whole === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {([['Morning', 'morning'], ['Afternoon', 'afternoon'], ['Evening', 'evening']] as const).map(([label, key]) => {
+                const value = energyPattern[key];
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="text-[12px] text-muted-foreground w-20 shrink-0">{label}</span>
+                    <div className="flex gap-1 flex-1">
+                      {ENERGY_LEVELS.map(e => (
+                        <button key={e}
+                          onClick={() => patchPattern({ [key]: value === e ? null : e } as Partial<EnergyPattern>)}
+                          className={`flex-1 px-2 py-1 rounded-full text-[12px] font-medium ${value === e ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ),
+      canNext: true,
+    },
+    {
+      eyebrow: '05 · Protected time',
       title: 'When do you sleep, eat, and recover?',
       sub: 'These blocks stay protected on your calendar.',
       body: (
