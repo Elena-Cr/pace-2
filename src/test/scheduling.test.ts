@@ -65,3 +65,29 @@ describe('scheduling helpers', () => {
     expect(calculateDailyWorkload(tasks)).toBe(75);
   });
 });
+
+import { effectiveCapacityMinutes, capacityState } from '@/lib/scheduling';
+
+describe('capacity helpers', () => {
+  it('uses profile default when no daily override exists', () => {
+    expect(effectiveCapacityMinutes(null, 330)).toBe(330);
+  });
+  it('applies the Low energy multiplier', () => {
+    expect(effectiveCapacityMinutes(
+      { available_hours: 6, energy_level: 'Low' },
+      330,
+    )).toBe(Math.round(6 * 60 * 0.75));
+  });
+  it('applies the High energy multiplier', () => {
+    expect(effectiveCapacityMinutes(
+      { available_hours: 6, energy_level: 'High' },
+      330,
+    )).toBe(Math.round(6 * 60 * 1.1));
+  });
+  it('classifies capacity state at the boundary', () => {
+    expect(capacityState(85, 100)).toBe('balanced');
+    expect(capacityState(86, 100)).toBe('close');
+    expect(capacityState(100, 100)).toBe('close');
+    expect(capacityState(101, 100)).toBe('over');
+  });
+});

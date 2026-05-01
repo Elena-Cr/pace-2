@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
-import { todayISO, fmtMin, toISODate } from '@/lib/pace';
+import { todayISO, fmtMin, toISODate, formatDeadline } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
 import {
   rowsToTasks,
   getTodayTasks,
   getBacklog,
   calculateDailyWorkload,
+  effectiveCapacityMinutes,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
@@ -95,8 +96,11 @@ export default function Plan() {
   }
 
   const plannedMinutes = calculateDailyWorkload(tasks);
-  const energyMultiplier = energyLevel === 'Low' ? 0.75 : energyLevel === 'High' ? 1.1 : 1;
-  const capacityMinutes = Math.round(capacityHours * 60 * energyMultiplier);
+  const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+  const capacityMinutes = effectiveCapacityMinutes(
+    { available_hours: capacityHours, energy_level: energyLevel },
+    profileCapMin,
+  );
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
   const over = plannedMinutes > capacityMinutes;
   const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
@@ -212,7 +216,7 @@ export default function Plan() {
               <div className="text-[12px] mt-0.5 text-muted-foreground">
                 {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
                 {t.effort_level ? ` · ${t.effort_level}` : ''}
-                {t.deadline ? ` · due ${new Date(t.deadline).toLocaleDateString()}` : ''}
+                {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
               </div>
             </button>
             <div className="mt-3 flex gap-2">

@@ -14,6 +14,8 @@ import {
   getMissed,
   getDoneOnDate,
   getRestBlocksForDate,
+  effectiveCapacityMinutes,
+  capacityState,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
@@ -111,13 +113,14 @@ export default function Home() {
   // Capacity math — daily override (daily_capacity row) takes precedence,
   // otherwise fall back to user's profile default.
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
-  const capH = capacity ? Number(capacity.available_hours) : profileCapMin / 60;
-  const energy = capacity?.energy_level ?? 'Med';
-  const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
-  const capMin = Math.round(capH * 60 * mult);
+  const capMin = effectiveCapacityMinutes(
+    capacity ? { available_hours: Number(capacity.available_hours), energy_level: capacity.energy_level ?? 'Med' } : null,
+    profileCapMin,
+  );
   const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0);
+  const capState = capacityState(plannedMin, capMin);
   const ratio = plannedMin / Math.max(1, capMin);
-  const capState: 'balanced' | 'close' | 'over' = ratio > 1 ? 'over' : ratio > 0.85 ? 'close' : 'balanced';
+  const energy = capacity?.energy_level ?? 'Med';
   const capLabel = capState === 'over' ? 'Over capacity' : capState === 'close' ? 'Close to capacity' : 'Balanced';
   const capChipClass = capState === 'over'
     ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]'
