@@ -81,12 +81,14 @@ export function getTasksForDate(tasks: Task[], date: string): Task[] {
 }
 
 export function getBacklog(tasks: Task[]): Task[] {
-  return tasks.filter(t => !t.scheduled_date && t.status !== 'done');
+  // Unscheduled open tasks, plus any blocked tasks (regardless of schedule)
+  // so blocked work surfaces in the backlog instead of as a "missed" nudge.
+  return tasks.filter(t => t.status !== 'done' && (!t.scheduled_date || t.status === 'blocked'));
 }
 
 export function getMissed(tasks: Task[], today: string): Task[] {
   return tasks.filter(
-    t => t.scheduled_date && t.scheduled_date < today && t.status !== 'done' && !t.is_rest
+    t => t.scheduled_date && t.scheduled_date < today && t.status !== 'done' && t.status !== 'blocked' && !t.is_rest
   );
 }
 
