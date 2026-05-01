@@ -245,6 +245,16 @@ export default function Home() {
                 {nextUp.domain && <span>{DOMAIN_LABEL[nextUp.domain as Domain]}</span>}
                 {nextUp.duration_minutes != null && <span>· {fmtMin(nextUp.duration_minutes)}</span>}
                 {nextUp.next_action && <span>· {nextUp.next_action}</span>}
+                {(nextUp.involves_others || nextUp.others_rely) && (
+                  <span className="inline-flex items-center gap-1">
+                    · <Users className="w-3 h-3" /> {nextUp.others_rely ? 'Others rely' : 'Involves others'}
+                  </span>
+                )}
+                {conflictTaskIds.has(nextUp.id) && (
+                  <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]">
+                    · <AlertTriangle className="w-3 h-3" /> overlaps rest
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -255,6 +265,20 @@ export default function Home() {
             <button onClick={() => nav(`/task/${nextUp.id}`)} className="pace-btn pace-btn-sm">Open</button>
           </div>
         </div>
+      )}
+
+      {/* Important without a deadline */}
+      {noDeadlineHighValue.length > 0 && (
+        <button
+          onClick={() => nav('/workload')}
+          className="pace-card-soft mt-3 w-full text-left flex items-center justify-between gap-2"
+        >
+          <span className="text-[13px]">
+            <span className="pace-eyebrow inline-flex items-center gap-1.5 mr-2"><span className="priority-dot must" />Important without a deadline</span>
+            {noDeadlineHighValue.length} {noDeadlineHighValue.length === 1 ? 'task' : 'tasks'} worth a slot this week.
+          </span>
+          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        </button>
       )}
 
       {/* Domain breakdown */}
