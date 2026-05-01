@@ -4,7 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { type Task, progressForStatus } from '@/lib/scheduling';
+import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
+import { todayISO, DOMAIN_COLOR_VAR, type Domain, fmtMin } from '@/lib/pace';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
@@ -13,11 +15,26 @@ export default function Focus() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const loc = useLocation() as any;
-  const initialMinutes: number = loc.state?.minutes ?? 25;
   const taskIdHint: string | undefined = loc.state?.taskId;
 
   const { data: allTasks = [] } = useTasks();
   const { update } = useTaskMutations();
+
+  // Pick the focus task: explicit hint, else null so the user picks from a
+  // list. (Auto-picking the first open task hid the choice from users.)
+  const task = useMemo<Task | null>(() => {
+    const candidates = allTasks.filter(t => t.status !== 'done' && !t.is_rest);
+    if (taskIdHint) return candidates.find(t => t.id === taskIdHint) ?? null;
+    return null;
+  }, [allTasks, taskIdHint]);
+
+  // Default session length: if the chosen task has a duration under 2h, use
+  // it; otherwise (or with no task) fall back to caller's hint or 25m.
+  const taskDefault = task?.duration_minutes && task.duration_minutes > 0 && task.duration_minutes < 120
+    ? task.duration_minutes
+    : null;
+  const initialMinutes: number = taskDefault ?? loc.state?.minutes ?? 25;
+
   const [planned, setPlanned] = useState(initialMinutes);
   const [secondsLeft, setSecondsLeft] = useState(initialMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -29,17 +46,55 @@ export default function Focus() {
   // True while a 5-minute recovery break countdown is running.
   // The visual ring + timer are reused; we just don't show focus controls.
   const [breakMode, setBreakMode] = useState(false);
+  // Confirmation gate for switching tasks while a session is running.
+  const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
-  // Pick the focus task: explicit hint, else first open non-rest task by useTasks ordering.
-  const task = useMemo<Task | null>(() => {
-    const candidates = allTasks.filter(t => t.status !== 'done' && !t.is_rest);
-    if (taskIdHint) return candidates.find(t => t.id === taskIdHint) ?? null;
-    return candidates[0] ?? null;
-  }, [allTasks, taskIdHint]);
+  // When a new task is chosen (e.g. via the picker) and nothing is running yet,
+  // sync the planned length to that task's duration if it's a sensible focus block.
+  useEffect(() => {
+    if (running) return;
+    if (sessionId) return;
+    if (taskDefault && planned !== taskDefault) {
+      setPlanned(taskDefault);
+      setSecondsLeft(taskDefault * 60);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task?.id]);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+
+  // Today's open tasks for the in-page picker.
+  const todayOpen = useMemo(
+    () => getTodayTasks(allTasks, todayISO()).filter(t => t.status !== 'done'),
+    [allTasks],
+  );
+
+  // True when the timer is at its initial state and no session has started.
+  const isIdle = !running && !sessionId && secondsLeft === planned * 60 && !overrunPrompt && !completionCheck && !breakMode;
+
+  function chooseTask(id: string) {
+    if (sessionId || running) {
+      // A session is in flight — confirm before swapping subjects.
+      setPendingSwitchId(id);
+      return;
+    }
+    nav('/focus', { state: { taskId: id }, replace: true });
+  }
+
+  function confirmSwitch() {
+    const id = pendingSwitchId;
+    setPendingSwitchId(null);
+    if (!id) return;
+    // Drop the running session locally — outcomes are only persisted on
+    // explicit complete; a quick switch is treated as a discard.
+    setRunning(false);
+    setSessionId(null);
+    setSecondsLeft(planned * 60);
+    nav('/focus', { state: { taskId: id }, replace: true });
+  }
+
 
   useEffect(() => {
     if (!running) return;
@@ -213,6 +268,43 @@ export default function Focus() {
         </div>
       </div>
 
+      {/* Task picker — shown while idle so the user can switch what they're
+          focusing on without leaving Focus. While a session is running we
+          gate switches behind a confirm dialog (confirmSwitch). */}
+      {(isIdle || !task) && (
+        <div className="pace-card mb-3">
+          <div className="flex items-center justify-between">
+            <div className="pace-eyebrow">{task ? 'Switch task' : 'Pick a task'}</div>
+            <span className="pace-meta">{todayOpen.length} today</span>
+          </div>
+          {todayOpen.length === 0 ? (
+            <div className="mt-2 text-[13px] text-muted-foreground">
+              Nothing open on today's plan. Add an intention from Home.
+            </div>
+          ) : (
+            <ul className="mt-2 max-h-48 overflow-y-auto space-y-1 -mx-1 px-1">
+              {todayOpen.map(t => {
+                const dom = (t.domain || 'personal') as Domain;
+                const active = task?.id === t.id;
+                return (
+                  <li key={t.id}>
+                    <button
+                      onClick={() => chooseTask(t.id)}
+                      className={`w-full text-left flex items-center gap-2 px-2 py-2 rounded-xl border transition ${active ? 'border-primary/50 bg-primary/5' : 'border-border/40 hover:bg-muted/40'}`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
+                      <span className="text-[14px] truncate flex-1 min-w-0">{t.title}</span>
+                      {t.duration_minutes != null && (
+                        <span className="text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
       {interrupted && running && (
         <div className="pace-alert mb-3 animate-fade-in">
           <div className="text-[14px] font-medium">Welcome back.</div>
@@ -291,20 +383,48 @@ export default function Focus() {
         </div>
       )}
 
-      {completionCheck && (
-        <div className="pace-card animate-fade-in space-y-3">
-          <div>
-            <div className="pace-section">What happened with this task?</div>
-            <div className="text-[13px] text-muted-foreground mt-1">No wrong answer.</div>
+      {completionCheck && (() => {
+        // actualMinutes = planned − remaining, rounded up so a 24:30 session
+        // reads as "25m" not "24m". Caps at planned (overrun is its own flow).
+        const actualMinutes = Math.max(0, Math.min(planned, Math.ceil((planned * 60 - secondsLeft) / 60)));
+        return (
+          <div className="pace-card animate-fade-in space-y-3">
+            <div>
+              <div className="pace-section">
+                {task
+                  ? `You focused for ${actualMinutes}m on ${task.title}. What's the status now?`
+                  : `You focused for ${actualMinutes}m. What's the status now?`}
+              </div>
+              <div className="text-[13px] text-muted-foreground mt-1">
+                This updates the task, not just the session.
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => complete('completed')} className="pace-btn-primary">Task completed</button>
+              <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
+              <button onClick={() => complete('replan')} className="pace-btn">Should be replanned</button>
+              <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => complete('completed')} className="pace-btn-primary">Completed</button>
-            <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
-            <button onClick={() => complete('replan')} className="pace-btn">Should be replanned</button>
-            <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
+        );
+      })()}
+
+      {/* Switch-task confirmation when a session is in flight. */}
+      <Dialog open={!!pendingSwitchId} onOpenChange={(o) => { if (!o) setPendingSwitchId(null); }}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Switch task?</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              Your current session will end without being saved. The new task starts fresh.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button onClick={() => setPendingSwitchId(null)} className="pace-btn">Keep going</button>
+            <button onClick={confirmSwitch} className="pace-btn-primary">Switch</button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
+
     </AppShell>
   );
 }

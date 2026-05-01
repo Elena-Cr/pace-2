@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -38,10 +38,31 @@ export default function Home() {
   const nav = useNavigate();
   const { data: tasks = [] } = useTasks();
   const { update } = useTaskMutations();
-  const [filter, setFilter] = useState<'all' | Status>('all');
+  // Persist the active task filter in the URL so back-navigation from
+  // TaskDetail restores the same view. Only non-default filters are stored.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialFilter = (() => {
+    const f = searchParams.get('filter');
+    return (f === 'in_progress' || f === 'blocked' || f === 'nearly_done') ? (f as Status) : 'all';
+  })();
+  const [filter, setFilter] = useState<'all' | Status>(initialFilter);
+  // Inline-expand state for stat cards (D.2 / D.3).
+  const [showDone, setShowDone] = useState(false);
+  const [showTomorrow, setShowTomorrow] = useState(false);
   const todayStr = todayISO();
   const { data: capacity = null } = useDailyCapacity(todayStr);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
+
+  // Sync filter ↔ URL.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (filter === 'all') next.delete('filter');
+    else next.set('filter', filter);
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
   useEffect(() => {
@@ -68,7 +89,8 @@ export default function Home() {
   }, []);
   const missed = useMemo(() => getMissed(tasks, todayStr), [tasks, todayStr]);
   const doneToday = useMemo(() => getDoneOnDate(tasks, todayStr), [tasks, todayStr]);
-  const tomorrowCount = useMemo(() => getTomorrowTasks(tasks, tomorrowStr).length, [tasks, tomorrowStr]);
+  const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
+  const tomorrowCount = tomorrowTasks.length;
 
   async function nudge(id: string, kind: 'start' | 'reschedule' | 'block') {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
@@ -211,9 +233,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick stats */}
+      {/* Quick stats — Done & Tomorrow expand inline; Focus jumps to /focus. */}
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <button onClick={() => nav('/calendar')} className="pace-card !p-3 text-left">
+        <button
+          onClick={() => { setShowDone(s => !s); if (!showDone) setShowTomorrow(false); }}
+          aria-expanded={showDone}
+          className={`pace-card !p-3 text-left transition ${showDone ? 'ring-1 ring-primary/40' : ''}`}>
           <div className="pace-eyebrow">Done</div>
           <div className="text-[20px] font-semibold mt-0.5">{doneToday.length}</div>
           <div className="pace-meta">{completionPct}% of today</div>
@@ -223,12 +248,91 @@ export default function Home() {
           <div className="text-[20px] font-semibold mt-0.5">{focusToday.count}</div>
           <div className="pace-meta">{fmtMin(focusToday.minutes) || '0m'}</div>
         </button>
-        <button onClick={() => nav('/calendar')} className="pace-card !p-3 text-left">
+        <button
+          onClick={() => { setShowTomorrow(s => !s); if (!showTomorrow) setShowDone(false); }}
+          aria-expanded={showTomorrow}
+          className={`pace-card !p-3 text-left transition ${showTomorrow ? 'ring-1 ring-primary/40' : ''}`}>
           <div className="pace-eyebrow">Tomorrow</div>
           <div className="text-[20px] font-semibold mt-0.5">{tomorrowCount}</div>
           <div className="pace-meta">{tomorrowCount === 1 ? 'item' : 'items'}</div>
         </button>
       </div>
+
+      {/* Inline expansion: today's completed tasks. */}
+      {showDone && (
+        <div className="mt-3 pace-card animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="pace-eyebrow">Done today</div>
+            <button onClick={() => setShowDone(false)} className="text-[12px] text-muted-foreground">Hide</button>
+          </div>
+          {doneToday.length === 0 ? (
+            <div className="mt-2 text-[13px] text-muted-foreground">Nothing finished yet today.</div>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {doneToday.map(t => {
+                const dom = (t.domain || 'personal') as Domain;
+                const completedAt = t.completed_at
+                  ? new Date(t.completed_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                  : null;
+                return (
+                  <li key={t.id}>
+                    <button
+                      onClick={() => nav(`/task/${t.id}`)}
+                      className="w-full text-left flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-muted/40">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
+                      <span className="text-[14px] line-through text-muted-foreground truncate">{t.title}</span>
+                      {completedAt && <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{completedAt}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Inline expansion: tomorrow's planned tasks, sorted by priority. */}
+      {showTomorrow && (
+        <div className="mt-3 pace-card animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="pace-eyebrow">Tomorrow</div>
+            <button onClick={() => setShowTomorrow(false)} className="text-[12px] text-muted-foreground">Hide</button>
+          </div>
+          {tomorrowTasks.length === 0 ? (
+            <div className="mt-2 text-[13px] text-muted-foreground">Nothing planned for tomorrow yet.</div>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {[...tomorrowTasks]
+                .sort((a, b) => {
+                  const ap = a.priority === 'must' ? 0 : a.priority === 'should' ? 1 : 2;
+                  const bp = b.priority === 'must' ? 0 : b.priority === 'should' ? 1 : 2;
+                  return ap - bp;
+                })
+                .map(t => {
+                  const dom = (t.domain || 'personal') as Domain;
+                  return (
+                    <li key={t.id}>
+                      <button
+                        onClick={() => nav(`/task/${t.id}`)}
+                        className="w-full text-left flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-muted/40">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
+                        <span className="text-[14px] truncate">{t.title}</span>
+                        {t.duration_minutes != null && (
+                          <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
+          <button
+            onClick={() => nav(`/calendar?view=day&date=${tomorrowStr}`)}
+            className="mt-3 text-[12px] font-medium text-primary inline-flex items-center gap-1">
+            View in calendar <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* Up next */}
       {nextUp && (
@@ -298,10 +402,31 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick actions */}
+      {/* Quick actions — taller tiles with subtitles so they read as
+          distinct primary actions rather than identical text buttons. */}
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <button onClick={() => nav('/capture')} className="pace-btn-primary"><Plus className="w-4 h-4" /> New intention</button>
-        <button onClick={() => nav('/calendar')} className="pace-btn"><CalIcon className="w-4 h-4" /> Calendar</button>
+        <button
+          onClick={() => nav('/capture')}
+          className="rounded-2xl px-4 py-3.5 bg-primary text-primary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
+            <Plus className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">New intention</span>
+            <span className="block text-[11px] opacity-80 leading-tight mt-0.5">Quick capture</span>
+          </span>
+        </button>
+        <button
+          onClick={() => nav('/calendar')}
+          className="rounded-2xl px-4 py-3.5 bg-secondary text-secondary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
+            <CalIcon className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">Calendar</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Week & month</span>
+          </span>
+        </button>
       </div>
 
       {/* Needs attention */}
