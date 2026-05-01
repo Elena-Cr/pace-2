@@ -15,6 +15,7 @@ import TaskDetail from "./pages/TaskDetail";
 import Onboarding from "./pages/Onboarding";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import RequireAuth from "./components/RequireAuth";
 
 const queryClient = new QueryClient();
 
