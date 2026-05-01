@@ -259,7 +259,13 @@ export default function Plan() {
                 {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
                 {t.effort_level ? ` · ${t.effort_level}` : ''}
                 {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
+                {(t.reschedule_count ?? 0) >= 2 && ` · Rescheduled ${t.reschedule_count}×`}
               </div>
+              {(t.involves_others || t.others_rely) && (
+                <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Users className="w-3 h-3" />{t.others_rely ? 'Others rely' : 'Involves others'}
+                </div>
+              )}
             </button>
             <div className="mt-3 flex gap-2">
               <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">
