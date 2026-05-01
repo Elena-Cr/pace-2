@@ -5,7 +5,7 @@ import TaskCard from '@/components/TaskCard';
 import { useTasks } from '@/hooks/useTasks';
 import { todayISO, DOMAIN_LABEL, type Domain } from '@/lib/pace';
 import { getBacklog, getMissed, type Task } from '@/lib/scheduling';
-import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock } from 'lucide-react';
+import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer } from 'lucide-react';
 
 type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'scheduled' | 'done';
 type DomainFilter = 'all' | Domain | 'none';
@@ -63,11 +63,20 @@ export default function Tasks() {
 
   return (
     <AppShell>
-      <header className="space-y-1 mb-5">
-        <h1 className="text-3xl font-semibold tracking-tight">Tasks</h1>
-        <p className="text-muted-foreground text-[15px]">
-          Your full backlog — including unscheduled and missed work.
-        </p>
+      <header className="flex items-start justify-between gap-3 mb-5">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-semibold tracking-tight">Tasks</h1>
+          <p className="text-muted-foreground text-[15px]">
+            Your full backlog — including unscheduled and missed work.
+          </p>
+        </div>
+        <button
+          onClick={() => nav('/focus')}
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-[0_4px_14px_hsl(var(--primary)/0.3)] transition active:scale-95"
+        >
+          <Timer className="w-4 h-4" />
+          Start Focus
+        </button>
       </header>
 
       <section aria-label="Task group" className="mb-3">
