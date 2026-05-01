@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +14,7 @@ const DEFAULT_BLOCKS: TimeBlock[] = [
 ];
 
 export default function Onboarding() {
-  const { user, profile: authProfile } = useAuth();
+  const { user, loading: authLoading, profile: authProfile } = useAuth();
   const { profile, loading, update } = useUserProfile();
   const nav = useNavigate();
   const [step, setStep] = useState(0);
@@ -24,9 +24,16 @@ export default function Onboarding() {
   const [blocks, setBlocks] = useState<TimeBlock[]>(profile?.default_time_blocks ?? DEFAULT_BLOCKS);
   const [busy, setBusy] = useState(false);
 
-  if (!user) { nav('/auth', { replace: true }); return null; }
-  if (loading) return null;
-  if (profile?.onboarding_completed) { nav('/', { replace: true }); return null; }
+  // Side-effect navigation runs in an effect, not the render body, so we never
+  // briefly render Onboarding for an already-onboarded user (or vice versa).
+  useEffect(() => {
+    if (authLoading || loading) return;
+    if (!user) { nav('/auth', { replace: true }); return; }
+    if (profile?.onboarding_completed) { nav('/', { replace: true }); return; }
+  }, [authLoading, loading, user, profile, nav]);
+
+  // Render nothing until auth + profile have resolved (prevents flicker).
+  if (authLoading || loading || !user || profile?.onboarding_completed) return null;
 
   function setBlock(i: number, patch: Partial<TimeBlock>) {
     setBlocks(b => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
