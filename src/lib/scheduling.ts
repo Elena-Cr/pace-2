@@ -20,7 +20,6 @@ export type Task = {
   duration_minutes: number | null;        // canonical unit
   start_time: string | null;              // HH:MM:SS
   end_time: string | null;
-  parent_task_id: string | null;
   is_rest: boolean;
   effort_level: string | null;
   energy: string | null;
