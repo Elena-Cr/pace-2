@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
+import { rowsToTasks, rowToTask } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
@@ -86,8 +88,8 @@ export default function CalendarView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
   const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
-  const [monthTasks, setMonthTasks] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [monthTasks, setMonthTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [capacities, setCapacities] = useState<Record<string, { available_hours: number; energy_level: string }>>({});
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
   const [showCompleted, setShowCompleted] = useState(false);
@@ -132,7 +134,7 @@ export default function CalendarView() {
     const endIso = toISODate(end);
     supabase.from('tasks').select('*')
       .gte('scheduled_date', start).lt('scheduled_date', endIso)
-      .then(({ data }) => setTasks(data ?? []));
+      .then(({ data }) => setTasks(rowsToTasks(data)));
     supabase.from('daily_capacity').select('*').gte('date', start).lt('date', endIso)
       .then(({ data }) => {
         const map: Record<string, any> = {};
@@ -156,7 +158,7 @@ export default function CalendarView() {
     const end = new Date(monthGrid[41]); end.setDate(end.getDate() + 1);
     supabase.from('tasks').select('*')
       .gte('scheduled_date', start).lt('scheduled_date', toISODate(end))
-      .then(({ data }) => setMonthTasks(data ?? []));
+      .then(({ data }) => setMonthTasks(rowsToTasks(data)));
   }, [user, monthAnchor, view]);
 
   // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day
@@ -680,7 +682,7 @@ export default function CalendarView() {
       scheduled_date: date, duration_minutes: 60,
     }).select().single();
     if (error) { toast.error(error.message); return; }
-    setTasks(arr => [...arr, data]);
+    setTasks(arr => [...arr, rowToTask(data)]);
     toast.success('Added to your plan.');
   }
 }

@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
 import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
+import { rowsToTasks } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
@@ -11,7 +13,7 @@ const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
 export default function Replan() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const [carry, setCarry] = useState<any[]>([]);
+  const [carry, setCarry] = useState<Task[]>([]);
   const [mood, setMood] = useState<Mood | null>(null);
   const [reasonByTask, setReasonByTask] = useState<Record<string, ReplanReason>>({});
 
@@ -23,7 +25,7 @@ export default function Replan() {
       .neq('status', 'done')
       .lt('scheduled_date', todayISO())
       .order('reschedule_count', { ascending: false })
-      .then(({ data }) => setCarry(data ?? []));
+      .then(({ data }) => setCarry(rowsToTasks(data)));
   }, [user]);
 
   async function action(id: string, kind: 'start' | 'reschedule' | 'remove' | 'tiny' | 'block') {

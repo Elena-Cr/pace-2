@@ -1,12 +1,6 @@
-import { Priority, Domain, Status, DOMAIN_LABEL, STATUS_LABEL, formatDeadline, fmtMin } from '@/lib/pace';
+import { DOMAIN_LABEL, STATUS_LABEL, formatDeadline, fmtMin } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
 import { ArrowRight, Users } from 'lucide-react';
-
-type Task = {
-  id: string; title: string; domain: Domain | null; priority: Priority;
-  status: Status; deadline: string | null; next_action: string | null;
-  progress: number; reschedule_count: number; involves_others: boolean;
-  others_rely?: boolean; duration_minutes?: number | null;
-};
 
 export default function TaskCard({ task, onOpen }: { task: Task; onOpen?: (t: Task) => void }) {
   return (

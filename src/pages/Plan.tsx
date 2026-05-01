@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate } from '@/lib/pace';
+import type { Task } from '@/lib/scheduling';
+import { rowsToTasks } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
 
@@ -20,8 +22,8 @@ export default function Plan() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [backlog, setBacklog] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [backlog, setBacklog] = useState<Task[]>([]);
   const [capacityHours, setCapacityHours] = useState(5.5);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
@@ -43,13 +45,13 @@ export default function Plan() {
       .eq('scheduled_date', todayISO())
       .neq('status', 'done').eq('is_rest', false)
       .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setTasks(data ?? []));
+      .then(({ data }) => setTasks(rowsToTasks(data)));
     // Backlog: unscheduled, open
     supabase.from('tasks').select('*')
       .is('scheduled_date', null).neq('status', 'done').eq('is_rest', false)
       .order('priority', { ascending: true })
       .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setBacklog(data ?? []));
+      .then(({ data }) => setBacklog(rowsToTasks(data)));
     supabase.from('daily_capacity').select('*').eq('date', todayISO()).maybeSingle()
       .then(({ data }) => {
         if (data) {
