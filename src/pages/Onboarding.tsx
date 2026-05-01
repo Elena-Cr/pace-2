@@ -195,6 +195,13 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-md px-5 pt-10 pb-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 2.5rem)' }}>
+        {step === 0 && (
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="text-[40px] font-bold tracking-tight text-primary leading-none">Pace</div>
+            <p className="mt-2 text-[14px] text-muted-foreground">A calm planner built for students.</p>
+          </div>
+        )}
+
         <div className="flex gap-1 mb-6">
           {steps.map((_, i) => (
             <div key={i} className={`h-1 flex-1 rounded-full transition ${i <= step ? 'bg-primary' : 'bg-muted'}`} />
