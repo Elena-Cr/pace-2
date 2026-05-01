@@ -6,7 +6,10 @@ export type TimeBlock = {
   label: string;
   start: string;       // 'HH:MM'
   end: string;         // 'HH:MM'
-  kind: 'sleep' | 'meal' | 'recovery';
+  kind: 'sleep' | 'meal' | 'recovery' | 'custom';
+  // Optional weekday filter. 0 = Mon … 6 = Sun. Absent or empty = applies
+  // every day (backwards compatible with existing rows that lack this field).
+  days?: number[];
 };
 
 export type UserProfile = {

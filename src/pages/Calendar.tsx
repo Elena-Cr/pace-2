@@ -205,26 +205,38 @@ export default function CalendarView() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // Build the per-day fixed blocks from the user's preferences (sleep/meal/recovery).
-  // If a sleep block crosses midnight (e.g. 23:30 → 07:30), split it visually
-  // into "evening" + "morning" segments so it renders correctly on a 0–24h grid.
-  const fixedBlocks: Array<Omit<CalEvent, 'id' | 'day'>> = useMemo(() => {
-    const tb: TimeBlock[] = userProfile?.default_time_blocks ?? [];
-    if (!tb.length) return FIXED_BLOCKS; // sane defaults until profile loads
-    const out: Array<Omit<CalEvent, 'id' | 'day'>> = [];
-    tb.forEach(b => {
-      const s = timeStrToMin(b.start);
-      const e = timeStrToMin(b.end);
-      const base = { title: b.label, domain: 'rest' as const, kind: b.kind as CalKind, fixed: true };
-      if (e > s) {
-        out.push({ ...base, startMin: s, endMin: e });
-      } else {
-        // wraps midnight
-        out.push({ ...base, startMin: s, endMin: 24 * 60 });
-        if (e > 0) out.push({ ...base, startMin: 0, endMin: e });
-      }
-    });
-    return out;
+  // Build the per-day fixed blocks from the user's preferences (sleep/meal/
+  // recovery/custom). Each block can be filtered to specific weekdays via
+  // its optional `days` field (0=Mon..6=Sun) — e.g. a later sleep on
+  // weekends. If `days` is absent or empty, the block applies every day.
+  // If a sleep block crosses midnight (e.g. 23:30 → 07:30), split it
+  // visually into "evening" + "morning" segments so it renders correctly
+  // on a 0–24h grid.
+  const fixedBlocksFor = useMemo(() => {
+    const tb: TimeBlock[] | null = userProfile?.default_time_blocks ?? null;
+    return (date: Date): Array<Omit<CalEvent, 'id' | 'day'>> => {
+      // Mon=0..Sun=6
+      const dow = (date.getDay() + 6) % 7;
+      const source: Array<TimeBlock | { label: string; start: string; end: string; kind: CalKind; days?: number[] }> =
+        tb && tb.length ? tb : (FIXED_BLOCKS.map(b => ({ label: b.title, start: '', end: '', kind: b.kind, days: undefined })) as any);
+      // If we fell back to FIXED_BLOCKS, return them unchanged (no day filter).
+      if (!tb || !tb.length) return FIXED_BLOCKS;
+      const out: Array<Omit<CalEvent, 'id' | 'day'>> = [];
+      tb.forEach(b => {
+        if (b.days && b.days.length > 0 && !b.days.includes(dow)) return;
+        const s = timeStrToMin(b.start);
+        const e = timeStrToMin(b.end);
+        const base = { title: b.label, domain: 'rest' as const, kind: b.kind as CalKind, fixed: true };
+        if (e > s) {
+          out.push({ ...base, startMin: s, endMin: e });
+        } else {
+          // wraps midnight
+          out.push({ ...base, startMin: s, endMin: 24 * 60 });
+          if (e > 0) out.push({ ...base, startMin: 0, endMin: e });
+        }
+      });
+      return out;
+    };
   }, [userProfile]);
 
 
@@ -301,7 +313,7 @@ export default function CalendarView() {
   const events: CalEvent[] = useMemo(() => {
     const list: CalEvent[] = [];
     days.forEach((d, di) => {
-      fixedBlocks.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
+      fixedBlocksFor(d).forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
     });
     const taskById = new Map(tasks.map(t => [t.id, t] as const));
     const dayByDate = new Map(days.map((d, i) => [toISODate(d), i] as const));
@@ -330,7 +342,7 @@ export default function CalendarView() {
       });
     });
     return list;
-  }, [tasks, days, fixedBlocks]);
+  }, [tasks, days, fixedBlocksFor]);
 
   // Compute per-day workload + conflicts
   const daySummary = days.map((d, di) => {

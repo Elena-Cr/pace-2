@@ -46,6 +46,11 @@ export default function Plan() {
   const [capacityMin, setCapacityMin] = useState<number | null>(null);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
+  // Optional per-period overrides; null = inherit the daily energyLevel.
+  const [morningEnergy, setMorningEnergy] = useState<string | null>(null);
+  const [afternoonEnergy, setAfternoonEnergy] = useState<string | null>(null);
+  const [eveningEnergy, setEveningEnergy] = useState<string | null>(null);
+  const [showPeriodEnergy, setShowPeriodEnergy] = useState(false);
   const hasCapacityRow = !!capacityRow;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
@@ -56,6 +61,13 @@ export default function Plan() {
       setCapacityMin(Math.round(Number(capacityRow.available_hours) * 60));
       setEnergyLevel(capacityRow.energy_level);
       setRecoveryNotes(capacityRow.recovery_notes ?? '');
+      setMorningEnergy(capacityRow.morning_energy ?? null);
+      setAfternoonEnergy(capacityRow.afternoon_energy ?? null);
+      setEveningEnergy(capacityRow.evening_energy ?? null);
+      // Auto-expand the period section if the user has set any override.
+      if (capacityRow.morning_energy || capacityRow.afternoon_energy || capacityRow.evening_energy) {
+        setShowPeriodEnergy(true);
+      }
     } else if (userProfile) {
       setCapacityMin(userProfile.daily_capacity_minutes);
     }
@@ -74,13 +86,23 @@ export default function Plan() {
   }
 
 
-  async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
+  async function saveCapacity(partial: Partial<{
+    available_hours: number;
+    energy_level: string;
+    recovery_notes: string | null;
+    morning_energy: string | null;
+    afternoon_energy: string | null;
+    evening_energy: string | null;
+  }>) {
     if (!user || capacityMin == null) return;
     await upsertCapacity.mutateAsync({
       date: today,
       available_hours: capacityMin / 60,
       energy_level: energyLevel,
       recovery_notes: recoveryNotes || null,
+      morning_energy: morningEnergy,
+      afternoon_energy: afternoonEnergy,
+      evening_energy: eveningEnergy,
       ...partial,
     });
   }
@@ -104,12 +126,33 @@ export default function Plan() {
   const planConflictTaskIds = useMemo(() => {
     const taskEvents = getScheduledEvents(tasks).filter(e => e.date === today);
     const blocks = (userProfile?.default_time_blocks ?? []).map(b => ({
-      label: b.label, start: b.start, end: b.end, kind: b.kind as any,
+      label: b.label, start: b.start, end: b.end, kind: b.kind as any, days: b.days,
     }));
     const blockEvents = expandTimeBlocks(blocks, today);
     const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
     return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
   }, [tasks, userProfile, today]);
+
+  // Per-task energy hint: if a task has an `energy` value and the period
+  // override at its scheduled start_time matches, surface a soft hint.
+  // Informational only — no scheduling change.
+  const energyHintByTaskId = useMemo(() => {
+    const events = getScheduledEvents(tasks).filter(e => e.date === today && e.taskId);
+    const map = new Map<string, string>();
+    events.forEach(e => {
+      const t = tasks.find(x => x.id === e.taskId);
+      if (!t || !t.energy) return;
+      const h = Math.floor(e.startMin / 60);
+      const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+      const periodEnergy = period === 'morning' ? morningEnergy
+        : period === 'afternoon' ? afternoonEnergy
+        : eveningEnergy;
+      if (periodEnergy && periodEnergy === t.energy) {
+        map.set(t.id, `${t.energy} energy — good fit for ${period}`);
+      }
+    });
+    return map;
+  }, [tasks, today, morningEnergy, afternoonEnergy, eveningEnergy]);
 
 
   async function move(taskId: string) {
@@ -156,6 +199,45 @@ export default function Plan() {
                 className={energyLevel === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
             ))}
           </div>
+        </div>
+
+        {/* Optional per-period overrides on top of the daily energy. */}
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowPeriodEnergy(s => !s)}
+            aria-expanded={showPeriodEnergy}
+            className="text-[12px] font-medium text-primary inline-flex items-center gap-1">
+            {showPeriodEnergy ? '− Hide' : '+ Show'} energy by time of day
+          </button>
+          {showPeriodEnergy && (
+            <div className="mt-2 space-y-2">
+              {([
+                ['Morning', morningEnergy, setMorningEnergy, 'morning_energy'],
+                ['Afternoon', afternoonEnergy, setAfternoonEnergy, 'afternoon_energy'],
+                ['Evening', eveningEnergy, setEveningEnergy, 'evening_energy'],
+              ] as const).map(([label, value, setter, key]) => (
+                <div key={label} className="flex items-center gap-2">
+                  <span className="text-[12px] text-muted-foreground w-20 shrink-0">{label}</span>
+                  <div className="flex gap-1 flex-1">
+                    {ENERGIES.map(e => (
+                      <button
+                        key={e}
+                        onClick={() => {
+                          const next = value === e ? null : e;
+                          setter(next);
+                          saveCapacity({ [key]: next } as any);
+                        }}
+                        className={`flex-1 px-2 py-1 rounded-full text-[12px] font-medium ${value === e ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <p className="pace-meta">Optional. Leave empty to use the daily level.</p>
+            </div>
+          )}
         </div>
         <div className="mt-3">
           <label className="pace-field-label">Recovery needs (optional)</label>
@@ -217,6 +299,7 @@ export default function Plan() {
         {tasks.length === 0 && <div className="text-sm text-muted-foreground">Nothing scheduled. Capture something or rest — both count.</div>}
         {tasks.map(t => {
           const conflict = planConflictTaskIds.has(t.id);
+          const energyHint = energyHintByTaskId.get(t.id);
           return (
             <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -233,6 +316,9 @@ export default function Plan() {
                     <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]">
                       · <AlertTriangle className="w-3 h-3" /> overlaps rest
                     </span>
+                  )}
+                  {energyHint && (
+                    <span className="text-[hsl(var(--success))]">· {energyHint}</span>
                   )}
                 </div>
               </div>

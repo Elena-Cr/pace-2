@@ -16,33 +16,42 @@ export type Database = {
     Tables: {
       daily_capacity: {
         Row: {
+          afternoon_energy: string | null
           available_hours: number
           created_at: string
           date: string
           energy_level: string
+          evening_energy: string | null
           id: string
+          morning_energy: string | null
           recovery_notes: string | null
           recovery_rating: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          afternoon_energy?: string | null
           available_hours?: number
           created_at?: string
           date: string
           energy_level?: string
+          evening_energy?: string | null
           id?: string
+          morning_energy?: string | null
           recovery_notes?: string | null
           recovery_rating?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          afternoon_energy?: string | null
           available_hours?: number
           created_at?: string
           date?: string
           energy_level?: string
+          evening_energy?: string | null
           id?: string
+          morning_energy?: string | null
           recovery_notes?: string | null
           recovery_rating?: number | null
           updated_at?: string

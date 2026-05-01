@@ -232,14 +232,32 @@ export function getScheduledEvents(tasks: Task[]): CalEvent[] {
   return out;
 }
 
-// ---------- Default time blocks (sleep/meal/recovery) ----------
-export type DefaultBlock = { label: string; start: string; end: string; kind: CalEventKind };
+// ---------- Default time blocks (sleep/meal/recovery/custom) ----------
+// `days` is an optional 0-indexed Monday-start weekday filter. Absent or
+// empty means "every day" (backwards compatible).
+export type DefaultBlock = {
+  label: string;
+  start: string;
+  end: string;
+  kind: CalEventKind;
+  days?: number[];
+};
+
+// Returns the 0=Mon..6=Sun index for an ISO YYYY-MM-DD date string.
+export function monStartDayOfWeek(date: string): number {
+  const [y, m, d] = date.split('-').map(Number);
+  const js = new Date(y, (m || 1) - 1, d || 1).getDay();
+  return (js + 6) % 7;
+}
 
 export function expandTimeBlocks(blocks: DefaultBlock[], date: string): CalEvent[] {
-  return blocks.map((b, i) => {
+  const dow = monStartDayOfWeek(date);
+  const out: CalEvent[] = [];
+  blocks.forEach((b, i) => {
+    if (b.days && b.days.length > 0 && !b.days.includes(dow)) return;
     const startMin = timeStringToMin(b.start) ?? 0;
     const endMin = timeStringToMin(b.end) ?? startMin + 30;
-    return {
+    out.push({
       id: `block-${date}-${i}`,
       title: b.label,
       kind: b.kind,
@@ -248,8 +266,9 @@ export function expandTimeBlocks(blocks: DefaultBlock[], date: string): CalEvent
       endMin: endMin <= startMin ? 24 * 60 : endMin,
       date,
       fixed: true,
-    };
+    });
   });
+  return out;
 }
 
 // ---------- Status → progress mapping ----------
