@@ -149,6 +149,11 @@ export default function Focus() {
       setSessionId(data.id);
     }
     setRunning(true);
+    if (dnd) {
+      toast('Tip: enable Do Not Disturb on your device for a cleaner session.', {
+        action: { label: 'Got it', onClick: () => {} },
+      });
+    }
   }
 
   async function pause() {
