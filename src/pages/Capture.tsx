@@ -26,6 +26,7 @@ export default function Capture() {
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
   const [deadline, setDeadline] = useState('');
+  const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog'>('backlog');
   const [estimate, setEstimate] = useState<number | ''>('');
   const [energy, setEnergy] = useState<string | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
