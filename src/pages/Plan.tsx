@@ -179,6 +179,45 @@ export default function Plan() {
             ))}
           </div>
         </div>
+
+        {/* Optional per-period overrides on top of the daily energy. */}
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowPeriodEnergy(s => !s)}
+            aria-expanded={showPeriodEnergy}
+            className="text-[12px] font-medium text-primary inline-flex items-center gap-1">
+            {showPeriodEnergy ? '− Hide' : '+ Show'} energy by time of day
+          </button>
+          {showPeriodEnergy && (
+            <div className="mt-2 space-y-2">
+              {([
+                ['Morning', morningEnergy, setMorningEnergy, 'morning_energy'],
+                ['Afternoon', afternoonEnergy, setAfternoonEnergy, 'afternoon_energy'],
+                ['Evening', eveningEnergy, setEveningEnergy, 'evening_energy'],
+              ] as const).map(([label, value, setter, key]) => (
+                <div key={label} className="flex items-center gap-2">
+                  <span className="text-[12px] text-muted-foreground w-20 shrink-0">{label}</span>
+                  <div className="flex gap-1 flex-1">
+                    {ENERGIES.map(e => (
+                      <button
+                        key={e}
+                        onClick={() => {
+                          const next = value === e ? null : e;
+                          setter(next);
+                          saveCapacity({ [key]: next } as any);
+                        }}
+                        className={`flex-1 px-2 py-1 rounded-full text-[12px] font-medium ${value === e ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <p className="pace-meta">Optional. Leave empty to use the daily level.</p>
+            </div>
+          )}
+        </div>
         <div className="mt-3">
           <label className="pace-field-label">Recovery needs (optional)</label>
           <input className="pace-field" value={recoveryNotes}
