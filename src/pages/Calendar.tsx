@@ -342,7 +342,7 @@ export default function CalendarView() {
       });
     });
     return list;
-  }, [tasks, days, fixedBlocks]);
+  }, [tasks, days, fixedBlocksFor]);
 
   // Compute per-day workload + conflicts
   const daySummary = days.map((d, di) => {
