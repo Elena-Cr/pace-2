@@ -195,7 +195,8 @@ export default function CalendarView() {
   const daySummary = days.map((d, di) => {
     const date = toISODate(d);
     const cap = capacities[date];
-    const availH = cap ? Number(cap.available_hours) : 5.5;
+    const profileCapH = (userProfile?.daily_capacity_minutes ?? 330) / 60;
+    const availH = cap ? Number(cap.available_hours) : profileCapH;
     const energy = cap?.energy_level ?? 'Med';
     const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
     const capMin = Math.round(availH * 60 * mult);
