@@ -54,13 +54,11 @@ export default function Capture() {
 
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
-    // Only fill fields the user hasn't set yet, so we never overwrite intent
     if (!domain && s.domain) setDomain(s.domain);
     if (priority === 'should' && s.priority) setPriority(s.priority);
-    if (estimate === '' && s.estimated_minutes) setEstimate(s.estimated_minutes);
+    if (estimate === '' && s.duration_minutes) setEstimate(s.duration_minutes);
     if (!energy && s.energy) setEnergy(s.energy);
     if (!effort && s.effort_level) setEffort(s.effort_level);
-    if (!difficulty && s.difficulty) setDifficulty(s.difficulty);
     if (!nextAction && s.next_action) setNextAction(s.next_action);
     if (!involvesOthers && s.involves_others) setInvolvesOthers(true);
     if (!othersRely && s.others_rely) setOthersRely(true);
@@ -85,7 +83,7 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
-    const buffer = difficulty && difficulty >= 4 ? 0.2 : 0.1;
+    const buffer = effort === 'Heavy' ? 0.2 : 0.1;
     const suggested = estimate ? Math.round(estimate * (1 + buffer)) : null;
     const { error } = await supabase.from('tasks').insert({
       user_id: user.id,
@@ -93,16 +91,15 @@ export default function Capture() {
       domain,
       priority,
       deadline: deadline ? new Date(deadline).toISOString() : null,
-      estimated_minutes: suggested,
+      duration_minutes: suggested,
       energy,
       effort_level: effort,
-      difficulty,
       next_action: nextAction || null,
       notes: notes || null,
       involves_others: involvesOthers,
       others_rely: othersRely,
       subtasks: subtasks as any,
-      scheduled_for: new Date().toISOString().slice(0, 10),
+      scheduled_date: new Date().toISOString().slice(0, 10),
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
