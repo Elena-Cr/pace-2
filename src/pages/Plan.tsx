@@ -85,7 +85,9 @@ export default function Plan() {
     });
   }
 
-  const plannedMinutes = calculateDailyWorkload(tasks);
+  const plannedMinutes = calculateDailyWorkloadWithBuffer(tasks);
+  const taskMinutesOnly = tasks.reduce((s, t) => s + (t.duration_minutes || 0), 0);
+  const bufferTotal = plannedMinutes - taskMinutesOnly;
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
   const capacityReady = capacityMin != null;
   const capacityMinutes = effectiveCapacityMinutes(
@@ -97,6 +99,18 @@ export default function Plan() {
   const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
   const preferredCount = userProfile?.preferred_tasks_per_day ?? null;
   const showPaceHint = preferredCount != null && tasks.length > preferredCount;
+
+  // Conflict detection for today (tasks vs protected blocks).
+  const planConflictTaskIds = useMemo(() => {
+    const taskEvents = getScheduledEvents(tasks).filter(e => e.date === today);
+    const blocks = (userProfile?.default_time_blocks ?? []).map(b => ({
+      label: b.label, start: b.start, end: b.end, kind: b.kind as any,
+    }));
+    const blockEvents = expandTimeBlocks(blocks, today);
+    const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
+    return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
+  }, [tasks, userProfile, today]);
+
 
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
