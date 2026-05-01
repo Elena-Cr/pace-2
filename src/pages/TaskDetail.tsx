@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTask, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import {
   DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
@@ -16,19 +16,11 @@ export default function TaskDetail() {
   const { id } = useParams();
   const nav = useNavigate();
   const { user, loading } = useAuth();
-  const [task, setTask] = useState<any>(null);
+  const { data: task } = useTask(id);
+  const { update: updateMut, remove: removeMut } = useTaskMutations();
   const [subInput, setSubInput] = useState('');
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
-
-  useEffect(() => {
-    if (!user || !id) return;
-    supabase.from('tasks').select('*').eq('id', id).maybeSingle()
-      .then(({ data, error }) => {
-        if (error) { toast.error(error.message); return; }
-        setTask(data);
-      });
-  }, [user, id]);
 
   if (!task) {
     return <AppShell><div className="text-sm text-muted-foreground">Loading…</div></AppShell>;
@@ -41,9 +33,11 @@ export default function TaskDetail() {
     : task.progress;
 
   async function update(patch: any) {
-    const { data, error } = await supabase.from('tasks').update(patch).eq('id', task.id).select().single();
-    if (error) { toast.error(error.message); return; }
-    setTask(data);
+    try {
+      await updateMut.mutateAsync({ id: task!.id, patch });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
   }
 
   async function setStatus(s: Status) {
@@ -97,7 +91,7 @@ export default function TaskDetail() {
   }
 
   async function remove() {
-    await supabase.from('tasks').delete().eq('id', task.id);
+    await removeMut.mutateAsync(task!.id);
     toast.success('Removed.');
     nav('/');
   }

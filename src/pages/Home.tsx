@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
+import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
-import type { Task } from '@/lib/scheduling';
 import {
-  rowsToTasks,
   getTodayTasks,
   getTomorrowTasks,
   getMissed,
@@ -39,13 +39,12 @@ export default function Home() {
   const { user, profile, loading } = useAuth();
   const { profile: userProfile, loading: upLoading } = useUserProfile();
   const nav = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [missed, setMissed] = useState<Task[]>([]);
-  const [doneToday, setDoneToday] = useState<Task[]>([]);
+  const { data: tasks = [] } = useTasks();
+  const { update } = useTaskMutations();
   const [filter, setFilter] = useState<'all' | Status>('all');
-  const [capacity, setCapacity] = useState<{ available_hours: number; energy_level: string } | null>(null);
+  const todayStr = todayISO();
+  const { data: capacity = null } = useDailyCapacity(todayStr);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
-  const [tomorrowCount, setTomorrowCount] = useState(0);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
   useEffect(() => {
@@ -53,57 +52,45 @@ export default function Home() {
       nav('/onboarding', { replace: true });
     }
   }, [upLoading, user, userProfile, nav]);
-  useEffect(() => { if (user) load(); }, [user]);
 
-  async function load() {
-    const today = todayISO();
-    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = toISODate(tomorrow);
-
-    const { data, error } = await supabase
-      .from('tasks').select('*')
-      .order('priority', { ascending: true })
-      .order('deadline', { ascending: true, nullsFirst: false })
-      .limit(100);
-    if (error) { toast.error(error.message); return; }
-    const all = rowsToTasks(data);
-
-    // Keep the broader pool around so derived memos can compute today/rest/etc.
-    setTasks(all);
-    setMissed(getMissed(all, today));
-    setDoneToday(getDoneOnDate(all, today));
-    setTomorrowCount(getTomorrowTasks(all, tomorrowStr).length);
-
-    const { data: cap } = await supabase.from('daily_capacity').select('available_hours, energy_level').eq('date', today).maybeSingle();
-    setCapacity(cap as any);
-
+  // Focus session aggregates stay direct: focus_sessions hook is out of scope for this phase.
+  useEffect(() => {
+    if (!user) return;
     const since = new Date(); since.setHours(0, 0, 0, 0);
-    const { data: sessions } = await supabase.from('focus_sessions').select('planned_minutes, ended_at')
-      .gte('started_at', since.toISOString());
-    const list = sessions ?? [];
-    setFocusToday({ count: list.length, minutes: list.reduce((s, x: any) => s + (x.planned_minutes || 0), 0) });
-  }
+    supabase.from('focus_sessions').select('planned_minutes, ended_at')
+      .gte('started_at', since.toISOString())
+      .then(({ data }) => {
+        const list = data ?? [];
+        setFocusToday({ count: list.length, minutes: list.reduce((s, x: any) => s + (x.planned_minutes || 0), 0) });
+      });
+  }, [user, tasks]);
+
+  const tomorrowStr = useMemo(() => {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    return toISODate(d);
+  }, []);
+  const missed = useMemo(() => getMissed(tasks, todayStr), [tasks, todayStr]);
+  const doneToday = useMemo(() => getDoneOnDate(tasks, todayStr), [tasks, todayStr]);
+  const tomorrowCount = useMemo(() => getTomorrowTasks(tasks, tomorrowStr).length, [tasks, tomorrowStr]);
 
   async function nudge(id: string, kind: 'start' | 'reschedule' | 'block') {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
     if (kind === 'reschedule') {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id, patch: {
         scheduled_date: todayISO(),
         reschedule_count: (t.reschedule_count || 0) + 1,
         status: 'rescheduled',
-      }).eq('id', id);
+      } as any });
       toast.success('Carried to today.');
     } else {
-      await supabase.from('tasks').update({ status: 'blocked' }).eq('id', id);
+      await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
       toast.success('Marked as blocked. Not your fault.');
     }
-    load();
   }
 
   const today = new Date();
   const dateStr = today.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
-  const todayStr = todayISO();
 
   const todayTasks = useMemo(() => getTodayTasks(tasks, todayStr), [tasks, todayStr]);
   const restBlocks = useMemo(() => getRestBlocksForDate(tasks, todayStr), [tasks, todayStr]);

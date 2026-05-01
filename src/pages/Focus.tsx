@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import type { Task } from '@/lib/scheduling';
-import { rowToTask } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
 
@@ -15,7 +15,8 @@ export default function Focus() {
   const initialMinutes: number = loc.state?.minutes ?? 25;
   const taskIdHint: string | undefined = loc.state?.taskId;
 
-  const [task, setTask] = useState<Task | null>(null);
+  const { data: allTasks = [] } = useTasks();
+  const { update } = useTaskMutations();
   const [planned, setPlanned] = useState(initialMinutes);
   const [secondsLeft, setSecondsLeft] = useState(initialMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -27,16 +28,14 @@ export default function Focus() {
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
-  useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+  // Pick the focus task: explicit hint, else first open non-rest task by useTasks ordering.
+  const task = useMemo<Task | null>(() => {
+    const candidates = allTasks.filter(t => t.status !== 'done' && !t.is_rest);
+    if (taskIdHint) return candidates.find(t => t.id === taskIdHint) ?? null;
+    return candidates[0] ?? null;
+  }, [allTasks, taskIdHint]);
 
-  useEffect(() => {
-    if (!user) return;
-    const q = supabase.from('tasks').select('*').neq('status', 'done').eq('is_rest', false);
-    (taskIdHint
-      ? q.eq('id', taskIdHint).maybeSingle()
-      : q.order('priority', { ascending: true }).order('deadline', { ascending: true, nullsFirst: false }).limit(1).maybeSingle()
-    ).then(({ data }) => setTask(data ? rowToTask(data) : null));
-  }, [user, taskIdHint]);
+  useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
   useEffect(() => {
     if (!running) return;
@@ -69,7 +68,7 @@ export default function Focus() {
   async function start() {
     if (!user) return;
     if (task && task.status === 'not_started') {
-      await supabase.from('tasks').update({ status: 'started' }).eq('id', task.id);
+      await update.mutateAsync({ id: task.id, patch: { status: 'started' } as any });
     }
     const { data, error } = await supabase.from('focus_sessions').insert({
       user_id: user.id, task_id: task?.id ?? null, planned_minutes: planned,
@@ -85,16 +84,16 @@ export default function Focus() {
 
   async function reschedule() {
     if (task) {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id: task.id, patch: {
         status: 'rescheduled',
         reschedule_count: (task.reschedule_count || 0) + 1,
-      }).eq('id', task.id);
+      } as any });
     }
     nav('/replan');
   }
 
   async function markBlocked() {
-    if (task) await supabase.from('tasks').update({ status: 'blocked' }).eq('id', task.id);
+    if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
     if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'replan' }).eq('id', sessionId);
     toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
     nav('/');
@@ -102,9 +101,9 @@ export default function Focus() {
 
   async function reduceScope() {
     if (task) {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id: task.id, patch: {
         duration_minutes: Math.max(10, Math.round((task.duration_minutes || 30) / 2)),
-      }).eq('id', task.id);
+      } as any });
       toast.success('Scope reduced. Smaller is still real.');
     }
     setOverrunPrompt(false);
@@ -141,14 +140,14 @@ export default function Focus() {
       }).eq('id', sessionId);
     }
     if (outcome === 'completed' && task) {
-      await supabase.from('tasks').update({ status: 'done', progress: 100 }).eq('id', task.id);
+      await update.mutateAsync({ id: task.id, patch: { status: 'done', progress: 100 } as any });
       toast.success('Done. That was real work.');
       nav('/');
     } else if (outcome === 'more_time' && task) {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id: task.id, patch: {
         status: 'in_progress',
         progress: Math.min(80, (task.progress || 0) + 25),
-      }).eq('id', task.id);
+      } as any });
       nav('/');
     } else if (outcome === 'blocked') {
       await markBlocked();

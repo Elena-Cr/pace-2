@@ -4,10 +4,11 @@ import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, X, MoveRi
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
-import { supabase } from '@/integrations/supabase/client';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
+import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { rowsToTasks, rowToTask, getScheduledEvents, effectiveCapacityMinutes, capacityState } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
@@ -83,14 +84,13 @@ const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'pers
 export default function CalendarView() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
+  const { data: allTasks = [] } = useTasks();
+  const { update, insert } = useTaskMutations();
   const nav = useNavigate();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
   const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
-  const [monthTasks, setMonthTasks] = useState<Task[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [capacities, setCapacities] = useState<Record<string, { available_hours: number; energy_level: string }>>({});
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
   const [showCompleted, setShowCompleted] = useState(false);
   const [open, setOpen] = useState<CalEvent | null>(null);
@@ -127,21 +127,18 @@ export default function CalendarView() {
     const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
   }), [weekStart]);
 
-  useEffect(() => {
-    if (!user) return;
+  const weekRange = useMemo(() => {
     const start = toISODate(days[0]);
     const end = new Date(days[6]); end.setDate(end.getDate() + 1);
-    const endIso = toISODate(end);
-    supabase.from('tasks').select('*')
-      .gte('scheduled_date', start).lt('scheduled_date', endIso)
-      .then(({ data }) => setTasks(rowsToTasks(data)));
-    supabase.from('daily_capacity').select('*').gte('date', start).lt('date', endIso)
-      .then(({ data }) => {
-        const map: Record<string, any> = {};
-        (data ?? []).forEach((c: any) => { map[c.date] = c; });
-        setCapacities(map);
-      });
-  }, [user, weekStart]);
+    return { start, endExclusive: toISODate(end) };
+  }, [days]);
+
+  const tasks = useMemo<Task[]>(
+    () => allTasks.filter(t => t.scheduled_date && t.scheduled_date >= weekRange.start && t.scheduled_date < weekRange.endExclusive),
+    [allTasks, weekRange],
+  );
+
+  const { data: capacities = {} } = useDailyCapacityRange(weekRange.start, weekRange.endExclusive);
 
   // Month grid range (Mon-start, 6 rows = 42 days)
   const monthGrid = useMemo(() => {
@@ -152,14 +149,13 @@ export default function CalendarView() {
     });
   }, [monthAnchor]);
 
-  useEffect(() => {
-    if (!user || view !== 'month') return;
+  const monthTasks = useMemo<Task[]>(() => {
+    if (view !== 'month') return [];
     const start = toISODate(monthGrid[0]);
     const end = new Date(monthGrid[41]); end.setDate(end.getDate() + 1);
-    supabase.from('tasks').select('*')
-      .gte('scheduled_date', start).lt('scheduled_date', toISODate(end))
-      .then(({ data }) => setMonthTasks(rowsToTasks(data)));
-  }, [user, monthAnchor, view]);
+    const endIso = toISODate(end);
+    return allTasks.filter(t => t.scheduled_date && t.scheduled_date >= start && t.scheduled_date < endIso);
+  }, [allTasks, monthGrid, view]);
 
   // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day.
   // Task placement (incl. start_time / end_time) comes from the shared helper so
@@ -246,18 +242,20 @@ export default function CalendarView() {
     if (!ev || !ev.taskId || ev.day === targetDay) return;
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
-    const { error } = await supabase.from('tasks').update({
-      scheduled_date: newDate,
-      reschedule_count: (t?.reschedule_count || 0) + 1,
-    }).eq('id', ev.taskId);
-    if (error) { toast.error(error.message); return; }
-    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, scheduled_date: newDate, reschedule_count: (x.reschedule_count || 0) + 1 } : x));
-    setReplanFor({ taskId: ev.taskId, title: ev.title });
+    try {
+      await update.mutateAsync({ id: ev.taskId, patch: {
+        scheduled_date: newDate,
+        reschedule_count: (t?.reschedule_count || 0) + 1,
+      } as any });
+      setReplanFor({ taskId: ev.taskId, title: ev.title });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not move.');
+    }
   }
 
   async function setReplanReason(reason: ReplanReason | null) {
     if (!replanFor) return;
-    if (reason) await supabase.from('tasks').update({ replanning_reason: reason }).eq('id', replanFor.taskId);
+    if (reason) await update.mutateAsync({ id: replanFor.taskId, patch: { replanning_reason: reason } as any });
     toast.success('Task moved. Progress preserved.');
     setReplanFor(null);
   }
@@ -670,9 +668,11 @@ export default function CalendarView() {
   async function toggleDone(ev: CalEvent) {
     if (!ev.taskId) return;
     const newStatus: Status = ev.status === 'done' ? 'in_progress' : 'done';
-    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', ev.taskId);
-    if (error) { toast.error(error.message); return; }
-    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, status: newStatus } : x));
+    try {
+      await update.mutateAsync({ id: ev.taskId, patch: { status: newStatus } as any });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
   }
 
   async function createAt(dayI: number, hour: number) {
@@ -680,13 +680,15 @@ export default function CalendarView() {
     const title = window.prompt('New intention');
     if (!title?.trim()) return;
     const date = toISODate(days[dayI]);
-    const { data, error } = await supabase.from('tasks').insert({
-      user_id: user.id, title: title.trim(),
-      domain: 'personal', priority: 'should', status: 'not_started',
-      scheduled_date: date, duration_minutes: 60,
-    }).select().single();
-    if (error) { toast.error(error.message); return; }
-    setTasks(arr => [...arr, rowToTask(data)]);
-    toast.success('Added to your plan.');
+    try {
+      await insert.mutateAsync({
+        title: title.trim(),
+        domain: 'personal', priority: 'should', status: 'not_started',
+        scheduled_date: date, duration_minutes: 60,
+      } as any);
+      toast.success('Added to your plan.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not add.');
+    }
   }
 }
