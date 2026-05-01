@@ -108,17 +108,26 @@ export default function Plan() {
   return (
     <AppShell>
       <h1 className="pace-screen-title">Today's plan</h1>
-      <div className="pace-eyebrow mt-1">{new Date().toLocaleDateString([], { weekday: 'long' })} · capacity {fmtMin(capacityMinutes)}</div>
+      <div className="pace-eyebrow mt-1">{new Date().toLocaleDateString([], { weekday: 'long' })}{capacityReady ? ` · capacity ${fmtMin(capacityMinutes)}` : ''}</div>
 
       <div className="mt-5 pace-card">
         <div className="pace-eyebrow">Capacity for today</div>
         <div className="mt-3">
-          <label className="pace-field-label">Hours available · {capacityHours}h</label>
-          <input type="range" min={1} max={12} step={0.5} value={capacityHours}
-            onChange={e => setCapacityHours(Number(e.target.value))}
-            onMouseUp={() => saveCapacity({ available_hours: capacityHours })}
-            onTouchEnd={() => saveCapacity({ available_hours: capacityHours })}
-            className="w-full accent-primary" />
+          {capacityReady ? (
+            <>
+              <label className="pace-field-label">Hours available · {((capacityMin as number) / 60).toFixed(1)}h</label>
+              <input type="range" min={60} max={720} step={30} value={capacityMin as number}
+                onChange={e => setCapacityMin(Number(e.target.value))}
+                onMouseUp={() => saveCapacity({ available_hours: (capacityMin as number) / 60 })}
+                onTouchEnd={() => saveCapacity({ available_hours: (capacityMin as number) / 60 })}
+                className="w-full accent-primary" />
+            </>
+          ) : (
+            <>
+              <div className="pace-field-label">Hours available</div>
+              <div className="h-2 rounded-full bg-muted animate-pulse" />
+            </>
+          )}
         </div>
         <div className="mt-3">
           <label className="pace-field-label">Energy</label>
@@ -142,8 +151,14 @@ export default function Plan() {
       <div className={`pace-capacity ${over ? 'over' : ''}`}><i style={{ width: `${pct}%` }} /></div>
       <div className="mt-1.5 flex justify-between text-[12px] text-muted-foreground">
         <span>{fmtMin(plannedMinutes)} planned</span>
-        <span>{fmtMin(capacityMinutes)} available</span>
+        <span>{capacityReady ? `${fmtMin(capacityMinutes)} available` : '— available'}</span>
       </div>
+
+      {showPaceHint && (
+        <div className="pace-card-soft mt-3 animate-fade-in text-[13px] text-muted-foreground">
+          Today has {tasks.length} intentions; your usual rhythm is {preferredCount}. Want to move some to backlog?
+        </div>
+      )}
 
       {over && (
         <div className="pace-alert mt-3 animate-fade-in">
