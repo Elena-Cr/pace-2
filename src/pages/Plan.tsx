@@ -299,6 +299,7 @@ export default function Plan() {
         {tasks.length === 0 && <div className="text-sm text-muted-foreground">Nothing scheduled. Capture something or rest — both count.</div>}
         {tasks.map(t => {
           const conflict = planConflictTaskIds.has(t.id);
+          const energyHint = energyHintByTaskId.get(t.id);
           return (
             <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -315,6 +316,9 @@ export default function Plan() {
                     <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]">
                       · <AlertTriangle className="w-3 h-3" /> overlaps rest
                     </span>
+                  )}
+                  {energyHint && (
+                    <span className="text-[hsl(var(--success))]">· {energyHint}</span>
                   )}
                 </div>
               </div>
