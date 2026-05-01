@@ -120,6 +120,30 @@ export function getDoneOnDate(tasks: Task[], date: string): Task[] {
   );
 }
 
+// ---------- Capacity helpers ----------
+export const ENERGY_MULTIPLIER = { Low: 0.75, Med: 1, High: 1.1 } as const;
+export type EnergyLevel = keyof typeof ENERGY_MULTIPLIER;
+
+export function effectiveCapacityMinutes(
+  dailyOverride: { available_hours: number; energy_level: string } | null,
+  profileDefaultMinutes: number,
+): number {
+  const baseMin = dailyOverride
+    ? Number(dailyOverride.available_hours) * 60
+    : profileDefaultMinutes;
+  const energyKey = (dailyOverride?.energy_level ?? 'Med') as EnergyLevel;
+  const mult = ENERGY_MULTIPLIER[energyKey] ?? 1;
+  return Math.round(baseMin * mult);
+}
+
+export type CapacityState = 'balanced' | 'close' | 'over';
+export function capacityState(plannedMin: number, capMin: number): CapacityState {
+  const ratio = plannedMin / Math.max(1, capMin);
+  if (ratio > 1) return 'over';
+  if (ratio > 0.85) return 'close';
+  return 'balanced';
+}
+
 // ---------- Workload math ----------
 export function calculateDailyWorkload(tasks: Task[]): number {
   return tasks.reduce((sum, t) => sum + (t.duration_minutes || 0), 0);
