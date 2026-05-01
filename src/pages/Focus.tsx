@@ -4,8 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { type Task, buildReschedulePatch, progressForStatus } from '@/lib/scheduling';
-import { todayISO } from '@/lib/pace';
+import { type Task, progressForStatus } from '@/lib/scheduling';
+
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
 
@@ -98,13 +98,9 @@ export default function Focus() {
   }
 
   async function reschedule() {
-    if (task) {
-      await update.mutateAsync({
-        id: task.id,
-        patch: buildReschedulePatch(task, task.scheduled_date ?? todayISO()),
-      });
-    }
-    nav('/replan');
+    // Navigate to Replan with the task pre-selected; the date-picker dialog
+    // there is the single place where reschedules actually happen.
+    nav('/replan', { state: { taskId: task?.id } });
   }
 
   async function markBlocked() {
@@ -114,16 +110,8 @@ export default function Focus() {
     nav('/');
   }
 
-  async function reduceScope() {
-    if (task) {
-      await update.mutateAsync({ id: task.id, patch: {
-        duration_minutes: Math.max(10, Math.round((task.duration_minutes || 30) / 2)),
-      } as any });
-      toast.success('Scope reduced. Smaller is still real.');
-    }
-    setOverrunPrompt(false);
-    setCompletionCheck(true);
-  }
+  // (Reduce-scope removed — duration is now edited from TaskDetail's Edit form.)
+
 
   async function continueMore() {
     setOverrunPrompt(false);
@@ -245,9 +233,8 @@ export default function Focus() {
           <div className="grid grid-cols-2 gap-2">
             <button onClick={continueMore} className="pace-btn-primary">Continue +10m</button>
             <button onClick={takeBreak} className="pace-btn">Take a break</button>
-            <button onClick={reduceScope} className="pace-btn">Reduce scope</button>
             <button onClick={reschedule} className="pace-btn">Reschedule</button>
-            <button onClick={() => { setOverrunPrompt(false); setCompletionCheck(true); }} className="pace-btn col-span-2">Mark blocked</button>
+            <button onClick={() => { setOverrunPrompt(false); setCompletionCheck(true); }} className="pace-btn">Mark blocked</button>
           </div>
         </div>
       )}

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { Mood, MOOD_LABEL, ReplanReason, todayISO, toISODate } from '@/lib/pace';
-import { getMissed, buildReschedulePatch } from '@/lib/scheduling';
+import RescheduleDialog from '@/components/RescheduleDialog';
+import { Mood, MOOD_LABEL, ReplanReason, todayISO } from '@/lib/pace';
+import { getMissed } from '@/lib/scheduling';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { toast } from 'sonner';
 
@@ -13,10 +14,14 @@ const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
 export default function Replan() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  const loc = useLocation() as any;
+  const preselectId: string | undefined = loc.state?.taskId;
   const { data: tasks = [] } = useTasks();
   const { update, remove } = useTaskMutations();
   const [mood, setMood] = useState<Mood | null>(null);
   const [reasonByTask, setReasonByTask] = useState<Record<string, ReplanReason>>({});
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const openedFromState = useRef(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
@@ -26,6 +31,14 @@ export default function Replan() {
       .slice()
       .sort((a, b) => (b.reschedule_count ?? 0) - (a.reschedule_count ?? 0));
   }, [tasks]);
+
+  // When arriving from Focus with a pre-selected task, open the dialog once.
+  useEffect(() => {
+    if (preselectId && !openedFromState.current) {
+      openedFromState.current = true;
+      setRescheduleId(preselectId);
+    }
+  }, [preselectId]);
 
   async function action(id: string, kind: 'start' | 'reschedule' | 'remove' | 'tiny' | 'block') {
     const t = carry.find(x => x.id === id); if (!t) return;
@@ -42,12 +55,9 @@ export default function Replan() {
       return;
     }
     if (kind === 'reschedule') {
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      await update.mutateAsync({ id, patch: buildReschedulePatch(t, toISODate(tomorrow), {
-        reason: reason ?? undefined,
-        mood: mood ?? undefined,
-      }) });
-      toast.success('Carried to tomorrow. Progress preserved.');
+      // Open the shared date-picker dialog. The dialog applies the update
+      // via buildReschedulePatch so it stays consistent with TaskDetail.
+      setRescheduleId(id);
       return;
     }
     if (kind === 'tiny') {
@@ -130,6 +140,13 @@ export default function Replan() {
           );
         })}
       </div>
+
+      <RescheduleDialog
+        taskId={rescheduleId}
+        open={!!rescheduleId}
+        onClose={() => setRescheduleId(null)}
+        mood={mood}
+      />
     </AppShell>
   );
 }

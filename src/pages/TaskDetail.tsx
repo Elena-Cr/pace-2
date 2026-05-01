@@ -3,15 +3,29 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTask, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
+import RescheduleDialog from '@/components/RescheduleDialog';
 import {
-  DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
-  formatDeadline, fmtMin, todayISO, toISODate,
+  DOMAIN_LABEL, STATUS_LABEL, PRIORITY_LABEL, Status, Priority, Domain, Subtask,
+  formatDeadline, fmtMin, toISODate,
 } from '@/lib/pace';
-import { progressForStatus, progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
+import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, X, Timer, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users } from 'lucide-react';
 
 const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
+const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
+const ENERGIES = ['Low', 'Med', 'High'];
+const EFFORTS = ['Light', 'Moderate', 'Heavy'];
+
+// Convert an ISO timestamp into the value format expected by datetime-local
+// (YYYY-MM-DDTHH:MM) in the user's local time.
+function toDatetimeLocal(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -24,8 +38,65 @@ export default function TaskDetail() {
   const [notesDraft, setNotesDraft] = useState('');
   const [editingNext, setEditingNext] = useState(false);
   const [nextDraft, setNextDraft] = useState('');
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+
+  // Edit-form draft state. Populated from `task` whenever edit mode opens.
+  const [eTitle, setETitle] = useState('');
+  const [eDomain, setEDomain] = useState<Domain | null>(null);
+  const [ePriority, setEPriority] = useState<Priority>('should');
+  const [eDeadline, setEDeadline] = useState('');
+  const [eDuration, setEDuration] = useState<number | ''>('');
+  const [eEnergy, setEEnergy] = useState<string | null>(null);
+  const [eEffort, setEEffort] = useState<string | null>(null);
+  const [eScheduledDate, setEScheduledDate] = useState<string>('');
+  const [eOthers, setEOthers] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+
+  function openEdit() {
+    if (!task) return;
+    setETitle(task.title);
+    setEDomain(task.domain);
+    setEPriority(task.priority);
+    setEDeadline(toDatetimeLocal(task.deadline));
+    setEDuration(task.duration_minutes ?? '');
+    setEEnergy(task.energy);
+    setEEffort(task.effort_level);
+    setEScheduledDate(task.scheduled_date ?? '');
+    setEOthers(!!(task.involves_others || task.others_rely));
+    setEditMode(true);
+  }
+
+  async function saveEdit() {
+    if (!task) return;
+    if (!eTitle.trim()) { toast.error('Add a title to save.'); return; }
+    setSavingEdit(true);
+    try {
+      await updateMut.mutateAsync({
+        id: task.id,
+        patch: {
+          title: eTitle.trim(),
+          domain: eDomain,
+          priority: ePriority,
+          deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
+          duration_minutes: eDuration === '' ? null : Number(eDuration),
+          energy: eEnergy,
+          effort_level: eEffort,
+          scheduled_date: eScheduledDate || null,
+          involves_others: eOthers,
+          others_rely: eOthers,
+        } as any,
+      });
+      toast.success('Saved.');
+      setEditMode(false);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not save.');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   if (!task) {
     return <AppShell><div className="text-sm text-muted-foreground">Loading…</div></AppShell>;
@@ -79,19 +150,8 @@ export default function TaskDetail() {
     await update({ subtasks: next });
   }
 
-  async function reschedule() {
-    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    await update(buildReschedulePatch(task!, toISODate(tomorrow)));
-    toast.success('Moved to tomorrow. Progress preserved.');
-  }
-
   async function pauseTask() {
     await update({ status: 'blocked' });
-  }
-
-  async function reduceScope() {
-    await update({ duration_minutes: Math.max(10, Math.round((task.duration_minutes || 30) / 2)) });
-    toast.success('Scope reduced. Smaller is still real.');
   }
 
   async function remove() {
@@ -100,6 +160,120 @@ export default function TaskDetail() {
     nav('/');
   }
 
+  // ---------- Edit mode layout ----------
+  if (editMode) {
+    return (
+      <AppShell>
+        <button onClick={() => setEditMode(false)} className="pace-btn-ghost pace-btn-sm -ml-3">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <h1 className="pace-screen-title mt-2">Edit task</h1>
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <label className="pace-field-label">Title</label>
+            <input className="pace-field" value={eTitle} onChange={e => setETitle(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="pace-field-label">Domain</label>
+            <div className="flex flex-wrap gap-1.5">
+              {DOMAINS.map(d => (
+                <button key={d} onClick={() => setEDomain(d)}
+                  className={eDomain === d ? 'pace-chip-filled' : 'pace-chip'}>{DOMAIN_LABEL[d]}</button>
+              ))}
+              <button onClick={() => setEDomain(null)}
+                className={`pace-chip-dashed ${eDomain === null ? 'opacity-100' : 'opacity-70'}`}>Decide later</button>
+            </div>
+          </div>
+
+          <div>
+            <label className="pace-field-label">Priority</label>
+            <div className="flex gap-1.5">
+              {(['must','should','could'] as Priority[]).map(p => (
+                <button key={p} onClick={() => setEPriority(p)}
+                  className={ePriority === p ? 'pace-chip-filled' : 'pace-chip'}>
+                  <span className={`priority-dot ${p}`} />{PRIORITY_LABEL[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="pace-field-label">Scheduled date</label>
+            <input
+              type="date"
+              className="pace-field"
+              value={eScheduledDate}
+              onChange={e => setEScheduledDate(e.target.value)}
+            />
+            {eScheduledDate && (
+              <button onClick={() => setEScheduledDate('')} className="pace-btn-ghost pace-btn-sm mt-1">
+                Move to backlog
+              </button>
+            )}
+          </div>
+
+          <div>
+            <label className="pace-field-label">Deadline (optional)</label>
+            <input
+              type="datetime-local"
+              className="pace-field"
+              value={eDeadline}
+              onChange={e => setEDeadline(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="pace-field-label">Estimates</label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number" min={5} step={5}
+                className="pace-field"
+                placeholder="Time · minutes"
+                value={eDuration}
+                onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
+              />
+              <select
+                className="pace-field"
+                value={eEnergy ?? ''}
+                onChange={e => setEEnergy(e.target.value || null)}
+              >
+                <option value="">Energy · any</option>
+                {ENERGIES.map(x => <option key={x} value={x}>Energy · {x}</option>)}
+              </select>
+            </div>
+            <div className="mt-3">
+              <div className="pace-field-label">Effort level</div>
+              <div className="flex gap-1.5">
+                {EFFORTS.map(e => (
+                  <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
+                    className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setEOthers(v => !v)}
+            className={`${eOthers ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
+          >
+            <Users className="w-3.5 h-3.5" /> Involves or relies on others
+          </button>
+
+          <div className="flex gap-2 pt-2">
+            <button onClick={() => setEditMode(false)} className="pace-btn flex-1">Cancel</button>
+            <button onClick={saveEdit} disabled={savingEdit} className="pace-btn-primary flex-1">
+              {savingEdit ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // ---------- View mode ----------
   return (
     <AppShell>
       <button onClick={() => nav(-1)} className="pace-btn-ghost pace-btn-sm -ml-3">
@@ -111,7 +285,12 @@ export default function TaskDetail() {
           <span className={`priority-dot ${task.priority}`} />
           {task.domain ? DOMAIN_LABEL[task.domain] : 'Uncategorized'} · {formatDeadline(task.deadline)}
         </span>
-        <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
+          <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit task">
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+        </div>
       </div>
 
       <h1 className="pace-screen-title mt-2">{task.title}</h1>
@@ -198,8 +377,9 @@ export default function TaskDetail() {
           {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
           {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
           {task.energy && <span className="pace-chip">Energy · {task.energy}</span>}
-          {task.involves_others && <span className="pace-chip">Involves others</span>}
-          {task.others_rely && <span className="pace-chip">Others rely</span>}
+          {(task.involves_others || task.others_rely) && (
+            <span className="pace-chip"><Users className="w-3 h-3" /> Others involved</span>
+          )}
           {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
         </div>
         <div className="mt-3">
@@ -247,12 +427,17 @@ export default function TaskDetail() {
           <Timer className="w-4 h-4" /> Focus on this
         </button>
         <button onClick={pauseTask} className="pace-btn">Pause</button>
-        <button onClick={reduceScope} className="pace-btn">Reduce scope</button>
-        <button onClick={reschedule} className="pace-btn col-span-2">Reschedule to tomorrow</button>
+        <button onClick={() => setRescheduleOpen(true)} className="pace-btn">Reschedule</button>
         <button onClick={remove} className="pace-btn-ghost col-span-2 text-[hsl(var(--attention))]">
           <Trash2 className="w-4 h-4" /> Remove
         </button>
       </div>
+
+      <RescheduleDialog
+        taskId={task.id}
+        open={rescheduleOpen}
+        onClose={() => setRescheduleOpen(false)}
+      />
     </AppShell>
   );
 }
