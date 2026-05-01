@@ -13,7 +13,7 @@ export default function BottomNav() {
   const loc = useLocation();
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border/60"
+      className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border/60 lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="mx-auto max-w-md flex items-end justify-around px-3 pt-2 pb-2">

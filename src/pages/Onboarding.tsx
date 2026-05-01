@@ -100,15 +100,20 @@ export default function Onboarding() {
     {
       eyebrow: '03 · Pace',
       title: 'How many intentions feel right per day?',
-      sub: 'Most people thrive with 3–5. You can always add more.',
+      sub: 'An intention is one meaningful task — something you can finish or meaningfully advance in a single day. Most students find 3–5 works well.',
       body: (
-        <div className="flex gap-2 justify-center">
-          {[2, 3, 4, 5, 6, 8].map(n => (
-            <button key={n} onClick={() => setTasksPerDay(n)}
-              className={tasksPerDay === n ? 'pace-chip-filled' : 'pace-chip'}>
-              {n}
-            </button>
-          ))}
+        <div className="space-y-3">
+          <div className="flex gap-2 justify-center">
+            {[2, 3, 4, 5, 6, 8].map(n => (
+              <button key={n} onClick={() => setTasksPerDay(n)}
+                className={tasksPerDay === n ? 'pace-chip-filled' : 'pace-chip'}>
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="pace-meta text-center">
+            e.g. draft the intro section, reply to all emails, prepare for tomorrow's lecture.
+          </p>
         </div>
       ),
       canNext: true,
@@ -190,6 +195,13 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-md px-5 pt-10 pb-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 2.5rem)' }}>
+        {step === 0 && (
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="text-[40px] font-bold tracking-tight text-primary leading-none">Pace</div>
+            <p className="mt-2 text-[14px] text-muted-foreground">A calm planner built for students.</p>
+          </div>
+        )}
+
         <div className="flex gap-1 mb-6">
           {steps.map((_, i) => (
             <div key={i} className={`h-1 flex-1 rounded-full transition ${i <= step ? 'bg-primary' : 'bg-muted'}`} />
