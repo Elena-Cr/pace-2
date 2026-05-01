@@ -68,21 +68,16 @@ const FIXED_BLOCKS: Array<Omit<CalEvent, 'id' | 'day'>> = [
   { title: 'Sleep', domain: 'rest', kind: 'sleep', startMin: 23 * 60 + 30, endMin: 24 * 60, fixed: true },
 ];
 
-// Build domain styles from the shared DOMAIN_COLOR_VAR so Calendar stays
-// in lockstep with Home, Plan, and Workload.
+// Domain styles use the same CSS variables exposed by DOMAIN_COLOR_VAR
+// in lib/pace.ts, so Calendar stays visually in sync with Home/Plan/Workload.
 function domainClass(domain: Domain | 'rest') {
-  const color = DOMAIN_COLOR_VAR[domain];
-  // Tailwind arbitrary-value syntax does not parse runtime variables, so we
-  // emit inline styles via the `style` helper — the returned `bg`/`bar`/`text`
-  // remain class slots that consumers spread onto `style` props.
-  return {
-    bg: '',
-    bar: '',
-    text: '',
-    bgStyle: { backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)` },
-    barStyle: { backgroundColor: color },
-    textStyle: { color },
-  };
+  switch (domain) {
+    case 'academic': return { bg: 'bg-[hsl(var(--domain-academic)/0.14)]', bar: 'bg-[hsl(var(--domain-academic))]', text: 'text-[hsl(var(--domain-academic))]' };
+    case 'work':     return { bg: 'bg-[hsl(var(--domain-work)/0.16)]',     bar: 'bg-[hsl(var(--domain-work))]',     text: 'text-[hsl(var(--domain-work))]' };
+    case 'social':   return { bg: 'bg-[hsl(var(--domain-social)/0.18)]',   bar: 'bg-[hsl(var(--domain-social))]',   text: 'text-[hsl(206_7%_20%)]' };
+    case 'personal': return { bg: 'bg-[hsl(var(--domain-personal)/0.14)]', bar: 'bg-[hsl(var(--domain-personal))]', text: 'text-[hsl(var(--domain-personal))]' };
+    case 'rest':     return { bg: 'bg-[hsl(var(--domain-rest)/0.55)]',     bar: 'bg-[hsl(var(--domain-rest))]',     text: 'text-[hsl(var(--rest-foreground))]' };
+  }
 }
 
 const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'personal', 'rest'];
