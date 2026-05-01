@@ -91,7 +91,7 @@ export default function TaskDetail() {
   }
 
   async function remove() {
-    await supabase.from('tasks').delete().eq('id', task.id);
+    await removeMut.mutateAsync(task!.id);
     toast.success('Removed.');
     nav('/');
   }
