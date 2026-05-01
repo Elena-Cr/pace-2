@@ -205,6 +205,22 @@ export default function Capture() {
           <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
         </div>
 
+        <div>
+          <label className="pace-field-label">When?</label>
+          <div className="flex gap-1.5">
+            {([
+              { k: 'today', label: 'Today' },
+              { k: 'tomorrow', label: 'Tomorrow' },
+              { k: 'backlog', label: 'Backlog' },
+            ] as const).map(opt => (
+              <button key={opt.k} type="button" onClick={() => setWhen(opt.k)}
+                className={when === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button type="button" onClick={() => setShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
           {showAdvanced ? 'Hide details' : 'Add estimates & details'}
         </button>
