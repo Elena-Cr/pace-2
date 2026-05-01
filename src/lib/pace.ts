@@ -45,6 +45,8 @@ export const DOMAIN_COLOR_VAR: Record<Domain | 'rest', string> = {
   rest: 'hsl(var(--domain-rest))',
 };
 
+// NOTE: any new value added to Status must be paired with a matching
+// `.status-<value>` rule in src/index.css (used by the `status-chip` component).
 export const STATUS_LABEL: Record<Status, string> = {
   not_started: 'Not started',
   started: 'Started',
