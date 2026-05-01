@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
+import { Calendar as CalIcon } from 'lucide-react';
 
-const PROTECTED = [
-  { label: 'Sleep', when: '11:30pm – 7:30am' },
-  { label: 'Lunch', when: '12:30 – 1:00' },
-  { label: 'Recovery walk', when: '5:00 – 5:30' },
-];
+function fmtBlockTime(t: string) {
+  const [h, m] = t.split(':').map(Number);
+  const am = h < 12; const hh = ((h + 11) % 12) + 1;
+  return `${hh}${m ? ':' + String(m).padStart(2, '0') : ''}${am ? 'a' : 'p'}`;
+}
 
 const ENERGIES = ['Low', 'Med', 'High'];
 
