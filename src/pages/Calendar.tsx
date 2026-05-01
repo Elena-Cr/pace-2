@@ -660,8 +660,9 @@ export default function CalendarView() {
 
       {/* === WEEK VIEW (time grid) === */}
       {view === 'week' && (
-      <div className="mt-4 pace-card !p-3 overflow-hidden">
-        {/* Day headers + summaries */}
+      <>
+      {/* Day headers + summaries — separate block above the time grid */}
+      <div className="mt-4 pace-card !p-3">
         <div className="flex" style={{ paddingLeft: 36 }}>
           {visibleDays.map(di => {
             const d = days[di];
@@ -697,6 +698,9 @@ export default function CalendarView() {
             );
           })}
         </div>
+      </div>
+
+      <div className="mt-3 pace-card !p-3 overflow-hidden">
 
         {/* Time grid */}
         <div ref={gridRef} className="relative mt-2 flex" style={{ height: totalGridHeight }}>
