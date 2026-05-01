@@ -283,7 +283,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      focus_outcome: "completed" | "more_time" | "replan" | "abandoned"
+      focus_outcome:
+        | "completed"
+        | "more_time"
+        | "replan"
+        | "abandoned"
+        | "blocked"
       mood: "fine" | "tired" | "overwhelmed" | "frustrated" | "unsure"
       replan_reason:
         | "too_tired"
@@ -430,7 +435,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      focus_outcome: ["completed", "more_time", "replan", "abandoned"],
+      focus_outcome: [
+        "completed",
+        "more_time",
+        "replan",
+        "abandoned",
+        "blocked",
+      ],
       mood: ["fine", "tired", "overwhelmed", "frustrated", "unsure"],
       replan_reason: [
         "too_tired",

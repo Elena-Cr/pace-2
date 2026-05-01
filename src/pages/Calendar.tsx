@@ -6,10 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
-import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
+import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
 import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
+import ReplanReasonChips from '@/components/ReplanReasonChips';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -651,11 +652,8 @@ export default function CalendarView() {
           <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="pace-title">Task moved. What changed?</div>
             <div className="text-[13px] text-muted-foreground mt-1">Optional — helps you spot patterns.</div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button onClick={() => setReplanReason(null)} className="pace-chip">Better time</button>
-              {(Object.keys(REPLAN_REASON_LABEL) as ReplanReason[]).map(r => (
-                <button key={r} onClick={() => setReplanReason(r)} className="pace-chip">{REPLAN_REASON_LABEL[r]}</button>
-              ))}
+            <div className="mt-3">
+              <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
             </div>
             <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
           </div>
@@ -679,11 +677,16 @@ export default function CalendarView() {
     const title = window.prompt('New intention');
     if (!title?.trim()) return;
     const date = toISODate(days[dayI]);
+    const startTime = `${String(hour).padStart(2, '0')}:00:00`;
+    const endTime = `${String(hour + 1).padStart(2, '0')}:00:00`;
     try {
       await insert.mutateAsync({
         title: title.trim(),
         domain: 'personal', priority: 'should', status: 'not_started',
-        scheduled_date: date, duration_minutes: 60,
+        scheduled_date: date,
+        duration_minutes: 60,
+        start_time: startTime,
+        end_time: endTime,
       } as any);
       toast.success('Added to your plan.');
     } catch (err: any) {

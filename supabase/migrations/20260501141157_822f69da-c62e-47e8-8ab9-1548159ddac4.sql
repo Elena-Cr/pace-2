@@ -1,0 +1,1 @@
+ALTER TYPE public.focus_outcome ADD VALUE IF NOT EXISTS 'blocked';

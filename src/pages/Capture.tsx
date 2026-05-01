@@ -26,6 +26,7 @@ export default function Capture() {
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
   const [deadline, setDeadline] = useState('');
+  const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog'>('backlog');
   const [estimate, setEstimate] = useState<number | ''>('');
   const [energy, setEnergy] = useState<string | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
@@ -85,6 +86,12 @@ export default function Capture() {
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
     try {
+      let scheduled_date: string | null = null;
+      if (when === 'today') scheduled_date = toISODate(new Date());
+      else if (when === 'tomorrow') {
+        const d = new Date(); d.setDate(d.getDate() + 1);
+        scheduled_date = toISODate(d);
+      }
       await insert.mutateAsync({
         title: title.trim(),
         domain,
@@ -98,7 +105,7 @@ export default function Capture() {
         involves_others: involvesOthers,
         others_rely: othersRely,
         subtasks,
-        scheduled_date: toISODate(new Date()),
+        scheduled_date,
       } as any);
       toast.success('Captured.');
       nav('/');
@@ -196,6 +203,22 @@ export default function Capture() {
         <div>
           <label className="pace-field-label">Deadline (optional)</label>
           <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
+        </div>
+
+        <div>
+          <label className="pace-field-label">When?</label>
+          <div className="flex gap-1.5">
+            {([
+              { k: 'today', label: 'Today' },
+              { k: 'tomorrow', label: 'Tomorrow' },
+              { k: 'backlog', label: 'Backlog' },
+            ] as const).map(opt => (
+              <button key={opt.k} type="button" onClick={() => setWhen(opt.k)}
+                className={when === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button type="button" onClick={() => setShowAdvanced(s => !s)} className="pace-btn-ghost w-full">

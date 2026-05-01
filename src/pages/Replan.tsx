@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
+import { Mood, MOOD_LABEL, ReplanReason, todayISO, toISODate } from '@/lib/pace';
 import { getMissed, buildReschedulePatch } from '@/lib/scheduling';
+import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
@@ -102,15 +103,10 @@ export default function Replan() {
 
                 <div className="mt-3">
                   <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {(Object.keys(REPLAN_REASON_LABEL) as ReplanReason[]).map(r => (
-                      <button key={r}
-                        onClick={() => setReasonByTask(s => ({ ...s, [t.id]: r }))}
-                        className={reason === r ? 'pace-chip-filled' : 'pace-chip'}>
-                        {REPLAN_REASON_LABEL[r]}
-                      </button>
-                    ))}
-                  </div>
+                  <ReplanReasonChips
+                    selected={reason}
+                    onSelect={(r) => setReasonByTask(s => ({ ...s, [t.id]: r }))}
+                  />
                 </div>
 
                 <div className="mt-3 flex gap-1.5 flex-wrap">
