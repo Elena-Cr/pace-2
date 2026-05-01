@@ -241,7 +241,8 @@ export default function Capture() {
               </div>
               <div className="mt-3">
                 <div className="pace-field-label">Effort level</div>
-                <div className="flex gap-1.5">
+                <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+                <div className="flex gap-1.5 mt-1.5">
                   {EFFORTS.map(e => (
                     <button key={e} onClick={() => setEffort(e === effort ? null : e)}
                       className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
