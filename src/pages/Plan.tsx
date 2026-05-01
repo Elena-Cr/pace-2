@@ -96,8 +96,11 @@ export default function Plan() {
   }
 
   const plannedMinutes = calculateDailyWorkload(tasks);
-  const energyMultiplier = energyLevel === 'Low' ? 0.75 : energyLevel === 'High' ? 1.1 : 1;
-  const capacityMinutes = Math.round(capacityHours * 60 * energyMultiplier);
+  const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+  const capacityMinutes = effectiveCapacityMinutes(
+    { available_hours: capacityHours, energy_level: energyLevel },
+    profileCapMin,
+  );
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
   const over = plannedMinutes > capacityMinutes;
   const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
