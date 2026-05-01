@@ -7,7 +7,7 @@ import {
   DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
   formatDeadline, fmtMin, todayISO, toISODate,
 } from '@/lib/pace';
-import { progressForStatus, buildReschedulePatch } from '@/lib/scheduling';
+import { progressForStatus, progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Timer, Trash2 } from 'lucide-react';
 
@@ -46,11 +46,15 @@ export default function TaskDetail() {
   }
 
   async function setStatus(s: Status) {
-    const target = progressForStatus(s, task.progress || 0);
-    // Don't drop existing progress when moving forward; honor it when status implies more.
-    const nextProgress = s === 'done' ? 100 : Math.max(task.progress || 0, target);
-    await update({ status: s, progress: nextProgress });
-    toast.success(`Marked ${STATUS_LABEL[s].toLowerCase()}.`);
+    // Explicit user selection: honour the canonical target so progress
+    // can decrease when moving backwards (e.g. Done → Nearly done).
+    const finalProgress = progressForStatusExplicit(s, task.progress || 0);
+    await update({ status: s, progress: finalProgress });
+    if (s === 'done') {
+      toast.success('Completed. That counts.');
+    } else {
+      toast.success(`Marked ${STATUS_LABEL[s].toLowerCase()}.`);
+    }
   }
 
   async function toggleSub(sid: string) {
