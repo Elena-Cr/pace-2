@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
-import type { Task } from '@/lib/scheduling';
-import { rowsToTasks, getMissed } from '@/lib/scheduling';
+import { getMissed } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
@@ -13,60 +12,54 @@ const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
 export default function Replan() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
-  const [carry, setCarry] = useState<Task[]>([]);
+  const { data: tasks = [] } = useTasks();
+  const { update, remove } = useTaskMutations();
   const [mood, setMood] = useState<Mood | null>(null);
   const [reasonByTask, setReasonByTask] = useState<Record<string, ReplanReason>>({});
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  useEffect(() => {
-    if (!user) return;
-    // Pull all open tasks scheduled before today, then drop rest blocks via getMissed.
-    supabase.from('tasks').select('*')
-      .neq('status', 'done')
-      .lt('scheduled_date', todayISO())
-      .order('reschedule_count', { ascending: false })
-      .then(({ data }) => setCarry(getMissed(rowsToTasks(data), todayISO())));
-  }, [user]);
+  // Pull missed tasks via shared helper, then sort by reschedule_count desc.
+  const carry = useMemo(() => {
+    return getMissed(tasks, todayISO())
+      .slice()
+      .sort((a, b) => (b.reschedule_count ?? 0) - (a.reschedule_count ?? 0));
+  }, [tasks]);
 
   async function action(id: string, kind: 'start' | 'reschedule' | 'remove' | 'tiny' | 'block') {
     const t = carry.find(x => x.id === id); if (!t) return;
     const reason = reasonByTask[id];
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
     if (kind === 'remove') {
-      await supabase.from('tasks').delete().eq('id', id);
-      setCarry(c => c.filter(x => x.id !== id));
+      await remove.mutateAsync(id);
       toast.success('Removed. That counts as a decision.');
       return;
     }
     if (kind === 'block') {
-      await supabase.from('tasks').update({ status: 'blocked', last_mood: mood, replanning_reason: reason }).eq('id', id);
-      setCarry(c => c.filter(x => x.id !== id));
+      await update.mutateAsync({ id, patch: { status: 'blocked', last_mood: mood, replanning_reason: reason } as any });
       toast.success('Marked blocked. We\'ll surface it when something unblocks.');
       return;
     }
     if (kind === 'reschedule') {
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id, patch: {
         scheduled_date: toISODate(tomorrow),
         reschedule_count: (t.reschedule_count || 0) + 1,
         status: 'rescheduled',
         last_mood: mood,
         replanning_reason: reason,
-      }).eq('id', id);
-      setCarry(c => c.filter(x => x.id !== id));
+      } as any });
       toast.success('Carried to tomorrow. Progress preserved.');
       return;
     }
     if (kind === 'tiny') {
-      await supabase.from('tasks').update({
+      await update.mutateAsync({ id, patch: {
         duration_minutes: 10,
         scheduled_date: todayISO(),
         next_action: t.next_action || 'Just open it for 10 minutes',
         last_mood: mood,
         replanning_reason: reason,
-      }).eq('id', id);
-      setCarry(c => c.filter(x => x.id !== id));
+      } as any });
       toast.success('Made it tiny. Ten minutes is a real start.');
     }
   }
