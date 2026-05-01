@@ -13,11 +13,26 @@ export default function Focus() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const loc = useLocation() as any;
-  const initialMinutes: number = loc.state?.minutes ?? 25;
   const taskIdHint: string | undefined = loc.state?.taskId;
 
   const { data: allTasks = [] } = useTasks();
   const { update } = useTaskMutations();
+
+  // Pick the focus task: explicit hint, else null so the user picks from a
+  // list. (Auto-picking the first open task hid the choice from users.)
+  const task = useMemo<Task | null>(() => {
+    const candidates = allTasks.filter(t => t.status !== 'done' && !t.is_rest);
+    if (taskIdHint) return candidates.find(t => t.id === taskIdHint) ?? null;
+    return null;
+  }, [allTasks, taskIdHint]);
+
+  // Default session length: if the chosen task has a duration under 2h, use
+  // it; otherwise (or with no task) fall back to caller's hint or 25m.
+  const taskDefault = task?.duration_minutes && task.duration_minutes > 0 && task.duration_minutes < 120
+    ? task.duration_minutes
+    : null;
+  const initialMinutes: number = taskDefault ?? loc.state?.minutes ?? 25;
+
   const [planned, setPlanned] = useState(initialMinutes);
   const [secondsLeft, setSecondsLeft] = useState(initialMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -29,15 +44,22 @@ export default function Focus() {
   // True while a 5-minute recovery break countdown is running.
   // The visual ring + timer are reused; we just don't show focus controls.
   const [breakMode, setBreakMode] = useState(false);
+  // Confirmation gate for switching tasks while a session is running.
+  const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
-  // Pick the focus task: explicit hint, else first open non-rest task by useTasks ordering.
-  const task = useMemo<Task | null>(() => {
-    const candidates = allTasks.filter(t => t.status !== 'done' && !t.is_rest);
-    if (taskIdHint) return candidates.find(t => t.id === taskIdHint) ?? null;
-    return candidates[0] ?? null;
-  }, [allTasks, taskIdHint]);
+  // When a new task is chosen (e.g. via the picker) and nothing is running yet,
+  // sync the planned length to that task's duration if it's a sensible focus block.
+  useEffect(() => {
+    if (running) return;
+    if (sessionId) return;
+    if (taskDefault && planned !== taskDefault) {
+      setPlanned(taskDefault);
+      setSecondsLeft(taskDefault * 60);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task?.id]);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
