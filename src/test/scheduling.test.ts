@@ -121,6 +121,22 @@ describe('progressForStatus', () => {
   });
 });
 
+import { progressForStatusExplicit } from '@/lib/scheduling';
+describe('progressForStatusExplicit', () => {
+  it('returns 0 for not_started regardless of current', () => {
+    expect(progressForStatusExplicit('not_started', 80)).toBe(0);
+  });
+  it('returns 80 for nearly_done even if current is 100', () => {
+    expect(progressForStatusExplicit('nearly_done', 100)).toBe(80);
+  });
+  it('returns 100 for done', () => {
+    expect(progressForStatusExplicit('done', 0)).toBe(100);
+  });
+  it('preserves current for unmapped statuses (e.g. rescheduled)', () => {
+    expect(progressForStatusExplicit('rescheduled', 40)).toBe(40);
+  });
+});
+
 import { bufferMinutes, getTaskRestConflicts, calculateDailyWorkloadWithBuffer } from '@/lib/scheduling';
 
 describe('buffer', () => {
