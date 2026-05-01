@@ -7,6 +7,7 @@ import {
   DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
   formatDeadline, fmtMin, todayISO, toISODate,
 } from '@/lib/pace';
+import { progressForStatus, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Timer, Trash2 } from 'lucide-react';
 
