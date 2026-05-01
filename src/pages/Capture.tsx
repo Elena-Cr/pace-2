@@ -96,6 +96,8 @@ export default function Capture() {
       else if (when === 'tomorrow') {
         const d = new Date(); d.setDate(d.getDate() + 1);
         scheduled_date = toISODate(d);
+      } else if (when === 'pick' && pickedDate) {
+        scheduled_date = toISODate(pickedDate);
       }
       await insert.mutateAsync({
         title: title.trim(),
