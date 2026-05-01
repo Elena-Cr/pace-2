@@ -488,18 +488,30 @@ export default function CalendarView() {
             {visibleDays.map(di => {
               const dayEvs = visibleEvents.filter(e => e.day === di);
               const summary = daySummary[di];
+              // Lay out overlapping events into side-by-side columns so two
+              // tasks in the same hour don't stack on top of each other.
+              const laidOut = layoutEventsForDay(dayEvs);
               return (
                 <div key={di}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(di)}
-                  className="flex-1 min-w-0 relative border-l border-border/40">
-                  {/* Hour lines + click-to-add */}
+                  // Single click handler computes the hour from the y-offset.
+                  // Replaces 18 separate <button> hour cells per day so keyboard
+                  // users don't get a tab stop at every empty slot.
+                  onClick={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const hour = START_HOUR + Math.floor(y / HOUR_PX);
+                    if (hour >= START_HOUR && hour < END_HOUR) createAt(di, hour);
+                  }}
+                  className="flex-1 min-w-0 relative border-l border-border/40 cursor-pointer">
+                  {/* Hour grid lines (visual only — not focusable). */}
                   {HOURS.map((h, i) => (
-                    <button key={h}
-                      onClick={() => createAt(di, h)}
-                      className="absolute left-0 right-0 border-t border-border/30 hover:bg-muted/40 transition"
-                      style={{ top: i * HOUR_PX, height: HOUR_PX }}
-                      aria-label={`Add at ${h}:00`} />
+                    <div key={h}
+                      aria-hidden="true"
+                      className="absolute left-0 right-0 border-t border-border/30 pointer-events-none"
+                      style={{ top: i * HOUR_PX, height: HOUR_PX }} />
                   ))}
 
                   {/* Overbooking ribbon */}
@@ -510,27 +522,29 @@ export default function CalendarView() {
                   )}
 
                   {/* Events */}
-                  {dayEvs.map(ev => {
+                  {laidOut.map(ev => {
                     const top = ((ev.startMin - START_HOUR * 60) / 60) * HOUR_PX;
                     const height = Math.max(22, ((ev.endMin - ev.startMin) / 60) * HOUR_PX - 2);
                     const dc = domainClass(ev.domain);
                     const conflict = summary.conflictIds.has(ev.id);
                     const isFixed = !!ev.fixed;
+                    const widthPct = 100 / ev.columnCount;
+                    const leftPct = ev.column * widthPct;
                     return (
                       <button
                         key={ev.id}
                         draggable={!isFixed}
                         onDragStart={() => setDrag({ id: ev.id })}
-                        onClick={() => setOpen(ev)}
-                        className={`absolute left-0.5 right-0.5 rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
-                        style={{ top, height, zIndex: 5 }}>
+                        onClick={(e) => { e.stopPropagation(); setOpen(ev); }}
+                        className={`absolute rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
+                        style={{ top, height, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`, zIndex: 5 }}>
                         <div className="flex gap-1 items-start">
                           <span className={`w-0.5 self-stretch rounded-full ${dc.bar} shrink-0`} />
                           <div className="min-w-0 flex-1">
                             <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
                             <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
                             <div className="flex gap-1 mt-0.5 flex-wrap items-center">
-                              {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" />}
+                              {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" aria-label="Others rely on this" />}
                               {(ev.reschedule_count ?? 0) >= 2 && (
                                 <span className="text-[9px] text-muted-foreground" aria-label={`Rescheduled ${ev.reschedule_count} times`}>↻{ev.reschedule_count}</span>
                               )}
