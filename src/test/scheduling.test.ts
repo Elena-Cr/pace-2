@@ -13,6 +13,7 @@ const make = (p: Partial<Task> = {}): Task => ({
   next_action: null, notes: null, progress: 0, reschedule_count: 0,
   involves_others: false, others_rely: false, subtasks: [],
   replanning_reason: null, last_mood: null,
+  completed_at: null,
   created_at: '', updated_at: '',
   ...p,
 });

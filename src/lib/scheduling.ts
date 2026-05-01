@@ -291,3 +291,42 @@ export function buildReschedulePatch(
     // progress, subtasks, next_action, notes intentionally untouched
   };
 }
+
+// ---------- Calendar event layout (sweep-line column allocation) ----------
+// Given a day's events, assigns each event a `column` index and `columnCount`
+// (the number of columns in its overlap cluster) so overlapping events render
+// side by side instead of stacked.
+export type LaidOutEvent<E extends { id: string; startMin: number; endMin: number }> =
+  E & { column: number; columnCount: number };
+
+export function layoutEventsForDay<E extends { id: string; startMin: number; endMin: number }>(
+  events: E[],
+): LaidOutEvent<E>[] {
+  const sorted = [...events].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+  const out = new Map<string, { column: number; columnCount: number }>();
+  // Process in clusters: a cluster is a maximal run of events where each
+  // overlaps at least one other in the cluster.
+  let cluster: E[] = [];
+  let clusterEnd = -Infinity;
+  const flush = () => {
+    if (!cluster.length) return;
+    // Assign first-available column per event using sweep over starts.
+    const columns: number[] = []; // columns[i] = endMin of last event placed in column i
+    const placed: Array<{ e: E; col: number }> = [];
+    cluster.forEach(e => {
+      let col = columns.findIndex(end => end <= e.startMin);
+      if (col === -1) { col = columns.length; columns.push(e.endMin); }
+      else columns[col] = e.endMin;
+      placed.push({ e, col });
+    });
+    const count = columns.length;
+    placed.forEach(({ e, col }) => out.set(e.id, { column: col, columnCount: count }));
+  };
+  sorted.forEach(e => {
+    if (e.startMin >= clusterEnd) { flush(); cluster = []; clusterEnd = -Infinity; }
+    cluster.push(e);
+    clusterEnd = Math.max(clusterEnd, e.endMin);
+  });
+  flush();
+  return sorted.map(e => ({ ...e, ...(out.get(e.id) ?? { column: 0, columnCount: 1 }) }));
+}
