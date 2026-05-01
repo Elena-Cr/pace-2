@@ -8,6 +8,10 @@ export type Capacity = {
   available_hours: number;
   energy_level: string;
   recovery_notes: string | null;
+  // Optional per-time-of-day overrides on top of the daily energy_level.
+  morning_energy: string | null;
+  afternoon_energy: string | null;
+  evening_energy: string | null;
 };
 
 const KEY = (userId?: string, date?: string) => ['daily_capacity', userId, date] as const;
