@@ -5,8 +5,12 @@ import { useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus, Sparkles, Repeat, Users } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat, Users, CalendarIcon } from 'lucide-react';
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
