@@ -170,13 +170,31 @@ export default function CalendarView() {
   const { data: allTasks = [] } = useTasks();
   const { update, insert } = useTaskMutations();
   const nav = useNavigate();
-  const [view, setView] = useState<'day' | 'week' | 'month'>('week');
+  // URL-backed view + date so back-navigation from TaskDetail restores the
+  // exact calendar state the user left. `view` is one of day|week|month;
+  // `date` is the focused date in YYYY-MM-DD (centerDate for week view,
+  // selected day for day view, anchor month for month view).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsedDate = (() => {
+    const raw = searchParams.get('date');
+    if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      const [y, m, dd] = raw.split('-').map(Number);
+      const d = new Date(y, m - 1, dd); d.setHours(0, 0, 0, 0);
+      if (!isNaN(d.getTime())) return d;
+    }
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d;
+  })();
+  const parsedView = (() => {
+    const v = searchParams.get('view');
+    return v === 'day' || v === 'week' || v === 'month' ? v : 'week';
+  })();
+  const [view, setView] = useState<'day' | 'week' | 'month'>(parsedView);
   // weekStart drives the 7-day window used by Day view's day picker.
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(parsedDate));
   // centerDate drives the 3-day sliding Week view (centerDate-1, centerDate, centerDate+1).
-  const [centerDate, setCenterDate] = useState(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
-  const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 6) % 7);
-  const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
+  const [centerDate, setCenterDate] = useState(() => parsedDate);
+  const [dayIdx, setDayIdx] = useState(() => (parsedDate.getDay() + 6) % 7);
+  const [monthAnchor, setMonthAnchor] = useState(() => { const d = new Date(parsedDate); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [filter, setFilter] = useState<Set<Domain | 'rest'>>(new Set(ALL_DOMAINS));
   const [showCompleted, setShowCompleted] = useState(false);
   const [open, setOpen] = useState<CalEvent | null>(null);
