@@ -6,7 +6,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { rowsToTasks } from '@/lib/scheduling';
+import { rowsToTasks, workloadByDate } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 
@@ -47,20 +47,18 @@ export default function Workload() {
 
   const week = useMemo(() => {
     const start = startOfWeek();
+    // Total minutes per day comes from the shared helper so every view agrees.
+    const totalsByDate = workloadByDate(tasks.filter(t => !t.is_rest));
     return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const iso = toISODate(d);
       const dayTasks = tasks.filter(t => t.scheduled_date === iso && !t.is_rest);
       const totals: Record<Domain, number> = { academic: 0, work: 0, social: 0, personal: 0 };
-      let rest = 0;
-      let total = 0;
       dayTasks.forEach(t => {
         const m = t.duration_minutes || 30;
-        total += m;
-        if (t.is_rest) rest += m;
-        else if (t.domain) totals[t.domain as Domain] += m;
+        if (t.domain) totals[t.domain as Domain] += m;
       });
-      return { date: d, iso, totals, rest, total, count: dayTasks.length };
+      return { date: d, iso, totals, rest: 0, total: totalsByDate[iso] || 0, count: dayTasks.length };
     });
   }, [tasks]);
 

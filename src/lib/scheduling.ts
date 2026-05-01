@@ -91,6 +91,35 @@ export function getMissed(tasks: Task[], today: string): Task[] {
   );
 }
 
+// Open, non-rest tasks scheduled for the given day.
+export function getTodayTasks(tasks: Task[], today: string): Task[] {
+  return tasks.filter(
+    t => t.scheduled_date === today && !t.is_rest && t.status !== 'done'
+  );
+}
+
+// Same shape as getTodayTasks but for an arbitrary "tomorrow" date.
+export function getTomorrowTasks(tasks: Task[], tomorrow: string): Task[] {
+  return tasks.filter(
+    t => t.scheduled_date === tomorrow && !t.is_rest && t.status !== 'done'
+  );
+}
+
+// Rest blocks for a given date — includes rest blocks with no scheduled_date
+// (treated as recurring/today defaults).
+export function getRestBlocksForDate(tasks: Task[], date: string): Task[] {
+  return tasks.filter(
+    t => t.is_rest && (!t.scheduled_date || t.scheduled_date === date)
+  );
+}
+
+// Tasks completed on the given day (uses updated_at as a proxy for completion time).
+export function getDoneOnDate(tasks: Task[], date: string): Task[] {
+  return tasks.filter(
+    t => t.status === 'done' && (t.updated_at ?? '').slice(0, 10) === date
+  );
+}
+
 // ---------- Workload math ----------
 export function calculateDailyWorkload(tasks: Task[]): number {
   return tasks.reduce((sum, t) => sum + (t.duration_minutes || 0), 0);

@@ -7,7 +7,7 @@ import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { rowsToTasks, rowToTask } from '@/lib/scheduling';
+import { rowsToTasks, rowToTask, getScheduledEvents } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
@@ -161,33 +161,37 @@ export default function CalendarView() {
       .then(({ data }) => setMonthTasks(rowsToTasks(data)));
   }, [user, monthAnchor, view]);
 
-  // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day
+  // Build events: tasks scheduled this week + fixed rest/meal/sleep blocks per day.
+  // Task placement (incl. start_time / end_time) comes from the shared helper so
+  // Calendar agrees with Home, Plan, and Workload.
   const events: CalEvent[] = useMemo(() => {
     const list: CalEvent[] = [];
     days.forEach((d, di) => {
       fixedBlocks.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
     });
-    tasks.forEach((t, i) => {
-      const dateStr = t.scheduled_date as string | null;
-      if (!dateStr) return;
-      const di = days.findIndex(d => toISODate(d) === dateStr);
-      if (di < 0) return;
-      const minutes = t.duration_minutes || 45;
-      // synthetic start time: stagger across the day so blocks don't fully stack
-      const baseStart = 9 * 60 + (i % 6) * 80;
-      const startMin = baseStart;
-      const endMin = startMin + minutes;
+    const taskById = new Map(tasks.map(t => [t.id, t] as const));
+    const dayByDate = new Map(days.map((d, i) => [toISODate(d), i] as const));
+    getScheduledEvents(tasks).forEach(ev => {
+      const di = ev.taskId ? dayByDate.get(ev.date) : undefined;
+      if (di === undefined || di < 0) return;
+      const t = ev.taskId ? taskById.get(ev.taskId) : undefined;
+      if (!t) return;
       list.push({
-        id: `task-${t.id}`,
+        id: ev.id,
         taskId: t.id,
-        title: t.title,
-        domain: (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest',
-        kind: t.is_rest ? 'rest' : 'task',
-        status: t.status, next_action: t.next_action,
-        duration_minutes: t.duration_minutes, effort_level: t.effort_level,
-        energy: t.energy, notes: t.notes,
+        title: ev.title,
+        domain: ev.domain,
+        kind: ev.kind,
+        status: ev.status,
+        next_action: t.next_action,
+        duration_minutes: t.duration_minutes,
+        effort_level: t.effort_level,
+        energy: t.energy,
+        notes: t.notes,
         others_rely: t.others_rely,
-        day: di, startMin, endMin,
+        day: di,
+        startMin: ev.startMin,
+        endMin: ev.endMin,
       });
     });
     return list;

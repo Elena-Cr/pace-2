@@ -7,7 +7,14 @@ import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { rowsToTasks } from '@/lib/scheduling';
+import {
+  rowsToTasks,
+  getTodayTasks,
+  getTomorrowTasks,
+  getMissed,
+  getDoneOnDate,
+  getRestBlocksForDate,
+} from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
 
@@ -59,11 +66,11 @@ export default function Home() {
     if (error) { toast.error(error.message); return; }
     const all = rowsToTasks(data);
 
-    const open = all.filter(t => t.status !== 'done');
-    setTasks(open.filter(t => !t.scheduled_date || t.scheduled_date >= today));
-    setMissed(open.filter(t => t.scheduled_date && t.scheduled_date < today && !t.is_rest));
-    setDoneToday(all.filter(t => t.status === 'done' && (t.updated_at ?? '').slice(0, 10) === today));
-    setTomorrowCount(open.filter(t => t.scheduled_date === tomorrowStr && !t.is_rest).length);
+    // Keep the broader pool around so derived memos can compute today/rest/etc.
+    setTasks(all);
+    setMissed(getMissed(all, today));
+    setDoneToday(getDoneOnDate(all, today));
+    setTomorrowCount(getTomorrowTasks(all, tomorrowStr).length);
 
     const { data: cap } = await supabase.from('daily_capacity').select('available_hours, energy_level').eq('date', today).maybeSingle();
     setCapacity(cap as any);
@@ -96,8 +103,8 @@ export default function Home() {
   const dateStr = today.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
   const todayStr = todayISO();
 
-  const todayTasks = useMemo(() => tasks.filter(t => t.scheduled_date === todayStr && !t.is_rest), [tasks, todayStr]);
-  const restBlocks = useMemo(() => tasks.filter(t => t.is_rest && (!t.scheduled_date || t.scheduled_date === todayStr)), [tasks, todayStr]);
+  const todayTasks = useMemo(() => getTodayTasks(tasks, todayStr), [tasks, todayStr]);
+  const restBlocks = useMemo(() => getRestBlocksForDate(tasks, todayStr), [tasks, todayStr]);
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
 
