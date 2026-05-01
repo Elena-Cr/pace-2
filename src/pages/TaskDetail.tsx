@@ -198,9 +198,36 @@ export default function TaskDetail() {
           {task.others_rely && <span className="pace-chip">Others rely</span>}
           {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
         </div>
-        {task.notes && (
-          <div className="mt-3 text-[14px] text-muted-foreground whitespace-pre-wrap">{task.notes}</div>
-        )}
+        <div className="mt-3">
+          {editingNotes ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                className="pace-field min-h-[88px] py-3"
+                value={notesDraft}
+                onChange={e => setNotesDraft(e.target.value)}
+                placeholder="Anything that helps future-you"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { update({ notes: notesDraft.trim() || null }); setEditingNotes(false); }}
+                  className="pace-btn-primary pace-btn-sm"
+                >Save</button>
+                <button
+                  onClick={() => setEditingNotes(false)}
+                  className="pace-btn-ghost pace-btn-sm"
+                >Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setNotesDraft(task.notes ?? ''); setEditingNotes(true); }}
+              className="text-left text-[14px] text-muted-foreground whitespace-pre-wrap w-full hover:text-foreground transition"
+            >
+              {task.notes || 'Add notes'}
+            </button>
+          )}
+        </div>
       </div>
 
       {(task.reschedule_count ?? 0) >= 2 && (
