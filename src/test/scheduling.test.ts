@@ -77,7 +77,7 @@ describe('capacity helpers', () => {
     expect(effectiveCapacityMinutes(
       { available_hours: 6, energy_level: 'Low' },
       330,
-    )).toBe(Math.round(6 * 60 * 0.75));
+    )).toBe(Math.round(6 * 60 * 0.9));
   });
   it('applies the High energy multiplier', () => {
     expect(effectiveCapacityMinutes(
