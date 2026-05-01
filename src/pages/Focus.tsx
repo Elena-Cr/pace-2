@@ -4,7 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { type Task, progressForStatus } from '@/lib/scheduling';
+import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
+import { todayISO, DOMAIN_COLOR_VAR, type Domain, fmtMin } from '@/lib/pace';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
