@@ -7,7 +7,7 @@ import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { rowsToTasks, rowToTask, getScheduledEvents } from '@/lib/scheduling';
+import { rowsToTasks, rowToTask, getScheduledEvents, effectiveCapacityMinutes, capacityState } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
