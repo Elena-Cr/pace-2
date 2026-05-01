@@ -9,12 +9,17 @@ import { todayISO, fmtMin, toISODate, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
   getBacklog,
-  calculateDailyWorkload,
+  getRestBlocksForDate,
+  getScheduledEvents,
+  expandTimeBlocks,
+  getTaskRestConflicts,
+  calculateDailyWorkloadWithBuffer,
+  bufferMinutes,
   effectiveCapacityMinutes,
   buildReschedulePatch,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { Calendar as CalIcon } from 'lucide-react';
+import { Calendar as CalIcon, Users, AlertTriangle } from 'lucide-react';
 
 function fmtBlockTime(t: string) {
   const [h, m] = t.split(':').map(Number);
@@ -80,7 +85,9 @@ export default function Plan() {
     });
   }
 
-  const plannedMinutes = calculateDailyWorkload(tasks);
+  const plannedMinutes = calculateDailyWorkloadWithBuffer(tasks);
+  const taskMinutesOnly = tasks.reduce((s, t) => s + (t.duration_minutes || 0), 0);
+  const bufferTotal = plannedMinutes - taskMinutesOnly;
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
   const capacityReady = capacityMin != null;
   const capacityMinutes = effectiveCapacityMinutes(
@@ -92,6 +99,18 @@ export default function Plan() {
   const heavyTask = tasks.find(t => t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 90);
   const preferredCount = userProfile?.preferred_tasks_per_day ?? null;
   const showPaceHint = preferredCount != null && tasks.length > preferredCount;
+
+  // Conflict detection for today (tasks vs protected blocks).
+  const planConflictTaskIds = useMemo(() => {
+    const taskEvents = getScheduledEvents(tasks).filter(e => e.date === today);
+    const blocks = (userProfile?.default_time_blocks ?? []).map(b => ({
+      label: b.label, start: b.start, end: b.end, kind: b.kind as any,
+    }));
+    const blockEvents = expandTimeBlocks(blocks, today);
+    const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
+    return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
+  }, [tasks, userProfile, today]);
+
 
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
@@ -153,6 +172,11 @@ export default function Plan() {
         <span>{fmtMin(plannedMinutes)} planned</span>
         <span>{capacityReady ? `${fmtMin(capacityMinutes)} available` : '— available'}</span>
       </div>
+      {bufferTotal > 0 && (
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          {fmtMin(bufferTotal)} of {fmtMin(plannedMinutes)} is buffer time
+        </div>
+      )}
 
       {showPaceHint && (
         <div className="pace-card-soft mt-3 animate-fade-in text-[13px] text-muted-foreground">
@@ -191,15 +215,31 @@ export default function Plan() {
       <div className="pace-eyebrow mt-6 mb-2">Tasks today</div>
       <div className="space-y-2">
         {tasks.length === 0 && <div className="text-sm text-muted-foreground">Nothing scheduled. Capture something or rest — both count.</div>}
-        {tasks.map(t => (
-          <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
-              <div className="text-[12px] mt-0.5">{t.duration_minutes ? fmtMin(t.duration_minutes) : '—'}{t.effort_level ? ` · ${t.effort_level}` : ''}</div>
-            </div>
-            {t.duration_minutes && <span className="pace-chip">+{Math.ceil(t.duration_minutes * 0.15)}m buffer</span>}
-          </button>
-        ))}
+        {tasks.map(t => {
+          const conflict = planConflictTaskIds.has(t.id);
+          return (
+            <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
+                <div className="text-[12px] mt-0.5">{t.duration_minutes ? fmtMin(t.duration_minutes) : '—'}{t.effort_level ? ` · ${t.effort_level}` : ''}</div>
+                <div className="mt-1 flex flex-wrap gap-1.5 items-center text-[11px] text-muted-foreground">
+                  {(t.involves_others || t.others_rely) && (
+                    <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" />{t.others_rely ? 'Others rely' : 'Involves others'}</span>
+                  )}
+                  {(t.reschedule_count ?? 0) >= 2 && (
+                    <span>· Rescheduled {t.reschedule_count}×</span>
+                  )}
+                  {conflict && (
+                    <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]">
+                      · <AlertTriangle className="w-3 h-3" /> overlaps rest
+                    </span>
+                  )}
+                </div>
+              </div>
+              {t.duration_minutes && <span className="pace-chip">+{bufferMinutes(t)}m buffer</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Backlog */}
@@ -219,7 +259,13 @@ export default function Plan() {
                 {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
                 {t.effort_level ? ` · ${t.effort_level}` : ''}
                 {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
+                {(t.reschedule_count ?? 0) >= 2 && ` · Rescheduled ${t.reschedule_count}×`}
               </div>
+              {(t.involves_others || t.others_rely) && (
+                <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Users className="w-3 h-3" />{t.others_rely ? 'Others rely' : 'Involves others'}
+                </div>
+              )}
             </button>
             <div className="mt-3 flex gap-2">
               <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">

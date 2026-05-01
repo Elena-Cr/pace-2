@@ -14,12 +14,16 @@ import {
   getMissed,
   getDoneOnDate,
   getRestBlocksForDate,
+  getScheduledEvents,
+  expandTimeBlocks,
+  getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
   buildReschedulePatch,
 } from '@/lib/scheduling';
+import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
+import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
 
 const FILTERS: { k: 'all' | Status; label: string }[] = [
   { k: 'all', label: 'All' },
@@ -85,6 +89,36 @@ export default function Home() {
   const restBlocks = useMemo(() => getRestBlocksForDate(tasks, todayStr), [tasks, todayStr]);
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
+
+  // Conflict detection: build today's full event picture (tasks + protected
+  // time blocks from the user profile) and ask the shared helper which task
+  // event ids overlap rest. Use the *unfiltered* event set so a hidden filter
+  // never makes a real conflict invisible.
+  const conflictTaskIds = useMemo(() => {
+    const taskEvents = getScheduledEvents(tasks).filter(e => e.date === todayStr);
+    const blocks = (userProfile?.default_time_blocks ?? []).map(b => ({
+      label: b.label, start: b.start, end: b.end, kind: b.kind as any,
+    }));
+    const blockEvents = expandTimeBlocks(blocks, todayStr);
+    const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
+    // ids are like "task-<uuid>"; map back to task ids
+    return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
+  }, [tasks, userProfile, todayStr]);
+
+  // Important without a deadline (recurring or must-priority).
+  const { templates } = useTaskSuggestions(user?.id);
+  const recurringStems = useMemo(
+    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
+    [templates],
+  );
+  const noDeadlineHighValue = useMemo(
+    () => tasks.filter(t =>
+      !t.deadline
+      && t.status !== 'done'
+      && (t.priority === 'must' || recurringStems.has(stem(t.title)))
+    ),
+    [tasks, recurringStems],
+  );
 
   // Capacity math — daily override (daily_capacity row) takes precedence,
   // otherwise fall back to user's profile default.
@@ -211,6 +245,16 @@ export default function Home() {
                 {nextUp.domain && <span>{DOMAIN_LABEL[nextUp.domain as Domain]}</span>}
                 {nextUp.duration_minutes != null && <span>· {fmtMin(nextUp.duration_minutes)}</span>}
                 {nextUp.next_action && <span>· {nextUp.next_action}</span>}
+                {(nextUp.involves_others || nextUp.others_rely) && (
+                  <span className="inline-flex items-center gap-1">
+                    · <Users className="w-3 h-3" /> {nextUp.others_rely ? 'Others rely' : 'Involves others'}
+                  </span>
+                )}
+                {conflictTaskIds.has(nextUp.id) && (
+                  <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]">
+                    · <AlertTriangle className="w-3 h-3" /> overlaps rest
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -221,6 +265,20 @@ export default function Home() {
             <button onClick={() => nav(`/task/${nextUp.id}`)} className="pace-btn pace-btn-sm">Open</button>
           </div>
         </div>
+      )}
+
+      {/* Important without a deadline */}
+      {noDeadlineHighValue.length > 0 && (
+        <button
+          onClick={() => nav('/workload')}
+          className="pace-card-soft mt-3 w-full text-left flex items-center justify-between gap-2"
+        >
+          <span className="text-[13px]">
+            <span className="pace-eyebrow inline-flex items-center gap-1.5 mr-2"><span className="priority-dot must" />Important without a deadline</span>
+            {noDeadlineHighValue.length} {noDeadlineHighValue.length === 1 ? 'task' : 'tasks'} worth a slot this week.
+          </span>
+          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        </button>
       )}
 
       {/* Domain breakdown */}
@@ -289,10 +347,18 @@ export default function Home() {
         )}
 
         {filtered.map((t) => (
-          <TaskCard key={t.id} task={t} onOpen={(task) => nav(`/task/${task.id}`)} />
+          <div key={t.id} className="space-y-1">
+            {conflictTaskIds.has(t.id) && (
+              <div className="flex items-center gap-1.5 text-[12px] text-[hsl(var(--attention))] px-1">
+                <AlertTriangle className="w-3 h-3" /> overlaps rest
+              </div>
+            )}
+            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} />
+          </div>
         ))}
 
-        {filter === 'all' && restBlocks.map(t => (
+        {/* Rest blocks stay visible no matter which status filter is active. */}
+        {restBlocks.map(t => (
           <div key={t.id} className="pace-rest">
             <span>◯ {t.title}</span>
             <span>{t.next_action ?? ''}</span>

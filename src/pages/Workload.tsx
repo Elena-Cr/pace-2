@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTasks } from '@/hooks/useTasks';
+import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, DOMAIN_COLOR_VAR, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 import { workloadByDate } from '@/lib/scheduling';
@@ -21,6 +22,7 @@ export default function Workload() {
   const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const { data: allTasks = [] } = useTasks();
+  const { templates } = useTaskSuggestions(user?.id);
   const [reflection, setReflection] = useState<number | null>(null);
 
   const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
@@ -59,8 +61,17 @@ export default function Workload() {
   }, {} as Record<Domain, number>);
   const grandTotal = Object.values(totalsByDomain).reduce((a, b) => a + b, 0);
 
-  // Non-deadline high-value
-  const noDeadline = tasks.filter(t => !t.deadline && t.priority === 'must' && t.status !== 'done');
+  // Non-deadline high-value: priority "must" OR a stem that matches a
+  // recurring template from the user's history.
+  const recurringStems = useMemo(
+    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
+    [templates],
+  );
+  const noDeadline = tasks.filter(t =>
+    !t.deadline
+    && t.status !== 'done'
+    && (t.priority === 'must' || recurringStems.has(stem(t.title)))
+  );
 
   return (
     <AppShell>

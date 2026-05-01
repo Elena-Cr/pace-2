@@ -144,6 +144,18 @@ export function capacityState(plannedMin: number, capMin: number): CapacityState
 }
 
 // ---------- Workload math ----------
+// 15% rounded up. Tasks without an estimate contribute no buffer.
+export function bufferMinutes(task: Pick<Task, 'duration_minutes'>): number {
+  const d = task.duration_minutes ?? 0;
+  if (d <= 0) return 0;
+  return Math.ceil(d * 0.15);
+}
+
+// Same shape as calculateDailyWorkload but adds the per-task buffer.
+export function calculateDailyWorkloadWithBuffer(tasks: Task[]): number {
+  return tasks.reduce((sum, t) => sum + (t.duration_minutes || 0) + bufferMinutes(t), 0);
+}
+
 export function calculateDailyWorkload(tasks: Task[]): number {
   return tasks.reduce((sum, t) => sum + (t.duration_minutes || 0), 0);
 }
@@ -153,6 +165,27 @@ export function workloadByDate(tasks: Task[]): Record<string, number> {
   tasks.forEach(t => {
     if (!t.scheduled_date) return;
     out[t.scheduled_date] = (out[t.scheduled_date] || 0) + (t.duration_minutes || 0);
+  });
+  return out;
+}
+
+// ---------- Conflict detection (task vs rest/meal/sleep blocks) ----------
+// Returns the set of task event ids that overlap any non-task event in the
+// same calendar day. Use on the *unfiltered* day events so hiding domains
+// in the UI doesn't make a real conflict disappear.
+export function getTaskRestConflicts(events: CalEvent[]): Set<string> {
+  const out = new Set<string>();
+  // Bucket by date so we only compare events on the same day.
+  const byDate: Record<string, CalEvent[]> = {};
+  events.forEach(e => { (byDate[e.date] ||= []).push(e); });
+  Object.values(byDate).forEach(list => {
+    const tasks = list.filter(e => e.kind === 'task');
+    const rests = list.filter(e => e.kind !== 'task');
+    tasks.forEach(t => {
+      rests.forEach(r => {
+        if (t.startMin < r.endMin && t.endMin > r.startMin) out.add(t.id);
+      });
+    });
   });
   return out;
 }

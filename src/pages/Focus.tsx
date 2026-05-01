@@ -174,7 +174,9 @@ export default function Focus() {
       } as any });
       nav('/');
     } else if (outcome === 'blocked') {
-      await markBlocked();
+      if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
+      toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
+      nav('/');
     } else {
       nav('/replan');
     }
@@ -241,7 +243,7 @@ export default function Focus() {
             <button onClick={takeBreak} className="pace-btn">Take a break</button>
             <button onClick={reduceScope} className="pace-btn">Reduce scope</button>
             <button onClick={reschedule} className="pace-btn">Reschedule</button>
-            <button onClick={markBlocked} className="pace-btn col-span-2">Mark blocked</button>
+            <button onClick={() => { setOverrunPrompt(false); setCompletionCheck(true); }} className="pace-btn col-span-2">Mark blocked</button>
           </div>
         </div>
       )}

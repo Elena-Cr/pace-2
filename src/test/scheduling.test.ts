@@ -119,3 +119,49 @@ describe('progressForStatus', () => {
     expect(progressForStatus('rescheduled', 40)).toBe(40);
   });
 });
+
+import { bufferMinutes, getTaskRestConflicts, calculateDailyWorkloadWithBuffer } from '@/lib/scheduling';
+
+describe('buffer', () => {
+  it('returns 15% rounded up for a 60-minute task', () => {
+    expect(bufferMinutes(make({ duration_minutes: 60 }))).toBe(9);
+  });
+  it('returns 0 when duration is null', () => {
+    expect(bufferMinutes(make({ duration_minutes: null }))).toBe(0);
+  });
+  it('rolls into daily workload helper', () => {
+    const tasks = [
+      make({ duration_minutes: 60 }),
+      make({ duration_minutes: 30 }),
+      make({ duration_minutes: null }),
+    ];
+    // 60+9 + 30+5 + 0 = 104
+    expect(calculateDailyWorkloadWithBuffer(tasks)).toBe(104);
+  });
+});
+
+describe('conflicts', () => {
+  it('flags overlapping task and rest events on the same day', () => {
+    const events = [
+      { id: 'r', kind: 'meal', startMin: 750, endMin: 780, date: '2026-05-01', title: 'Lunch', domain: 'rest' },
+      { id: 't', kind: 'task', startMin: 760, endMin: 820, date: '2026-05-01', title: 'Stats', domain: 'academic' },
+    ] as any;
+    const conflicts = getTaskRestConflicts(events);
+    expect(conflicts.has('t')).toBe(true);
+    expect(conflicts.has('r')).toBe(false);
+  });
+  it('does not flag overlaps that span different dates', () => {
+    const events = [
+      { id: 'r', kind: 'meal', startMin: 750, endMin: 780, date: '2026-05-01', title: 'Lunch', domain: 'rest' },
+      { id: 't', kind: 'task', startMin: 760, endMin: 820, date: '2026-05-02', title: 'Stats', domain: 'academic' },
+    ] as any;
+    expect(getTaskRestConflicts(events).size).toBe(0);
+  });
+  it('does not flag back-to-back (non-overlapping) events', () => {
+    const events = [
+      { id: 'r', kind: 'meal', startMin: 750, endMin: 780, date: '2026-05-01', title: 'Lunch', domain: 'rest' },
+      { id: 't', kind: 'task', startMin: 780, endMin: 840, date: '2026-05-01', title: 'Stats', domain: 'academic' },
+    ] as any;
+    expect(getTaskRestConflicts(events).size).toBe(0);
+  });
+});

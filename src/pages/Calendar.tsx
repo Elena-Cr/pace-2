@@ -31,6 +31,7 @@ type CalEvent = {
   energy?: string | null;
   notes?: string | null;
   others_rely?: boolean;
+  reschedule_count?: number;
   // time
   day: number;        // 0..6 (week index)
   startMin: number;   // minutes from 00:00
@@ -187,6 +188,7 @@ export default function CalendarView() {
         energy: t.energy,
         notes: t.notes,
         others_rely: t.others_rely,
+        reschedule_count: t.reschedule_count,
         day: di,
         startMin: ev.startMin,
         endMin: ev.endMin,
@@ -397,6 +399,7 @@ export default function CalendarView() {
                               {ev.duration_minutes != null && <span>· {fmtMin(ev.duration_minutes)}</span>}
                               {ev.energy && <span>· {ev.energy} energy</span>}
                               {ev.others_rely && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> shared</span>}
+                              {(ev.reschedule_count ?? 0) >= 2 && <span className="pace-chip !py-0.5 !px-1.5 !text-[11px]">Rescheduled {ev.reschedule_count}×</span>}
                               {conflict && <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]"><AlertTriangle className="w-3 h-3" /> overlaps rest</span>}
                             </div>
                             {ev.next_action && (
@@ -525,8 +528,11 @@ export default function CalendarView() {
                           <div className="min-w-0 flex-1">
                             <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
                             <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
-                            <div className="flex gap-1 mt-0.5 flex-wrap">
+                            <div className="flex gap-1 mt-0.5 flex-wrap items-center">
                               {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" />}
+                              {(ev.reschedule_count ?? 0) >= 2 && (
+                                <span className="text-[9px] text-muted-foreground" aria-label={`Rescheduled ${ev.reschedule_count} times`}>↻{ev.reschedule_count}</span>
+                              )}
                               {conflict && <AlertTriangle className="w-2.5 h-2.5 text-[hsl(var(--attention))]" aria-label="Conflict with rest" />}
                             </div>
                           </div>
