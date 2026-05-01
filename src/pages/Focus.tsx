@@ -345,8 +345,8 @@ export default function Focus() {
         <div className="space-y-3">
           <div className="pace-card flex items-center justify-between">
             <div>
-              <div className="pace-eyebrow"><span className="priority-dot should" />Do Not Disturb</div>
-              <div className="text-[12px] text-muted-foreground mt-1">Notifications paused while you focus.</div>
+              <div className="pace-eyebrow"><span className="priority-dot should" />Remind me to enable DND</div>
+              <div className="text-[12px] text-muted-foreground mt-1">We'll remind you to enable DND when you start.</div>
             </div>
             <button onClick={() => setDnd(d => !d)}
               className={`w-11 h-6 rounded-full relative transition ${dnd ? 'bg-primary' : 'bg-muted'}`}>
