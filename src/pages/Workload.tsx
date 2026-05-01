@@ -22,6 +22,7 @@ export default function Workload() {
   const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const { data: allTasks = [] } = useTasks();
+  const { templates } = useTaskSuggestions(user?.id);
   const [reflection, setReflection] = useState<number | null>(null);
 
   const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
