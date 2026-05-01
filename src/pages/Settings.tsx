@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
+import { useUserProfile, TimeBlock, EnergyPattern, EnergyLevel, DEFAULT_ENERGY_PATTERN } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { fmtMin } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowLeft, LogOut, Plus, X } from 'lucide-react';
+
+const ENERGY_LEVELS: EnergyLevel[] = ['Low', 'Med', 'High'];
 
 export default function Settings() {
   const { user, profile: authProfile, signOut } = useAuth();
@@ -16,6 +18,9 @@ export default function Settings() {
   const [capacityMin, setCapacityMin] = useState(330);
   const [tasksPerDay, setTasksPerDay] = useState(4);
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
+  const [energyPattern, setEnergyPattern] = useState<EnergyPattern>(DEFAULT_ENERGY_PATTERN);
+  const [energyAffects, setEnergyAffects] = useState(true);
+  const [energyPct, setEnergyPct] = useState(10);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (!user) nav('/auth', { replace: true }); }, [user, nav]);
@@ -29,10 +34,17 @@ export default function Settings() {
       setCapacityMin(profile.daily_capacity_minutes);
       setTasksPerDay(profile.preferred_tasks_per_day);
       setBlocks(profile.default_time_blocks ?? []);
+      setEnergyPattern(profile.energy_pattern ?? DEFAULT_ENERGY_PATTERN);
+      setEnergyAffects(profile.energy_affects_capacity ?? true);
+      setEnergyPct(profile.energy_capacity_pct ?? 10);
     }
   }, [profile]);
 
   if (loading || !profile) return null;
+
+  function patchPattern(p: Partial<EnergyPattern>) {
+    setEnergyPattern(prev => ({ ...prev, ...p }));
+  }
 
   function setBlock(i: number, patch: Partial<TimeBlock>) {
     setBlocks(b => b.map((x, idx) => (idx === i ? { ...x, ...patch } : x)));
@@ -70,6 +82,9 @@ export default function Settings() {
       daily_capacity_minutes: capacityMin,
       preferred_tasks_per_day: tasksPerDay,
       default_time_blocks: blocks,
+      energy_pattern: energyPattern,
+      energy_affects_capacity: energyAffects,
+      energy_capacity_pct: energyPct,
     });
     setBusy(false);
     if (res?.error) { toast.error(res.error.message); return; }
@@ -122,6 +137,88 @@ export default function Settings() {
                 {n}
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="pace-card">
+          <div className="pace-eyebrow">Typical energy pattern</div>
+          <p className="pace-meta mt-1">Your usual rhythm. Each day inherits this; you can override per day in Plan or Calendar.</p>
+
+          <div className="mt-3 flex gap-1.5">
+            <button
+              onClick={() => patchPattern({ mode: 'whole' })}
+              className={energyPattern.mode === 'whole' ? 'pace-chip-filled' : 'pace-chip'}>
+              Whole day
+            </button>
+            <button
+              onClick={() => patchPattern({ mode: 'period' })}
+              className={energyPattern.mode === 'period' ? 'pace-chip-filled' : 'pace-chip'}>
+              By time of day
+            </button>
+          </div>
+
+          {energyPattern.mode === 'whole' ? (
+            <div className="mt-3">
+              <label className="pace-field-label">Default energy</label>
+              <div className="flex gap-1.5">
+                {ENERGY_LEVELS.map(e => (
+                  <button key={e}
+                    onClick={() => patchPattern({ whole: e })}
+                    className={energyPattern.whole === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {([
+                ['Morning', 'morning'],
+                ['Afternoon', 'afternoon'],
+                ['Evening', 'evening'],
+              ] as const).map(([label, key]) => {
+                const value = energyPattern[key];
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="text-[12px] text-muted-foreground w-20 shrink-0">{label}</span>
+                    <div className="flex gap-1 flex-1">
+                      {ENERGY_LEVELS.map(e => (
+                        <button key={e}
+                          onClick={() => patchPattern({ [key]: value === e ? null : e } as Partial<EnergyPattern>)}
+                          className={`flex-1 px-2 py-1 rounded-full text-[12px] font-medium ${value === e ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="pace-meta">Leave a row empty to fall back to {energyPattern.whole}.</p>
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-border/60">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={energyAffects}
+                onChange={e => setEnergyAffects(e.target.checked)}
+                className="w-4 h-4 accent-primary"
+              />
+              <span className="text-[13px]">Let energy adjust daily capacity</span>
+            </label>
+            {energyAffects && (
+              <div className="mt-3">
+                <label className="pace-field-label">
+                  How much · ±{energyPct}%
+                </label>
+                <input
+                  type="range" min={0} max={30} step={5}
+                  value={energyPct}
+                  onChange={e => setEnergyPct(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <p className="pace-meta mt-1">High energy adds {energyPct}%, Low subtracts {energyPct}%.</p>
+              </div>
+            )}
           </div>
         </section>
 

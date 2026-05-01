@@ -8,7 +8,6 @@ export type PastTask = {
   domain: Domain | null;
   priority: Priority;
   duration_minutes: number | null;
-  energy: string | null;
   effort_level: string | null;
   next_action: string | null;
   involves_others: boolean;
@@ -24,7 +23,6 @@ export type Suggestion = {
   domain: Domain | null;
   priority: Priority | null;
   duration_minutes: number | null;
-  energy: string | null;
   effort_level: string | null;
   next_action: string | null;
   involves_others: boolean;
@@ -77,7 +75,6 @@ function mode<T>(items: (T | null | undefined)[]): T | null {
 function summarize(group: PastTask[], source: Suggestion['source']): Suggestion {
   const matches = group.length;
   const confidence: Suggestion['confidence'] = matches >= 4 ? 'high' : matches >= 2 ? 'med' : 'low';
-  // Pick the most recent example title
   const example = [...group].sort((a, b) => (b.created_at > a.created_at ? 1 : -1))[0];
   return {
     source,
@@ -87,7 +84,6 @@ function summarize(group: PastTask[], source: Suggestion['source']): Suggestion 
     domain: mode(group.map(g => g.domain)),
     priority: mode(group.map(g => g.priority)),
     duration_minutes: median(group.map(g => g.duration_minutes ?? NaN).filter(n => !isNaN(n))),
-    energy: mode(group.map(g => g.energy)),
     effort_level: mode(group.map(g => g.effort_level)),
     next_action: mode(group.map(g => g.next_action)),
     involves_others: group.filter(g => g.involves_others).length > group.length / 2,
@@ -103,17 +99,16 @@ export function useTaskSuggestions(userId: string | undefined) {
     if (!userId) return;
     setLoading(true);
     supabase.from('tasks')
-      .select('id,title,domain,priority,duration_minutes,energy,effort_level,next_action,involves_others,others_rely,created_at')
+      .select('id,title,domain,priority,duration_minutes,effort_level,next_action,involves_others,others_rely,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(200)
       .then(({ data }) => {
-        setPast((data ?? []) as PastTask[]);
+        setPast(((data ?? []) as unknown) as PastTask[]);
         setLoading(false);
       });
   }, [userId]);
 
-  // Repeating templates: group past tasks by stem(title), show those with 2+ occurrences
   const templates = useMemo<Suggestion[]>(() => {
     const groups = new Map<string, PastTask[]>();
     past.forEach(t => {
@@ -128,18 +123,15 @@ export function useTaskSuggestions(userId: string | undefined) {
       .slice(0, 6);
   }, [past]);
 
-  // Match by current title input
   function suggestFor(title: string): Suggestion | null {
     const q = title.trim();
     if (q.length < 3 || past.length === 0) return null;
     const qStem = stem(q);
     const qToks = tokenize(q);
 
-    // 1) exact stem match
     const stemHits = past.filter(t => stem(t.title) === qStem);
     if (stemHits.length >= 2) return summarize(stemHits, 'repeating');
 
-    // 2) similar by token overlap
     const scored = past
       .map(t => ({ t, score: jaccard(qToks, tokenize(t.title)) }))
       .filter(x => x.score >= 0.34)

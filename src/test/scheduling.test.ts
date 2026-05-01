@@ -9,7 +9,7 @@ const make = (p: Partial<Task> = {}): Task => ({
   id: 'x', user_id: 'u', title: 't', domain: 'academic', priority: 'should',
   status: 'not_started', deadline: null, scheduled_date: null,
   duration_minutes: null, start_time: null, end_time: null,
-  is_rest: false, effort_level: null, energy: null,
+  is_rest: false, effort_level: null,
   next_action: null, notes: null, progress: 0, reschedule_count: 0,
   involves_others: false, others_rely: false, subtasks: [],
   replanning_reason: null, last_mood: null,
@@ -77,7 +77,7 @@ describe('capacity helpers', () => {
     expect(effectiveCapacityMinutes(
       { available_hours: 6, energy_level: 'Low' },
       330,
-    )).toBe(Math.round(6 * 60 * 0.75));
+    )).toBe(Math.round(6 * 60 * 0.9));
   });
   it('applies the High energy multiplier', () => {
     expect(effectiveCapacityMinutes(

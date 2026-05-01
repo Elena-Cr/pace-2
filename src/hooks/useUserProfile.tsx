@@ -12,6 +12,26 @@ export type TimeBlock = {
   days?: number[];
 };
 
+export type EnergyLevel = 'Low' | 'Med' | 'High';
+
+// User's typical pattern. `mode: 'whole'` uses `whole`. `mode: 'period'`
+// uses morning/afternoon/evening (each may fall back to `whole` if null).
+export type EnergyPattern = {
+  mode: 'whole' | 'period';
+  whole: EnergyLevel;
+  morning: EnergyLevel | null;
+  afternoon: EnergyLevel | null;
+  evening: EnergyLevel | null;
+};
+
+export const DEFAULT_ENERGY_PATTERN: EnergyPattern = {
+  mode: 'whole',
+  whole: 'Med',
+  morning: null,
+  afternoon: null,
+  evening: null,
+};
+
 export type UserProfile = {
   id: string;
   user_id: string;
@@ -19,9 +39,27 @@ export type UserProfile = {
   daily_capacity_minutes: number;
   preferred_tasks_per_day: number;
   default_time_blocks: TimeBlock[];
+  energy_pattern: EnergyPattern;
+  energy_affects_capacity: boolean;
+  energy_capacity_pct: number;
   created_at: string;
   updated_at: string;
 };
+
+function coerceProfile(row: any): UserProfile | null {
+  if (!row) return null;
+  const blocks = Array.isArray(row.default_time_blocks) ? row.default_time_blocks : [];
+  const pat = (row.energy_pattern && typeof row.energy_pattern === 'object')
+    ? { ...DEFAULT_ENERGY_PATTERN, ...row.energy_pattern }
+    : DEFAULT_ENERGY_PATTERN;
+  return {
+    ...row,
+    default_time_blocks: blocks as TimeBlock[],
+    energy_pattern: pat as EnergyPattern,
+    energy_affects_capacity: row.energy_affects_capacity ?? true,
+    energy_capacity_pct: row.energy_capacity_pct ?? 10,
+  } as UserProfile;
+}
 
 export function useUserProfile() {
   const { user } = useAuth();
@@ -35,7 +73,7 @@ export function useUserProfile() {
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
-    setProfile(data as UserProfile | null);
+    setProfile(coerceProfile(data));
     setLoading(false);
   }, [user]);
 
@@ -49,7 +87,7 @@ export function useUserProfile() {
       .eq('user_id', user.id)
       .select()
       .single();
-    if (!error && data) setProfile(data as UserProfile);
+    if (!error && data) setProfile(coerceProfile(data));
     return { data, error };
   }, [user]);
 

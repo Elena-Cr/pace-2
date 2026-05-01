@@ -148,6 +148,7 @@ export default function Home() {
   const capMin = effectiveCapacityMinutes(
     capacity ? { available_hours: Number(capacity.available_hours), energy_level: capacity.energy_level ?? 'Med' } : null,
     profileCapMin,
+    { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
   );
   const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0);
   const capState = capacityState(plannedMin, capMin);

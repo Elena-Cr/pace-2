@@ -56,6 +56,8 @@ export default function Plan() {
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
   // Seed slider with capacity row when present, otherwise from the user profile default.
+  // Energy and per-period overrides default to the user's typical pattern when
+  // there's no row yet for today.
   useEffect(() => {
     if (capacityRow) {
       setCapacityMin(Math.round(Number(capacityRow.available_hours) * 60));
@@ -64,12 +66,21 @@ export default function Plan() {
       setMorningEnergy(capacityRow.morning_energy ?? null);
       setAfternoonEnergy(capacityRow.afternoon_energy ?? null);
       setEveningEnergy(capacityRow.evening_energy ?? null);
-      // Auto-expand the period section if the user has set any override.
       if (capacityRow.morning_energy || capacityRow.afternoon_energy || capacityRow.evening_energy) {
         setShowPeriodEnergy(true);
       }
     } else if (userProfile) {
       setCapacityMin(userProfile.daily_capacity_minutes);
+      const pat = userProfile.energy_pattern;
+      if (pat) {
+        setEnergyLevel(pat.whole ?? 'Med');
+        if (pat.mode === 'period') {
+          setMorningEnergy(pat.morning ?? null);
+          setAfternoonEnergy(pat.afternoon ?? null);
+          setEveningEnergy(pat.evening ?? null);
+          setShowPeriodEnergy(true);
+        }
+      }
     }
   }, [capacityRow, userProfile]);
 
@@ -115,6 +126,7 @@ export default function Plan() {
   const capacityMinutes = effectiveCapacityMinutes(
     capacityReady ? { available_hours: (capacityMin as number) / 60, energy_level: energyLevel } : null,
     profileCapMin,
+    { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
   );
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
   const over = capacityReady && plannedMinutes > capacityMinutes;
@@ -133,22 +145,23 @@ export default function Plan() {
     return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
   }, [tasks, userProfile, today]);
 
-  // Per-task energy hint: if a task has an `energy` value and the period
-  // override at its scheduled start_time matches, surface a soft hint.
-  // Informational only — no scheduling change.
+  // Energy hint per task: if any period override matches the user's
+  // typical pattern's "high" slot, surface a soft hint at the task's
+  // scheduled time. Purely informational — no scheduling change.
   const energyHintByTaskId = useMemo(() => {
-    const events = getScheduledEvents(tasks).filter(e => e.date === today && e.taskId);
     const map = new Map<string, string>();
+    const events = getScheduledEvents(tasks).filter(e => e.date === today && e.taskId);
     events.forEach(e => {
       const t = tasks.find(x => x.id === e.taskId);
-      if (!t || !t.energy) return;
+      if (!t) return;
       const h = Math.floor(e.startMin / 60);
       const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
       const periodEnergy = period === 'morning' ? morningEnergy
         : period === 'afternoon' ? afternoonEnergy
         : eveningEnergy;
-      if (periodEnergy && periodEnergy === t.energy) {
-        map.set(t.id, `${t.energy} energy — good fit for ${period}`);
+      // Hint only when this period is High and the task is heavier than light.
+      if (periodEnergy === 'High' && (t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 60)) {
+        map.set(t.id, `High energy ${period} — good fit for this`);
       }
     });
     return map;

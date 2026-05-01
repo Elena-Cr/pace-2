@@ -15,7 +15,6 @@ const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'personal', label: 'Personal' },
 ];
 
-const ENERGIES = ['Low', 'Med', 'High'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
 export default function Capture() {
@@ -28,7 +27,6 @@ export default function Capture() {
   const [deadline, setDeadline] = useState('');
   const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog'>('backlog');
   const [estimate, setEstimate] = useState<number | ''>('');
-  const [energy, setEnergy] = useState<string | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
@@ -62,7 +60,6 @@ export default function Capture() {
     if (!domain && s.domain) setDomain(s.domain);
     if (priority === 'should' && s.priority) setPriority(s.priority);
     if (estimate === '' && s.duration_minutes) setEstimate(s.duration_minutes);
-    if (!energy && s.energy) setEnergy(s.energy);
     if (!effort && s.effort_level) setEffort(s.effort_level);
     if (!nextAction && s.next_action) setNextAction(s.next_action);
     if (!othersInvolved && (s.involves_others || s.others_rely)) setOthersInvolved(true);
@@ -100,7 +97,6 @@ export default function Capture() {
         priority,
         deadline: deadline ? new Date(deadline).toISOString() : null,
         duration_minutes: estimate ? Number(estimate) : null,
-        energy,
         effort_level: effort,
         next_action: nextAction || null,
         notes: notes || null,
@@ -169,7 +165,6 @@ export default function Capture() {
               {suggestion.domain && <span className="pace-chip">Domain · {DOMAIN_LABEL[suggestion.domain]}</span>}
               {suggestion.priority && <span className="pace-chip">Priority · {PRIORITY_LABEL[suggestion.priority]}</span>}
               {suggestion.duration_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.duration_minutes)}</span>}
-              {suggestion.energy && <span className="pace-chip">Energy · {suggestion.energy}</span>}
               {suggestion.effort_level && <span className="pace-chip">Effort · {suggestion.effort_level}</span>}
             </div>
             <div className="mt-3 flex gap-2">
@@ -230,15 +225,9 @@ export default function Capture() {
         {showAdvanced && (
           <div className="space-y-4 animate-fade-in">
             <div>
-              <label className="pace-field-label">Estimates</label>
-              <div className="grid grid-cols-2 gap-2">
-                <input type="number" min={5} step={5} className="pace-field" placeholder="Time · minutes"
-                  value={estimate} onChange={e => setEstimate(e.target.value ? Number(e.target.value) : '')} />
-                <select className="pace-field" value={energy ?? ''} onChange={e => setEnergy(e.target.value || null)}>
-                  <option value="">Energy · any</option>
-                  {ENERGIES.map(x => <option key={x} value={x}>Energy · {x}</option>)}
-                </select>
-              </div>
+              <label className="pace-field-label">Time estimate</label>
+              <input type="number" min={5} step={5} className="pace-field" placeholder="Minutes"
+                value={estimate} onChange={e => setEstimate(e.target.value ? Number(e.target.value) : '')} />
               <div className="mt-3">
                 <div className="pace-field-label">Effort level</div>
                 <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>

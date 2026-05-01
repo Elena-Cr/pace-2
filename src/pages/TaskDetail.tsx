@@ -14,7 +14,6 @@ import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users } from 'lucide-react';
 
 const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
-const ENERGIES = ['Low', 'Med', 'High'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
 // Convert an ISO timestamp into the value format expected by datetime-local
@@ -47,7 +46,6 @@ export default function TaskDetail() {
   const [ePriority, setEPriority] = useState<Priority>('should');
   const [eDeadline, setEDeadline] = useState('');
   const [eDuration, setEDuration] = useState<number | ''>('');
-  const [eEnergy, setEEnergy] = useState<string | null>(null);
   const [eEffort, setEEffort] = useState<string | null>(null);
   const [eScheduledDate, setEScheduledDate] = useState<string>('');
   const [eOthers, setEOthers] = useState(false);
@@ -62,7 +60,6 @@ export default function TaskDetail() {
     setEPriority(task.priority);
     setEDeadline(toDatetimeLocal(task.deadline));
     setEDuration(task.duration_minutes ?? '');
-    setEEnergy(task.energy);
     setEEffort(task.effort_level);
     setEScheduledDate(task.scheduled_date ?? '');
     setEOthers(!!(task.involves_others || task.others_rely));
@@ -82,7 +79,6 @@ export default function TaskDetail() {
           priority: ePriority,
           deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
           duration_minutes: eDuration === '' ? null : Number(eDuration),
-          energy: eEnergy,
           effort_level: eEffort,
           scheduled_date: eScheduledDate || null,
           involves_others: eOthers,
@@ -225,24 +221,14 @@ export default function TaskDetail() {
           </div>
 
           <div>
-            <label className="pace-field-label">Estimates</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number" min={5} step={5}
-                className="pace-field"
-                placeholder="Time · minutes"
-                value={eDuration}
-                onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
-              />
-              <select
-                className="pace-field"
-                value={eEnergy ?? ''}
-                onChange={e => setEEnergy(e.target.value || null)}
-              >
-                <option value="">Energy · any</option>
-                {ENERGIES.map(x => <option key={x} value={x}>Energy · {x}</option>)}
-              </select>
-            </div>
+            <label className="pace-field-label">Time estimate</label>
+            <input
+              type="number" min={5} step={5}
+              className="pace-field"
+              placeholder="Minutes"
+              value={eDuration}
+              onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
+            />
             <div className="mt-3">
               <div className="pace-field-label">Effort level</div>
               <div className="flex gap-1.5">
@@ -376,7 +362,7 @@ export default function TaskDetail() {
         <div className="flex flex-wrap gap-1.5 text-[13px]">
           {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
           {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
-          {task.energy && <span className="pace-chip">Energy · {task.energy}</span>}
+          
           {(task.involves_others || task.others_rely) && (
             <span className="pace-chip"><Users className="w-3 h-3" /> Others involved</span>
           )}

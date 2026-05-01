@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
+import { useUserProfile, TimeBlock, EnergyPattern, EnergyLevel, DEFAULT_ENERGY_PATTERN } from '@/hooks/useUserProfile';
 import { fmtMin } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
+
+const ENERGY_LEVELS: EnergyLevel[] = ['Low', 'Med', 'High'];
 
 const DEFAULT_BLOCKS: TimeBlock[] = [
   { label: 'Sleep', start: '23:30', end: '07:30', kind: 'sleep' },
@@ -22,6 +24,7 @@ export default function Onboarding() {
   const [capacityMin, setCapacityMin] = useState(profile?.daily_capacity_minutes ?? 330);
   const [tasksPerDay, setTasksPerDay] = useState(profile?.preferred_tasks_per_day ?? 4);
   const [blocks, setBlocks] = useState<TimeBlock[]>(profile?.default_time_blocks ?? DEFAULT_BLOCKS);
+  const [energyPattern, setEnergyPattern] = useState<EnergyPattern>(profile?.energy_pattern ?? DEFAULT_ENERGY_PATTERN);
   const [busy, setBusy] = useState(false);
 
   // Side-effect navigation runs in an effect, not the render body, so we never
@@ -49,11 +52,16 @@ export default function Onboarding() {
       daily_capacity_minutes: capacityMin,
       preferred_tasks_per_day: tasksPerDay,
       default_time_blocks: blocks,
+      energy_pattern: energyPattern,
       onboarding_completed: true,
     });
     setBusy(false);
     toast.success('Welcome aboard.');
     nav('/', { replace: true });
+  }
+
+  function patchPattern(p: Partial<EnergyPattern>) {
+    setEnergyPattern(prev => ({ ...prev, ...p }));
   }
 
   const steps = [
@@ -106,7 +114,51 @@ export default function Onboarding() {
       canNext: true,
     },
     {
-      eyebrow: '04 · Protected time',
+      eyebrow: '04 · Energy (optional)',
+      title: 'When do you usually have the most energy?',
+      sub: 'You can skip this and set it later in Settings.',
+      body: (
+        <div className="space-y-3">
+          <div className="flex gap-1.5 justify-center">
+            <button onClick={() => patchPattern({ mode: 'whole' })}
+              className={energyPattern.mode === 'whole' ? 'pace-chip-filled' : 'pace-chip'}>Whole day</button>
+            <button onClick={() => patchPattern({ mode: 'period' })}
+              className={energyPattern.mode === 'period' ? 'pace-chip-filled' : 'pace-chip'}>By time of day</button>
+          </div>
+          {energyPattern.mode === 'whole' ? (
+            <div className="flex gap-1.5 justify-center">
+              {ENERGY_LEVELS.map(e => (
+                <button key={e} onClick={() => patchPattern({ whole: e })}
+                  className={energyPattern.whole === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {([['Morning', 'morning'], ['Afternoon', 'afternoon'], ['Evening', 'evening']] as const).map(([label, key]) => {
+                const value = energyPattern[key];
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="text-[12px] text-muted-foreground w-20 shrink-0">{label}</span>
+                    <div className="flex gap-1 flex-1">
+                      {ENERGY_LEVELS.map(e => (
+                        <button key={e}
+                          onClick={() => patchPattern({ [key]: value === e ? null : e } as Partial<EnergyPattern>)}
+                          className={`flex-1 px-2 py-1 rounded-full text-[12px] font-medium ${value === e ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ),
+      canNext: true,
+    },
+    {
+      eyebrow: '05 · Protected time',
       title: 'When do you sleep, eat, and recover?',
       sub: 'These blocks stay protected on your calendar.',
       body: (
