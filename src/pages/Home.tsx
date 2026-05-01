@@ -347,10 +347,18 @@ export default function Home() {
         )}
 
         {filtered.map((t) => (
-          <TaskCard key={t.id} task={t} onOpen={(task) => nav(`/task/${task.id}`)} />
+          <div key={t.id} className="space-y-1">
+            {conflictTaskIds.has(t.id) && (
+              <div className="flex items-center gap-1.5 text-[12px] text-[hsl(var(--attention))] px-1">
+                <AlertTriangle className="w-3 h-3" /> overlaps rest
+              </div>
+            )}
+            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} />
+          </div>
         ))}
 
-        {filter === 'all' && restBlocks.map(t => (
+        {/* Rest blocks stay visible no matter which status filter is active. */}
+        {restBlocks.map(t => (
           <div key={t.id} className="pace-rest">
             <span>◯ {t.title}</span>
             <span>{t.next_action ?? ''}</span>
