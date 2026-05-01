@@ -79,8 +79,20 @@ export default function Workload() {
 
       {/* Stacked bars */}
       <div className="mt-5 pace-card">
-        <div className="pace-eyebrow mb-3">By day</div>
-        <div className="flex items-end gap-2 h-44">
+        <div className="flex items-center justify-between mb-3">
+          <div className="pace-eyebrow">By day</div>
+          <div className="pace-meta">capacity {fmtMin(dailyCapMin)}/day</div>
+        </div>
+        <div className="relative flex items-end gap-2 h-44">
+          {/* Capacity reference line */}
+          <div
+            className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-primary/50"
+            style={{ bottom: `${(dailyCapMin / maxMin) * 100}%` }}
+          >
+            <span className="absolute -top-4 right-0 text-[10px] text-primary/80 font-medium">
+              capacity
+            </span>
+          </div>
           {week.map(w => {
             const isToday = w.iso === todayISO();
             return (
