@@ -126,7 +126,7 @@ export default function Plan() {
   const planConflictTaskIds = useMemo(() => {
     const taskEvents = getScheduledEvents(tasks).filter(e => e.date === today);
     const blocks = (userProfile?.default_time_blocks ?? []).map(b => ({
-      label: b.label, start: b.start, end: b.end, kind: b.kind as any,
+      label: b.label, start: b.start, end: b.end, kind: b.kind as any, days: b.days,
     }));
     const blockEvents = expandTimeBlocks(blocks, today);
     const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
