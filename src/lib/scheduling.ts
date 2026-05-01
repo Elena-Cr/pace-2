@@ -37,6 +37,18 @@ export type Task = {
   updated_at: string;
 };
 
+// Map a raw DB row (where subtasks is Json) into our canonical Task.
+// This is the single boundary that translates DB shape -> app type.
+export function rowToTask(row: any): Task {
+  const raw = row?.subtasks;
+  const subtasks: Subtask[] = Array.isArray(raw) ? raw as Subtask[] : [];
+  return { ...row, subtasks } as Task;
+}
+
+export function rowsToTasks(rows: any[] | null | undefined): Task[] {
+  return (rows || []).map(rowToTask);
+}
+
 export type CalEventKind = 'task' | 'rest' | 'meal' | 'sleep' | 'recovery' | 'focus';
 
 export type CalEvent = {
