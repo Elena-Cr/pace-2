@@ -9,12 +9,17 @@ import { todayISO, fmtMin, toISODate, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
   getBacklog,
-  calculateDailyWorkload,
+  getRestBlocksForDate,
+  getScheduledEvents,
+  expandTimeBlocks,
+  getTaskRestConflicts,
+  calculateDailyWorkloadWithBuffer,
+  bufferMinutes,
   effectiveCapacityMinutes,
   buildReschedulePatch,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { Calendar as CalIcon } from 'lucide-react';
+import { Calendar as CalIcon, Users, AlertTriangle } from 'lucide-react';
 
 function fmtBlockTime(t: string) {
   const [h, m] = t.split(':').map(Number);
