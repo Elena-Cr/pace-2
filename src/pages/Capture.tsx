@@ -86,6 +86,12 @@ export default function Capture() {
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
     try {
+      let scheduled_date: string | null = null;
+      if (when === 'today') scheduled_date = toISODate(new Date());
+      else if (when === 'tomorrow') {
+        const d = new Date(); d.setDate(d.getDate() + 1);
+        scheduled_date = toISODate(d);
+      }
       await insert.mutateAsync({
         title: title.trim(),
         domain,
@@ -99,7 +105,7 @@ export default function Capture() {
         involves_others: involvesOthers,
         others_rely: othersRely,
         subtasks,
-        scheduled_date: toISODate(new Date()),
+        scheduled_date,
       } as any);
       toast.success('Captured.');
       nav('/');
