@@ -80,6 +80,7 @@ const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'pers
 
 export default function CalendarView() {
   const { user, loading } = useAuth();
+  const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -94,6 +95,29 @@ export default function CalendarView() {
   const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Build the per-day fixed blocks from the user's preferences (sleep/meal/recovery).
+  // If a sleep block crosses midnight (e.g. 23:30 → 07:30), split it visually
+  // into "evening" + "morning" segments so it renders correctly on a 0–24h grid.
+  const fixedBlocks: Array<Omit<CalEvent, 'id' | 'day'>> = useMemo(() => {
+    const tb: TimeBlock[] = userProfile?.default_time_blocks ?? [];
+    if (!tb.length) return FIXED_BLOCKS; // sane defaults until profile loads
+    const out: Array<Omit<CalEvent, 'id' | 'day'>> = [];
+    tb.forEach(b => {
+      const s = timeStrToMin(b.start);
+      const e = timeStrToMin(b.end);
+      const base = { title: b.label, domain: 'rest' as const, kind: b.kind as CalKind, fixed: true };
+      if (e > s) {
+        out.push({ ...base, startMin: s, endMin: e });
+      } else {
+        // wraps midnight
+        out.push({ ...base, startMin: s, endMin: 24 * 60 });
+        if (e > 0) out.push({ ...base, startMin: 0, endMin: e });
+      }
+    });
+    return out;
+  }, [userProfile]);
+
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
