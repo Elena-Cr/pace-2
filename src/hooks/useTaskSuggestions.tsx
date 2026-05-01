@@ -7,7 +7,7 @@ export type PastTask = {
   title: string;
   domain: Domain | null;
   priority: Priority;
-  estimated_minutes: number | null;
+  duration_minutes: number | null;
   energy: string | null;
   effort_level: string | null;
   difficulty: number | null;
@@ -24,7 +24,7 @@ export type Suggestion = {
   exampleTitle: string;       // representative past title
   domain: Domain | null;
   priority: Priority | null;
-  estimated_minutes: number | null;
+  duration_minutes: number | null;
   energy: string | null;
   effort_level: string | null;
   difficulty: number | null;
@@ -88,7 +88,7 @@ function summarize(group: PastTask[], source: Suggestion['source']): Suggestion 
     exampleTitle: example.title,
     domain: mode(group.map(g => g.domain)),
     priority: mode(group.map(g => g.priority)),
-    estimated_minutes: median(group.map(g => g.estimated_minutes ?? NaN).filter(n => !isNaN(n))),
+    duration_minutes: median(group.map(g => g.duration_minutes ?? NaN).filter(n => !isNaN(n))),
     energy: mode(group.map(g => g.energy)),
     effort_level: mode(group.map(g => g.effort_level)),
     difficulty: median(group.map(g => g.difficulty ?? NaN).filter(n => !isNaN(n))),
@@ -106,7 +106,7 @@ export function useTaskSuggestions(userId: string | undefined) {
     if (!userId) return;
     setLoading(true);
     supabase.from('tasks')
-      .select('id,title,domain,priority,estimated_minutes,energy,effort_level,difficulty,next_action,involves_others,others_rely,created_at')
+      .select('id,title,domain,priority,duration_minutes,energy,effort_level,difficulty,next_action,involves_others,others_rely,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(200)

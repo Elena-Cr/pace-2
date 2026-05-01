@@ -5,7 +5,7 @@ type Task = {
   id: string; title: string; domain: Domain | null; priority: Priority;
   status: Status; deadline: string | null; next_action: string | null;
   progress: number; reschedule_count: number; involves_others: boolean;
-  others_rely?: boolean; estimated_minutes?: number | null;
+  others_rely?: boolean; duration_minutes?: number | null;
 };
 
 export default function TaskCard({ task, onOpen }: { task: Task; onOpen?: (t: Task) => void }) {
@@ -28,7 +28,7 @@ export default function TaskCard({ task, onOpen }: { task: Task; onOpen?: (t: Ta
         </div>
       )}
       <div className="flex gap-1.5 flex-wrap">
-        {task.estimated_minutes ? <span className="pace-chip">{fmtMin(task.estimated_minutes)}</span> : null}
+        {task.duration_minutes ? <span className="pace-chip">{fmtMin(task.duration_minutes)}</span> : null}
         {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
         {(task.involves_others || task.others_rely) && (
           <span className="pace-chip"><Users className="w-3 h-3" />{task.others_rely ? 'Others rely' : 'Involves others'}</span>

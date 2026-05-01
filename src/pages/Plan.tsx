@@ -52,7 +52,7 @@ export default function Plan() {
     await supabase.from('daily_capacity').upsert(payload, { onConflict: 'user_id,date' });
   }
 
-  const plannedMinutes = tasks.reduce((s, t) => s + (t.estimated_minutes || 0), 0);
+  const plannedMinutes = tasks.reduce((s, t) => s + (t.duration_minutes || 0), 0);
   const energyMultiplier = energyLevel === 'Low' ? 0.75 : energyLevel === 'High' ? 1.1 : 1;
   const capacityMinutes = Math.round(capacityHours * 60 * energyMultiplier);
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
@@ -63,7 +63,7 @@ export default function Plan() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const t = tasks.find(x => x.id === taskId);
     const { error } = await supabase.from('tasks').update({
-      scheduled_for: tomorrow.toISOString().slice(0, 10),
+      scheduled_date: tomorrow.toISOString().slice(0, 10),
       reschedule_count: (t?.reschedule_count || 0) + 1,
       status: 'rescheduled',
     }).eq('id', taskId);
@@ -141,9 +141,9 @@ export default function Plan() {
           <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="pace-card w-full text-left flex items-center justify-between gap-2">
             <div className="min-w-0">
               <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
-              <div className="text-[12px] mt-0.5">{t.estimated_minutes ? fmtMin(t.estimated_minutes) : '—'}{t.effort_level ? ` · ${t.effort_level}` : ''}</div>
+              <div className="text-[12px] mt-0.5">{t.duration_minutes ? fmtMin(t.duration_minutes) : '—'}{t.effort_level ? ` · ${t.effort_level}` : ''}</div>
             </div>
-            {t.estimated_minutes && <span className="pace-chip">+{Math.ceil(t.estimated_minutes * 0.15)}m buffer</span>}
+            {t.duration_minutes && <span className="pace-chip">+{Math.ceil(t.duration_minutes * 0.15)}m buffer</span>}
           </button>
         ))}
       </div>

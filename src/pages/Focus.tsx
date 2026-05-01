@@ -101,7 +101,7 @@ export default function Focus() {
   async function reduceScope() {
     if (task) {
       await supabase.from('tasks').update({
-        estimated_minutes: Math.max(10, Math.round((task.estimated_minutes || 30) / 2)),
+        duration_minutes: Math.max(10, Math.round((task.duration_minutes || 30) / 2)),
       }).eq('id', task.id);
       toast.success('Scope reduced. Smaller is still real.');
     }
