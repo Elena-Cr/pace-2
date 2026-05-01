@@ -113,7 +113,7 @@ describe('reschedule', () => {
 
 describe('progressForStatus', () => {
   it('does not lower progress when moving forward', () => {
-    expect(progressForStatus('in_progress', 80)).toBe(50);
+    expect(progressForStatus('in_progress', 80)).toBe(80);
   });
   it('returns current for rescheduled', () => {
     expect(progressForStatus('rescheduled', 40)).toBe(40);
