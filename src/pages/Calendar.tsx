@@ -163,7 +163,7 @@ export default function CalendarView() {
   const events: CalEvent[] = useMemo(() => {
     const list: CalEvent[] = [];
     days.forEach((d, di) => {
-      FIXED_BLOCKS.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
+      fixedBlocks.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
     });
     tasks.forEach((t, i) => {
       const dateStr = t.scheduled_date as string | null;
