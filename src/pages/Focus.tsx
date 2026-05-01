@@ -81,11 +81,15 @@ export default function Focus() {
     if (task && task.status === 'not_started') {
       await update.mutateAsync({ id: task.id, patch: { status: 'started' } as any });
     }
-    const { data, error } = await supabase.from('focus_sessions').insert({
-      user_id: user.id, task_id: task?.id ?? null, planned_minutes: planned,
-    }).select().single();
-    if (error) { toast.error(error.message); return; }
-    setSessionId(data.id);
+    // Reuse an existing open session if one is already in flight (e.g. after
+    // continueMore). Otherwise insert a fresh row.
+    if (!sessionId) {
+      const { data, error } = await supabase.from('focus_sessions').insert({
+        user_id: user.id, task_id: task?.id ?? null, planned_minutes: planned,
+      }).select().single();
+      if (error) { toast.error(error.message); return; }
+      setSessionId(data.id);
+    }
     setRunning(true);
   }
 
@@ -105,7 +109,7 @@ export default function Focus() {
 
   async function markBlocked() {
     if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
-    if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'replan' }).eq('id', sessionId);
+    if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'blocked' }).eq('id', sessionId);
     toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
     nav('/');
   }
@@ -123,31 +127,38 @@ export default function Focus() {
 
   async function continueMore() {
     setOverrunPrompt(false);
+    if (!user) return;
+    // Insert the new session BEFORE clearing the previous id, so a failed
+    // insert leaves the original session still owned by the UI.
+    const { data, error } = await supabase.from('focus_sessions').insert({
+      user_id: user.id, task_id: task?.id ?? null, planned_minutes: 10,
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
     setPlanned(p => p + 10);
     setSecondsLeft(10 * 60);
-    setSessionId(null);
-    if (user) {
-      const { data } = await supabase.from('focus_sessions').insert({
-        user_id: user.id, task_id: task?.id ?? null, planned_minutes: 10,
-      }).select().single();
-      if (data) setSessionId(data.id);
-    }
+    setSessionId(data.id);
     setRunning(true);
     toast('+10 minutes. Same task, same next step.');
   }
 
   async function takeBreak() {
     setOverrunPrompt(false);
+    // Close out the focus session as a "more_time" outcome since the user
+    // chose to step away rather than finish.
     if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'more_time' }).eq('id', sessionId);
+    setSessionId(null);
     toast('Five-minute break. Stand up, drink water.');
-    setSecondsLeft(planned * 60);
+    // Run an actual 5-minute countdown via the existing tick effect.
+    setBreakMode(true);
+    setSecondsLeft(5 * 60);
+    setRunning(true);
   }
 
   async function complete(outcome: 'completed' | 'more_time' | 'replan' | 'blocked') {
     if (sessionId) {
       await supabase.from('focus_sessions').update({
         ended_at: new Date().toISOString(),
-        outcome: outcome === 'blocked' ? 'replan' : outcome,
+        outcome,
       }).eq('id', sessionId);
     }
     if (outcome === 'completed' && task) {
@@ -155,9 +166,11 @@ export default function Focus() {
       toast.success('Done. That was real work.');
       nav('/');
     } else if (outcome === 'more_time' && task) {
+      // Use the canonical status→progress mapping so we agree with TaskDetail.
+      const nextProgress = progressForStatus('in_progress', task.progress || 0);
       await update.mutateAsync({ id: task.id, patch: {
         status: 'in_progress',
-        progress: Math.min(80, (task.progress || 0) + 25),
+        progress: nextProgress,
       } as any });
       nav('/');
     } else if (outcome === 'blocked') {
