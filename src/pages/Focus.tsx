@@ -218,7 +218,9 @@ export default function Focus() {
         status: 'in_progress',
         progress: nextProgress,
       } as any });
-      nav('/');
+      // Don't navigate away yet — offer a reschedule prompt for the remainder.
+      setCompletionCheck(false);
+      setMoreTimeReschedule(true);
     } else if (outcome === 'blocked') {
       if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
       toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
