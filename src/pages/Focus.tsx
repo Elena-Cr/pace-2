@@ -26,6 +26,9 @@ export default function Focus() {
   const [overrunPrompt, setOverrunPrompt] = useState(false);
   const [completionCheck, setCompletionCheck] = useState(false);
   const [interrupted, setInterrupted] = useState(false);
+  // True while a 5-minute recovery break countdown is running.
+  // The visual ring + timer are reused; we just don't show focus controls.
+  const [breakMode, setBreakMode] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
