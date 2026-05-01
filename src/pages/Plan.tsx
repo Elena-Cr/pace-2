@@ -2,42 +2,79 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
+import { Calendar as CalIcon } from 'lucide-react';
 
-const PROTECTED = [
-  { label: 'Sleep', when: '11:30pm – 7:30am' },
-  { label: 'Lunch', when: '12:30 – 1:00' },
-  { label: 'Recovery walk', when: '5:00 – 5:30' },
-];
+function fmtBlockTime(t: string) {
+  const [h, m] = t.split(':').map(Number);
+  const am = h < 12; const hh = ((h + 11) % 12) + 1;
+  return `${hh}${m ? ':' + String(m).padStart(2, '0') : ''}${am ? 'a' : 'p'}`;
+}
 
 const ENERGIES = ['Low', 'Med', 'High'];
 
 export default function Plan() {
   const { user, loading } = useAuth();
+  const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
+  const [backlog, setBacklog] = useState<any[]>([]);
   const [capacityHours, setCapacityHours] = useState(5.5);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
+  const [hasCapacityRow, setHasCapacityRow] = useState(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
+  // When the profile loads and there is no per-day override, seed slider with the profile default.
+  useEffect(() => {
+    if (userProfile && !hasCapacityRow) {
+      setCapacityHours(userProfile.daily_capacity_minutes / 60);
+    }
+  }, [userProfile, hasCapacityRow]);
+
   useEffect(() => {
     if (!user) return;
-    supabase.from('tasks').select('*').neq('status', 'done').eq('is_rest', false)
+    // Today's scheduled tasks
+    supabase.from('tasks').select('*')
+      .eq('scheduled_date', todayISO())
+      .neq('status', 'done').eq('is_rest', false)
       .order('deadline', { ascending: true, nullsFirst: false })
       .then(({ data }) => setTasks(data ?? []));
+    // Backlog: unscheduled, open
+    supabase.from('tasks').select('*')
+      .is('scheduled_date', null).neq('status', 'done').eq('is_rest', false)
+      .order('priority', { ascending: true })
+      .order('deadline', { ascending: true, nullsFirst: false })
+      .then(({ data }) => setBacklog(data ?? []));
     supabase.from('daily_capacity').select('*').eq('date', todayISO()).maybeSingle()
       .then(({ data }) => {
         if (data) {
+          setHasCapacityRow(true);
           setCapacityHours(Number(data.available_hours));
           setEnergyLevel(data.energy_level);
           setRecoveryNotes(data.recovery_notes ?? '');
         }
       });
   }, [user]);
+
+  async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
+    const date = new Date();
+    if (when === 'tomorrow') date.setDate(date.getDate() + 1);
+    const iso = toISODate(date);
+    const { error } = await supabase.from('tasks').update({ scheduled_date: iso }).eq('id', taskId);
+    if (error) { toast.error(error.message); return; }
+    setBacklog(b => b.filter(t => t.id !== taskId));
+    if (when === 'today') {
+      const moved = backlog.find(t => t.id === taskId);
+      if (moved) setTasks(arr => [...arr, { ...moved, scheduled_date: iso }]);
+    }
+    toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
+  }
+
 
   async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
     if (!user) return;
@@ -129,8 +166,14 @@ export default function Plan() {
 
       <div className="pace-eyebrow mt-6 mb-2">Protected blocks</div>
       <div className="space-y-1.5">
-        {PROTECTED.map(p => (
-          <div key={p.label} className="pace-rest"><span>◯ {p.label}</span><span>{p.when}</span></div>
+        {(userProfile?.default_time_blocks ?? []).length === 0 && (
+          <div className="text-sm text-muted-foreground">No protected time set. Add some in Settings.</div>
+        )}
+        {(userProfile?.default_time_blocks ?? []).map((p, i) => (
+          <div key={`${p.label}-${i}`} className="pace-rest">
+            <span>◯ {p.label}</span>
+            <span>{fmtBlockTime(p.start)} – {fmtBlockTime(p.end)}</span>
+          </div>
         ))}
       </div>
 
@@ -145,6 +188,37 @@ export default function Plan() {
             </div>
             {t.duration_minutes && <span className="pace-chip">+{Math.ceil(t.duration_minutes * 0.15)}m buffer</span>}
           </button>
+        ))}
+      </div>
+
+      {/* Backlog */}
+      <div className="mt-6 flex items-center justify-between">
+        <div className="pace-eyebrow">Backlog</div>
+        <span className="pace-meta">{backlog.length} unscheduled</span>
+      </div>
+      <div className="mt-2 space-y-2">
+        {backlog.length === 0 && (
+          <div className="text-sm text-muted-foreground">Nothing waiting. Everything captured has a day.</div>
+        )}
+        {backlog.map(t => (
+          <div key={t.id} className="pace-card">
+            <button onClick={() => nav(`/task/${t.id}`)} className="w-full text-left">
+              <div className="pace-eyebrow flex items-center"><span className={`priority-dot ${t.priority}`} />{t.title}</div>
+              <div className="text-[12px] mt-0.5 text-muted-foreground">
+                {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
+                {t.effort_level ? ` · ${t.effort_level}` : ''}
+                {t.deadline ? ` · due ${new Date(t.deadline).toLocaleDateString()}` : ''}
+              </div>
+            </button>
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">
+                <CalIcon className="w-3.5 h-3.5" /> Today
+              </button>
+              <button onClick={() => scheduleFromBacklog(t.id, 'tomorrow')} className="pace-btn pace-btn-sm">
+                Tomorrow
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     </AppShell>

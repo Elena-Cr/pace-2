@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 
@@ -23,9 +24,12 @@ function startOfWeek(d = new Date()) {
 
 export default function Workload() {
   const { user, loading } = useAuth();
+  const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
   const [reflection, setReflection] = useState<number | null>(null);
+
+  const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
@@ -58,7 +62,7 @@ export default function Workload() {
     });
   }, [tasks]);
 
-  const maxMin = Math.max(60, ...week.map(d => d.total));
+  const maxMin = Math.max(60, dailyCapMin, ...week.map(d => d.total));
   const totalsByDomain = DOMAINS.reduce((acc, d) => {
     acc[d] = week.reduce((s, w) => s + w.totals[d], 0);
     return acc;
@@ -75,8 +79,20 @@ export default function Workload() {
 
       {/* Stacked bars */}
       <div className="mt-5 pace-card">
-        <div className="pace-eyebrow mb-3">By day</div>
-        <div className="flex items-end gap-2 h-44">
+        <div className="flex items-center justify-between mb-3">
+          <div className="pace-eyebrow">By day</div>
+          <div className="pace-meta">capacity {fmtMin(dailyCapMin)}/day</div>
+        </div>
+        <div className="relative flex items-end gap-2 h-44">
+          {/* Capacity reference line */}
+          <div
+            className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-primary/50"
+            style={{ bottom: `${(dailyCapMin / maxMin) * 100}%` }}
+          >
+            <span className="absolute -top-4 right-0 text-[10px] text-primary/80 font-medium">
+              capacity
+            </span>
+          </div>
           {week.map(w => {
             const isToday = w.iso === todayISO();
             return (

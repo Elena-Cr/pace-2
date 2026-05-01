@@ -13,6 +13,8 @@ import Focus from "./pages/Focus";
 import Workload from "./pages/Workload";
 import CalendarView from "./pages/Calendar";
 import TaskDetail from "./pages/TaskDetail";
+import Onboarding from "./pages/Onboarding";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/capture" element={<Capture />} />
             <Route path="/plan" element={<Plan />} />
             <Route path="/replan" element={<Replan />} />

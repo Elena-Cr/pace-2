@@ -47,10 +47,11 @@ export default function TaskDetail() {
   }
 
   async function setStatus(s: Status) {
-    const patch: any = { status: s };
-    if (s === 'done') patch.progress = 100;
-    if (s === 'nearly_done' && (task.progress || 0) < 75) patch.progress = 75;
-    await update(patch);
+    const { progressForStatus } = await import('@/lib/scheduling');
+    const target = progressForStatus(s, task.progress || 0);
+    // Don't drop existing progress when moving forward; honor it when status implies more.
+    const nextProgress = s === 'done' ? 100 : Math.max(task.progress || 0, target);
+    await update({ status: s, progress: nextProgress });
     toast.success(`Marked ${STATUS_LABEL[s].toLowerCase()}.`);
   }
 

@@ -3,9 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, X, MoveRight } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
+
+function timeStrToMin(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
 
 type CalKind = 'task' | 'rest' | 'meal' | 'sleep' | 'recovery' | 'focus';
 
@@ -74,6 +80,7 @@ const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'pers
 
 export default function CalendarView() {
   const { user, loading } = useAuth();
+  const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -88,6 +95,29 @@ export default function CalendarView() {
   const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Build the per-day fixed blocks from the user's preferences (sleep/meal/recovery).
+  // If a sleep block crosses midnight (e.g. 23:30 → 07:30), split it visually
+  // into "evening" + "morning" segments so it renders correctly on a 0–24h grid.
+  const fixedBlocks: Array<Omit<CalEvent, 'id' | 'day'>> = useMemo(() => {
+    const tb: TimeBlock[] = userProfile?.default_time_blocks ?? [];
+    if (!tb.length) return FIXED_BLOCKS; // sane defaults until profile loads
+    const out: Array<Omit<CalEvent, 'id' | 'day'>> = [];
+    tb.forEach(b => {
+      const s = timeStrToMin(b.start);
+      const e = timeStrToMin(b.end);
+      const base = { title: b.label, domain: 'rest' as const, kind: b.kind as CalKind, fixed: true };
+      if (e > s) {
+        out.push({ ...base, startMin: s, endMin: e });
+      } else {
+        // wraps midnight
+        out.push({ ...base, startMin: s, endMin: 24 * 60 });
+        if (e > 0) out.push({ ...base, startMin: 0, endMin: e });
+      }
+    });
+    return out;
+  }, [userProfile]);
+
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
@@ -133,7 +163,7 @@ export default function CalendarView() {
   const events: CalEvent[] = useMemo(() => {
     const list: CalEvent[] = [];
     days.forEach((d, di) => {
-      FIXED_BLOCKS.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
+      fixedBlocks.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
     });
     tasks.forEach((t, i) => {
       const dateStr = t.scheduled_date as string | null;
@@ -159,13 +189,14 @@ export default function CalendarView() {
       });
     });
     return list;
-  }, [tasks, days]);
+  }, [tasks, days, fixedBlocks]);
 
   // Compute per-day workload + conflicts
   const daySummary = days.map((d, di) => {
     const date = toISODate(d);
     const cap = capacities[date];
-    const availH = cap ? Number(cap.available_hours) : 5.5;
+    const profileCapH = (userProfile?.daily_capacity_minutes ?? 330) / 60;
+    const availH = cap ? Number(cap.available_hours) : profileCapH;
     const energy = cap?.energy_level ?? 'Med';
     const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
     const capMin = Math.round(availH * 60 * mult);
