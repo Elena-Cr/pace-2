@@ -166,3 +166,24 @@ describe('conflicts', () => {
     expect(getTaskRestConflicts(events).size).toBe(0);
   });
 });
+
+import { layoutEventsForDay } from '@/lib/scheduling';
+
+describe('event layout', () => {
+  it('places non-overlapping events in column 0', () => {
+    const out = layoutEventsForDay([
+      { id: 'a', startMin: 600, endMin: 660 },
+      { id: 'b', startMin: 720, endMin: 780 },
+    ]);
+    expect(out.every(e => e.column === 0)).toBe(true);
+    expect(out.every(e => e.columnCount === 1)).toBe(true);
+  });
+  it('splits two overlapping events into two columns', () => {
+    const out = layoutEventsForDay([
+      { id: 'a', startMin: 600, endMin: 660 },
+      { id: 'b', startMin: 630, endMin: 690 },
+    ]);
+    expect(new Set(out.map(e => e.column))).toEqual(new Set([0, 1]));
+    expect(out.every(e => e.columnCount === 2)).toBe(true);
+  });
+});
