@@ -216,7 +216,7 @@ export default function Plan() {
               <div className="text-[12px] mt-0.5 text-muted-foreground">
                 {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
                 {t.effort_level ? ` · ${t.effort_level}` : ''}
-                {t.deadline ? ` · due ${new Date(t.deadline).toLocaleDateString()}` : ''}
+                {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
               </div>
             </button>
             <div className="mt-3 flex gap-2">
