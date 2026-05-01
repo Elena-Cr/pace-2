@@ -6,9 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
-import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
+import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { getScheduledEvents, effectiveCapacityMinutes, capacityState } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
@@ -68,8 +68,9 @@ const FIXED_BLOCKS: Array<Omit<CalEvent, 'id' | 'day'>> = [
   { title: 'Sleep', domain: 'rest', kind: 'sleep', startMin: 23 * 60 + 30, endMin: 24 * 60, fixed: true },
 ];
 
+// Domain styles use the same CSS variables exposed by DOMAIN_COLOR_VAR
+// in lib/pace.ts, so Calendar stays visually in sync with Home/Plan/Workload.
 function domainClass(domain: Domain | 'rest') {
-  // soft tinted background + colored left bar
   switch (domain) {
     case 'academic': return { bg: 'bg-[hsl(var(--domain-academic)/0.14)]', bar: 'bg-[hsl(var(--domain-academic))]', text: 'text-[hsl(var(--domain-academic))]' };
     case 'work':     return { bg: 'bg-[hsl(var(--domain-work)/0.16)]',     bar: 'bg-[hsl(var(--domain-work))]',     text: 'text-[hsl(var(--domain-work))]' };
@@ -242,11 +243,9 @@ export default function CalendarView() {
     if (!ev || !ev.taskId || ev.day === targetDay) return;
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
+    if (!t) return;
     try {
-      await update.mutateAsync({ id: ev.taskId, patch: {
-        scheduled_date: newDate,
-        reschedule_count: (t?.reschedule_count || 0) + 1,
-      } as any });
+      await update.mutateAsync({ id: ev.taskId, patch: buildReschedulePatch(t, newDate) });
       setReplanFor({ taskId: ev.taskId, title: ev.title });
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');

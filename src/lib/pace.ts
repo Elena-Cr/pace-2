@@ -34,6 +34,19 @@ export const DOMAIN_LABEL: Record<Domain, string> = {
   personal: 'Personal',
 };
 
+// Single source of truth for domain colours. Resolves the same CSS variable
+// across every view (Home, Plan, Calendar, Workload). Use this constant
+// instead of inlining `hsl(var(--domain-...))` or inventing local palettes.
+export const DOMAIN_COLOR_VAR: Record<Domain | 'rest', string> = {
+  academic: 'hsl(var(--domain-academic))',
+  work: 'hsl(var(--domain-work))',
+  social: 'hsl(var(--domain-social))',
+  personal: 'hsl(var(--domain-personal))',
+  rest: 'hsl(var(--domain-rest))',
+};
+
+// NOTE: any new value added to Status must be paired with a matching
+// `.status-<value>` rule in src/index.css (used by the `status-chip` component).
 export const STATUS_LABEL: Record<Status, string> = {
   not_started: 'Not started',
   started: 'Started',

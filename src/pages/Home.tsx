@@ -7,7 +7,7 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
-import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
+import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
   getTomorrowTasks,
@@ -16,6 +16,7 @@ import {
   getRestBlocksForDate,
   effectiveCapacityMinutes,
   capacityState,
+  buildReschedulePatch,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
@@ -26,14 +27,6 @@ const FILTERS: { k: 'all' | Status; label: string }[] = [
   { k: 'blocked', label: STATUS_LABEL.blocked },
   { k: 'nearly_done', label: STATUS_LABEL.nearly_done },
 ];
-
-const DOMAIN_BAR: Record<Domain | 'rest', string> = {
-  academic: 'bg-[hsl(var(--domain-academic))]',
-  work: 'bg-[hsl(var(--domain-work))]',
-  social: 'bg-[hsl(var(--domain-social))]',
-  personal: 'bg-[hsl(var(--domain-personal))]',
-  rest: 'bg-[hsl(var(--domain-rest))]',
-};
 
 export default function Home() {
   const { user, profile, loading } = useAuth();
@@ -77,11 +70,7 @@ export default function Home() {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
     if (kind === 'reschedule') {
-      await update.mutateAsync({ id, patch: {
-        scheduled_date: todayISO(),
-        reschedule_count: (t.reschedule_count || 0) + 1,
-        status: 'rescheduled',
-      } as any });
+      await update.mutateAsync({ id, patch: buildReschedulePatch(t, todayISO()) });
       toast.success('Carried to today.');
     } else {
       await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
@@ -215,7 +204,7 @@ export default function Home() {
             <span className="pace-meta">{formatDeadline(nextUp.deadline)}</span>
           </div>
           <div className="mt-1.5 flex items-start gap-2">
-            <span className={`w-1 self-stretch rounded-full ${DOMAIN_BAR[(nextUp.domain || 'personal') as Domain]}`} />
+            <span className="w-1 self-stretch rounded-full" style={{ background: DOMAIN_COLOR_VAR[(nextUp.domain || 'personal') as Domain] }} />
             <div className="min-w-0 flex-1">
               <div className="text-[16px] font-medium leading-snug truncate">{nextUp.title}</div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
@@ -239,7 +228,7 @@ export default function Home() {
         <div className="mt-3 flex gap-1.5 flex-wrap">
           {(Object.keys(domainCounts) as Array<Domain>).map(d => (
             <span key={d} className="pace-chip">
-              <span className={`w-1.5 h-1.5 rounded-full ${DOMAIN_BAR[d]}`} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: DOMAIN_COLOR_VAR[d] }} />
               {DOMAIN_LABEL[d] ?? d} · {domainCounts[d]}
             </span>
           ))}

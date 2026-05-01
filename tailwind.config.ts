@@ -38,6 +38,13 @@ export default {
           "nearly-done": "hsl(var(--status-nearly-done))",
           completed: "hsl(var(--status-completed))",
         },
+        domain: {
+          academic: "hsl(var(--domain-academic))",
+          work: "hsl(var(--domain-work))",
+          social: "hsl(var(--domain-social))",
+          personal: "hsl(var(--domain-personal))",
+          rest: "hsl(var(--domain-rest))",
+        },
       },
       borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
       keyframes: {

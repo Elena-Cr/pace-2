@@ -7,6 +7,7 @@ import {
   DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
   formatDeadline, fmtMin, todayISO, toISODate,
 } from '@/lib/pace';
+import { progressForStatus, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Timer, Trash2 } from 'lucide-react';
 
@@ -41,7 +42,6 @@ export default function TaskDetail() {
   }
 
   async function setStatus(s: Status) {
-    const { progressForStatus } = await import('@/lib/scheduling');
     const target = progressForStatus(s, task.progress || 0);
     // Don't drop existing progress when moving forward; honor it when status implies more.
     const nextProgress = s === 'done' ? 100 : Math.max(task.progress || 0, target);
@@ -73,11 +73,7 @@ export default function TaskDetail() {
 
   async function reschedule() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    await update({
-      scheduled_date: toISODate(tomorrow),
-      reschedule_count: (task.reschedule_count || 0) + 1,
-      status: 'rescheduled',
-    });
+    await update(buildReschedulePatch(task!, toISODate(tomorrow)));
     toast.success('Moved to tomorrow. Progress preserved.');
   }
 

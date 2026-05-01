@@ -217,13 +217,14 @@ export function expandTimeBlocks(blocks: DefaultBlock[], date: string): CalEvent
 }
 
 // ---------- Status → progress mapping ----------
+// Statuses that are NOT in this map (e.g. 'rescheduled') intentionally
+// preserve the task's current progress — see progressForStatus().
 export const STATUS_PROGRESS: Record<string, number> = {
   not_started: 0,
   started: 10,
   in_progress: 50,
   blocked: 50,
   nearly_done: 80,
-  rescheduled: 0,
   done: 100,
 };
 
@@ -231,5 +232,26 @@ export function progressForStatus(status: string, current = 0): number {
   const target = STATUS_PROGRESS[status];
   if (target === undefined) return current;
   // Don't decrease user-recorded progress when moving forward
-  return target;
+  return Math.max(target, current);
+}
+
+// ---------- Reschedule patch ----------
+// Progress-preserving reschedule: bumps the date + reschedule_count and
+// records optional reason/mood, but never touches progress, subtasks,
+// next_action, or notes.
+import type { ReplanReason, Mood } from './pace';
+
+export function buildReschedulePatch(
+  task: Task,
+  newDate: string,
+  opts: { reason?: ReplanReason; mood?: Mood } = {},
+): Partial<Task> {
+  return {
+    scheduled_date: newDate,
+    reschedule_count: (task.reschedule_count || 0) + 1,
+    status: 'rescheduled',
+    last_mood: opts.mood ?? null,
+    replanning_reason: opts.reason ?? null,
+    // progress, subtasks, next_action, notes intentionally untouched
+  };
 }

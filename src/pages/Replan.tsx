@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
-import { getMissed } from '@/lib/scheduling';
+import { getMissed, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
@@ -42,13 +42,10 @@ export default function Replan() {
     }
     if (kind === 'reschedule') {
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      await update.mutateAsync({ id, patch: {
-        scheduled_date: toISODate(tomorrow),
-        reschedule_count: (t.reschedule_count || 0) + 1,
-        status: 'rescheduled',
-        last_mood: mood,
-        replanning_reason: reason,
-      } as any });
+      await update.mutateAsync({ id, patch: buildReschedulePatch(t, toISODate(tomorrow), {
+        reason: reason ?? undefined,
+        mood: mood ?? undefined,
+      }) });
       toast.success('Carried to tomorrow. Progress preserved.');
       return;
     }

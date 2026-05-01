@@ -11,6 +11,7 @@ import {
   getBacklog,
   calculateDailyWorkload,
   effectiveCapacityMinutes,
+  buildReschedulePatch,
 } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
@@ -91,12 +92,9 @@ export default function Plan() {
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const t = tasks.find(x => x.id === taskId);
+    if (!t) return;
     try {
-      await update.mutateAsync({ id: taskId, patch: {
-        scheduled_date: toISODate(tomorrow),
-        reschedule_count: (t?.reschedule_count || 0) + 1,
-        status: 'rescheduled',
-      } as any });
+      await update.mutateAsync({ id: taskId, patch: buildReschedulePatch(t, toISODate(tomorrow)) });
       toast.success('Moved to tomorrow. Your rest is untouched.');
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
