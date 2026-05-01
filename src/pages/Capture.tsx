@@ -21,6 +21,7 @@ const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 export default function Capture() {
   const nav = useNavigate();
   const { user } = useAuth();
+  const { insert } = useTaskMutations();
   const [title, setTitle] = useState('');
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
