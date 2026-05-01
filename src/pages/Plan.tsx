@@ -27,71 +27,55 @@ export default function Plan() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [backlog, setBacklog] = useState<Task[]>([]);
+  const { data: allTasks = [] } = useTasks();
+  const { update } = useTaskMutations();
+  const today = todayISO();
+  const { data: capacityRow } = useDailyCapacity(today);
+  const upsertCapacity = useUpsertCapacity();
+
+  const tasks = useMemo(() => getTodayTasks(allTasks, today), [allTasks, today]);
+  const backlog = useMemo(() => getBacklog(allTasks), [allTasks]);
+
   const [capacityHours, setCapacityHours] = useState(5.5);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
-  const [hasCapacityRow, setHasCapacityRow] = useState(false);
+  const hasCapacityRow = !!capacityRow;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  // When the profile loads and there is no per-day override, seed slider with the profile default.
+  // Seed slider with capacity row when present, otherwise from the user profile default.
   useEffect(() => {
-    if (userProfile && !hasCapacityRow) {
+    if (capacityRow) {
+      setCapacityHours(Number(capacityRow.available_hours));
+      setEnergyLevel(capacityRow.energy_level);
+      setRecoveryNotes(capacityRow.recovery_notes ?? '');
+    } else if (userProfile) {
       setCapacityHours(userProfile.daily_capacity_minutes / 60);
     }
-  }, [userProfile, hasCapacityRow]);
-
-  useEffect(() => {
-    if (!user) return;
-    // Pull a single open-task pool, then derive today + backlog with shared helpers.
-    supabase.from('tasks').select('*')
-      .neq('status', 'done')
-      .order('priority', { ascending: true })
-      .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => {
-        const all = rowsToTasks(data);
-        setTasks(getTodayTasks(all, todayISO()));
-        setBacklog(getBacklog(all));
-      });
-    supabase.from('daily_capacity').select('*').eq('date', todayISO()).maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setHasCapacityRow(true);
-          setCapacityHours(Number(data.available_hours));
-          setEnergyLevel(data.energy_level);
-          setRecoveryNotes(data.recovery_notes ?? '');
-        }
-      });
-  }, [user]);
+  }, [capacityRow, userProfile]);
 
   async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
     const date = new Date();
     if (when === 'tomorrow') date.setDate(date.getDate() + 1);
     const iso = toISODate(date);
-    const { error } = await supabase.from('tasks').update({ scheduled_date: iso }).eq('id', taskId);
-    if (error) { toast.error(error.message); return; }
-    setBacklog(b => b.filter(t => t.id !== taskId));
-    if (when === 'today') {
-      const moved = backlog.find(t => t.id === taskId);
-      if (moved) setTasks(arr => [...arr, { ...moved, scheduled_date: iso }]);
+    try {
+      await update.mutateAsync({ id: taskId, patch: { scheduled_date: iso } as any });
+      toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not schedule.');
     }
-    toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
   }
 
 
   async function saveCapacity(partial: Partial<{ available_hours: number; energy_level: string; recovery_notes: string }>) {
     if (!user) return;
-    const payload = {
-      user_id: user.id,
-      date: todayISO(),
+    await upsertCapacity.mutateAsync({
+      date: today,
       available_hours: capacityHours,
       energy_level: energyLevel,
       recovery_notes: recoveryNotes || null,
       ...partial,
-    };
-    await supabase.from('daily_capacity').upsert(payload, { onConflict: 'user_id,date' });
+    });
   }
 
   const plannedMinutes = calculateDailyWorkload(tasks);
@@ -107,14 +91,16 @@ export default function Plan() {
   async function move(taskId: string) {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const t = tasks.find(x => x.id === taskId);
-    const { error } = await supabase.from('tasks').update({
-      scheduled_date: toISODate(tomorrow),
-      reschedule_count: (t?.reschedule_count || 0) + 1,
-      status: 'rescheduled',
-    }).eq('id', taskId);
-    if (error) { toast.error(error.message); return; }
-    setTasks(t => t.filter(x => x.id !== taskId));
-    toast.success('Moved to tomorrow. Your rest is untouched.');
+    try {
+      await update.mutateAsync({ id: taskId, patch: {
+        scheduled_date: toISODate(tomorrow),
+        reschedule_count: (t?.reschedule_count || 0) + 1,
+        status: 'rescheduled',
+      } as any });
+      toast.success('Moved to tomorrow. Your rest is untouched.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not move.');
+    }
   }
 
   return (
