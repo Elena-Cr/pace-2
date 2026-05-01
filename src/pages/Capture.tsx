@@ -84,27 +84,29 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
-    
-    const { error } = await supabase.from('tasks').insert({
-      user_id: user.id,
-      title: title.trim(),
-      domain,
-      priority,
-      deadline: deadline ? new Date(deadline).toISOString() : null,
-      duration_minutes: estimate ? Number(estimate) : null,
-      energy,
-      effort_level: effort,
-      next_action: nextAction || null,
-      notes: notes || null,
-      involves_others: involvesOthers,
-      others_rely: othersRely,
-      subtasks,
-      scheduled_date: toISODate(new Date()),
-    });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success('Captured.');
-    nav('/');
+    try {
+      await insert.mutateAsync({
+        title: title.trim(),
+        domain,
+        priority,
+        deadline: deadline ? new Date(deadline).toISOString() : null,
+        duration_minutes: estimate ? Number(estimate) : null,
+        energy,
+        effort_level: effort,
+        next_action: nextAction || null,
+        notes: notes || null,
+        involves_others: involvesOthers,
+        others_rely: othersRely,
+        subtasks,
+        scheduled_date: toISODate(new Date()),
+      } as any);
+      toast.success('Captured.');
+      nav('/');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not save.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
