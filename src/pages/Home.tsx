@@ -449,18 +449,59 @@ export default function Home() {
       {missed.length > 0 && (
         <div className="mt-6 space-y-2.5">
           <div className="pace-eyebrow"><span className="priority-dot must" />Needs attention</div>
-          {missed.slice(0, 3).map(t => (
-            <div key={t.id} className="pace-alert animate-fade-in">
-              <div className="text-[14px] font-medium">{t.title}</div>
-              <div className="text-[13px] mt-1">This task needs attention. What would help now?</div>
-              <div className="mt-2 flex gap-1.5 flex-wrap">
-                <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
-                <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
+          {missed.slice(0, 3).map(t => {
+            const overdue = daysOverdue(t.scheduled_date ?? null);
+            const moved = t.reschedule_count ?? 0;
+            const heavyMoved = moved >= 2;
+            return (
+              <div key={t.id} className="pace-alert animate-fade-in">
+                <div className="text-[14px] font-medium">{t.title}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted-foreground">
+                  {overdue > 0 && <span>{overdue} {overdue === 1 ? 'day' : 'days'} overdue</span>}
+                  {moved > 0 && <span>· Rescheduled {moved}×</span>}
+                </div>
+                {t.others_rely && (
+                  <div className="mt-1 text-[12px] inline-flex items-center gap-1 text-[hsl(var(--attention))]">
+                    <Users className="w-3 h-3" /> Others are depending on this.
+                  </div>
+                )}
+                {heavyMoved && (
+                  <div className="mt-1.5 text-[13px]">
+                    This has moved a few times. A tiny version often unsticks it.
+                  </div>
+                )}
+                {!heavyMoved && (
+                  <div className="text-[13px] mt-1">This task needs attention. What would help now?</div>
+                )}
+                <div className="mt-2 flex gap-1.5 flex-wrap">
+                  {heavyMoved ? (
+                    <>
+                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Reduce to 10 min</button>
+                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
+                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
+                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Remove</button>
+                    </>
+                  ) : moved === 0 ? (
+                    <>
+                      <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
+                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
+                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10 min</button>
+                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
+                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
+                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10 min</button>
+                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
+                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
+                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {missed.length > 3 && (
             <button onClick={() => nav('/replan')} className="pace-btn-ghost w-full">See {missed.length - 3} more in Replan</button>
           )}
