@@ -5,7 +5,7 @@ import { useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus, Sparkles, Repeat } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat, Users } from 'lucide-react';
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 
 const DOMAINS: { k: Domain; label: string }[] = [
@@ -33,8 +33,10 @@ export default function Capture() {
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
   const [notes, setNotes] = useState('');
-  const [involvesOthers, setInvolvesOthers] = useState(false);
-  const [othersRely, setOthersRely] = useState(false);
+  // Single visibility marker — UI shows one toggle but persists both
+  // boolean columns in lockstep so existing readers (Home, Plan, Calendar)
+  // keep working without a schema change.
+  const [othersInvolved, setOthersInvolved] = useState(false);
   const [subtasks, setSubtasks] = useState<{ id: string; title: string; done: boolean }[]>([]);
   const [subInput, setSubInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,8 +65,7 @@ export default function Capture() {
     if (!energy && s.energy) setEnergy(s.energy);
     if (!effort && s.effort_level) setEffort(s.effort_level);
     if (!nextAction && s.next_action) setNextAction(s.next_action);
-    if (!involvesOthers && s.involves_others) setInvolvesOthers(true);
-    if (!othersRely && s.others_rely) setOthersRely(true);
+    if (!othersInvolved && (s.involves_others || s.others_rely)) setOthersInvolved(true);
     setShowAdvanced(true);
     setAppliedFor(stem(presetTitle ?? debouncedTitle));
     toast.success('Pre-filled from your past intentions.');
@@ -103,8 +104,8 @@ export default function Capture() {
         effort_level: effort,
         next_action: nextAction || null,
         notes: notes || null,
-        involves_others: involvesOthers,
-        others_rely: othersRely,
+        involves_others: othersInvolved,
+        others_rely: othersInvolved,
         subtasks,
         scheduled_date,
       } as any);
