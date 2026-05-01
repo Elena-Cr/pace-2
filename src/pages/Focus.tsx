@@ -98,13 +98,9 @@ export default function Focus() {
   }
 
   async function reschedule() {
-    if (task) {
-      await update.mutateAsync({
-        id: task.id,
-        patch: buildReschedulePatch(task, task.scheduled_date ?? todayISO()),
-      });
-    }
-    nav('/replan');
+    // Navigate to Replan with the task pre-selected; the date-picker dialog
+    // there is the single place where reschedules actually happen.
+    nav('/replan', { state: { taskId: task?.id } });
   }
 
   async function markBlocked() {
