@@ -28,15 +28,15 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/capture" element={<Capture />} />
-            <Route path="/plan" element={<Plan />} />
-            <Route path="/replan" element={<Replan />} />
-            <Route path="/focus" element={<Focus />} />
-            <Route path="/workload" element={<Workload />} />
-            <Route path="/calendar" element={<CalendarView />} />
-            <Route path="/task/:id" element={<TaskDetail />} />
+            <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+            <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+            <Route path="/capture" element={<RequireAuth><Capture /></RequireAuth>} />
+            <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
+            <Route path="/replan" element={<RequireAuth><Replan /></RequireAuth>} />
+            <Route path="/focus" element={<RequireAuth><Focus /></RequireAuth>} />
+            <Route path="/workload" element={<RequireAuth><Workload /></RequireAuth>} />
+            <Route path="/calendar" element={<RequireAuth><CalendarView /></RequireAuth>} />
+            <Route path="/task/:id" element={<RequireAuth><TaskDetail /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
