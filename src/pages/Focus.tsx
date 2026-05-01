@@ -435,6 +435,30 @@ export default function Focus() {
         </DialogContent>
       </Dialog>
 
+      {/* "Needs more time" → optional reschedule of the remainder. */}
+      <Dialog open={moreTimeReschedule && !!task} onOpenChange={(o) => {
+        if (!o) { setMoreTimeReschedule(false); nav('/'); }
+      }}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Want to reschedule the remainder?</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              You made progress. Pick a day to pick this back up — or carry on as-is.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button onClick={() => { setMoreTimeReschedule(false); nav('/'); }} className="pace-btn">Not now</button>
+            <button onClick={() => { setMoreTimeReschedule(false); setRescheduleRemainderOpen(true); }} className="pace-btn-primary">Pick a day</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <RescheduleDialog
+        taskId={rescheduleRemainderOpen ? (task?.id ?? null) : null}
+        open={rescheduleRemainderOpen}
+        onClose={() => { setRescheduleRemainderOpen(false); nav('/'); }}
+      />
+
     </AppShell>
   );
 }
