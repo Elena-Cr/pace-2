@@ -14,12 +14,16 @@ import {
   getMissed,
   getDoneOnDate,
   getRestBlocksForDate,
+  getScheduledEvents,
+  expandTimeBlocks,
+  getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
   buildReschedulePatch,
 } from '@/lib/scheduling';
+import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon } from 'lucide-react';
+import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
 
 const FILTERS: { k: 'all' | Status; label: string }[] = [
   { k: 'all', label: 'All' },
