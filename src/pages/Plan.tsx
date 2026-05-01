@@ -6,7 +6,12 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { rowsToTasks } from '@/lib/scheduling';
+import {
+  rowsToTasks,
+  getTodayTasks,
+  getBacklog,
+  calculateDailyWorkload,
+} from '@/lib/scheduling';
 import { toast } from 'sonner';
 import { Calendar as CalIcon } from 'lucide-react';
 
@@ -40,18 +45,16 @@ export default function Plan() {
 
   useEffect(() => {
     if (!user) return;
-    // Today's scheduled tasks
+    // Pull a single open-task pool, then derive today + backlog with shared helpers.
     supabase.from('tasks').select('*')
-      .eq('scheduled_date', todayISO())
-      .neq('status', 'done').eq('is_rest', false)
-      .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setTasks(rowsToTasks(data)));
-    // Backlog: unscheduled, open
-    supabase.from('tasks').select('*')
-      .is('scheduled_date', null).neq('status', 'done').eq('is_rest', false)
+      .neq('status', 'done')
       .order('priority', { ascending: true })
       .order('deadline', { ascending: true, nullsFirst: false })
-      .then(({ data }) => setBacklog(rowsToTasks(data)));
+      .then(({ data }) => {
+        const all = rowsToTasks(data);
+        setTasks(getTodayTasks(all, todayISO()));
+        setBacklog(getBacklog(all));
+      });
     supabase.from('daily_capacity').select('*').eq('date', todayISO()).maybeSingle()
       .then(({ data }) => {
         if (data) {
@@ -91,7 +94,7 @@ export default function Plan() {
     await supabase.from('daily_capacity').upsert(payload, { onConflict: 'user_id,date' });
   }
 
-  const plannedMinutes = tasks.reduce((s, t) => s + (t.duration_minutes || 0), 0);
+  const plannedMinutes = calculateDailyWorkload(tasks);
   const energyMultiplier = energyLevel === 'Low' ? 0.75 : energyLevel === 'High' ? 1.1 : 1;
   const capacityMinutes = Math.round(capacityHours * 60 * energyMultiplier);
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
