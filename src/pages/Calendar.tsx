@@ -6,9 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
-import { Domain, DOMAIN_LABEL, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
+import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, REPLAN_REASON_LABEL, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { getScheduledEvents, effectiveCapacityMinutes, capacityState } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
 
 function timeStrToMin(t: string): number {
