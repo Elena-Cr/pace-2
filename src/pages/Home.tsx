@@ -402,10 +402,31 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick actions */}
+      {/* Quick actions — taller tiles with subtitles so they read as
+          distinct primary actions rather than identical text buttons. */}
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <button onClick={() => nav('/capture')} className="pace-btn-primary"><Plus className="w-4 h-4" /> New intention</button>
-        <button onClick={() => nav('/calendar')} className="pace-btn"><CalIcon className="w-4 h-4" /> Calendar</button>
+        <button
+          onClick={() => nav('/capture')}
+          className="rounded-2xl px-4 py-3.5 bg-primary text-primary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
+            <Plus className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">New intention</span>
+            <span className="block text-[11px] opacity-80 leading-tight mt-0.5">Quick capture</span>
+          </span>
+        </button>
+        <button
+          onClick={() => nav('/calendar')}
+          className="rounded-2xl px-4 py-3.5 bg-secondary text-secondary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
+            <CalIcon className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">Calendar</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Week & month</span>
+          </span>
+        </button>
       </div>
 
       {/* Needs attention */}
