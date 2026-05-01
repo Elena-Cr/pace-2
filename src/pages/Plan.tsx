@@ -37,7 +37,8 @@ export default function Plan() {
   const tasks = useMemo(() => getTodayTasks(allTasks, today), [allTasks, today]);
   const backlog = useMemo(() => getBacklog(allTasks), [allTasks]);
 
-  const [capacityHours, setCapacityHours] = useState(5.5);
+  // Slider value in minutes; null while we don't yet know the user's default.
+  const [capacityMin, setCapacityMin] = useState<number | null>(null);
   const [energyLevel, setEnergyLevel] = useState('Med');
   const [recoveryNotes, setRecoveryNotes] = useState('');
   const hasCapacityRow = !!capacityRow;
@@ -47,11 +48,11 @@ export default function Plan() {
   // Seed slider with capacity row when present, otherwise from the user profile default.
   useEffect(() => {
     if (capacityRow) {
-      setCapacityHours(Number(capacityRow.available_hours));
+      setCapacityMin(Math.round(Number(capacityRow.available_hours) * 60));
       setEnergyLevel(capacityRow.energy_level);
       setRecoveryNotes(capacityRow.recovery_notes ?? '');
     } else if (userProfile) {
-      setCapacityHours(userProfile.daily_capacity_minutes / 60);
+      setCapacityMin(userProfile.daily_capacity_minutes);
     }
   }, [capacityRow, userProfile]);
 
