@@ -92,16 +92,31 @@ export default function Home() {
   const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
   const tomorrowCount = tomorrowTasks.length;
 
-  async function nudge(id: string, kind: 'start' | 'reschedule' | 'block') {
+  async function nudge(id: string, kind: 'start' | 'reschedule' | 'block' | 'tiny') {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
     if (kind === 'reschedule') {
       await update.mutateAsync({ id, patch: buildReschedulePatch(t, todayISO()) });
       toast.success('Carried to today.');
+    } else if (kind === 'tiny') {
+      await update.mutateAsync({ id, patch: {
+        duration_minutes: 10,
+        scheduled_date: todayISO(),
+        next_action: t.next_action || 'Just open it for 10 minutes',
+      } as any });
+      toast.success('Made it tiny. Ten minutes is a real start.');
     } else {
       await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
       toast.success('Marked as blocked. Not your fault.');
     }
+  }
+
+  function daysOverdue(scheduledDate: string | null): number {
+    if (!scheduledDate) return 0;
+    const today = new Date(todayStr + 'T00:00:00');
+    const sched = new Date(scheduledDate + 'T00:00:00');
+    const diff = Math.floor((today.getTime() - sched.getTime()) / 86400000);
+    return Math.max(0, diff);
   }
 
   const today = new Date();
