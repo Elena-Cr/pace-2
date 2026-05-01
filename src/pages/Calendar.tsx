@@ -380,17 +380,39 @@ export default function CalendarView() {
         </div>
       )}
 
-      {/* === DAY VIEW: to-do list style === */}
+      {/* === DAY VIEW: agenda layout ===
+          Rest blocks, focus blocks, and tasks all appear inline in chronological
+          order. A "Needs attention" section at the top surfaces tasks scheduled
+          today whose end time has already passed without completion, with
+          per-item Reschedule / Reduce / Block / Start now actions. */}
       {view === 'day' && (() => {
-        const dayEvs = visibleEvents.filter(e => e.day === dayIdx).sort((a, b) => a.startMin - b.startMin);
+        const dayEvs = visibleEvents.filter(e => e.day === dayIdx);
+        // Chronological agenda. Untimed events fall after timed ones because
+        // getScheduledEvents always assigns a synthetic startMin, but if any
+        // event happens to lack one we sort it last.
+        const agenda = [...dayEvs].sort((a, b) => {
+          const aHas = Number.isFinite(a.startMin) ? 0 : 1;
+          const bHas = Number.isFinite(b.startMin) ? 0 : 1;
+          if (aHas !== bHas) return aHas - bHas;
+          return a.startMin - b.startMin;
+        });
         const summary = daySummary[dayIdx];
         const stateLabel = summary.state === 'over' ? 'Needs adjustment' : summary.state === 'close' ? 'Close to capacity' : 'Balanced';
         const stateClass = summary.state === 'over' ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]' :
                            summary.state === 'close' ? 'bg-[hsl(var(--warning)/0.22)] text-[hsl(206_7%_20%)]' :
                            'bg-[hsl(var(--success)/0.18)] text-[hsl(var(--success))]';
-        const taskItems = dayEvs.filter(e => e.kind === 'task' || e.kind === 'focus');
-        const restItems = dayEvs.filter(e => e.kind !== 'task' && e.kind !== 'focus');
+        const taskItems = agenda.filter(e => e.kind === 'task' || e.kind === 'focus');
         const dateObj = days[dayIdx];
+        const isTodayView = dateObj.toDateString() === new Date().toDateString();
+        const taskById = new Map(tasks.map(t => [t.id, t] as const));
+
+        // Needs attention: tasks scheduled today whose end time is in the past
+        // and whose status is not done. Only meaningful for the "today" column.
+        const attentionItems = isTodayView
+          ? taskItems.filter(e => e.taskId && e.status !== 'done' && e.endMin <= nowMin)
+          : [];
+        const attentionIds = new Set(attentionItems.map(e => e.id));
+        const restAgenda = agenda.filter(e => !attentionIds.has(e.id));
 
         return (
           <div className="mt-4 space-y-4">
@@ -406,19 +428,62 @@ export default function CalendarView() {
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
             </div>
 
-            {/* To-do list */}
+            {/* Needs attention — collapsible, compact, action-led. */}
+            {attentionItems.length > 0 && (
+              <NeedsAttention
+                items={attentionItems}
+                onReschedule={(ev) => { setOpen(null); nav('/replan', { state: { taskId: ev.taskId } }); }}
+                onReduce={async (ev) => {
+                  if (!ev.taskId) return;
+                  try {
+                    await update.mutateAsync({ id: ev.taskId, patch: { duration_minutes: 10 } as any });
+                    toast.success('Reduced to 10 minutes.');
+                  } catch (err: any) { toast.error(err?.message ?? 'Could not update.'); }
+                }}
+                onBlock={async (ev) => {
+                  if (!ev.taskId) return;
+                  try {
+                    await update.mutateAsync({ id: ev.taskId, patch: { status: 'blocked' } as any });
+                    toast.success('Marked as blocked.');
+                  } catch (err: any) { toast.error(err?.message ?? 'Could not update.'); }
+                }}
+                onStart={(ev) => nav('/focus', { state: { taskId: ev.taskId } })}
+              />
+            )}
+
+            {/* Agenda */}
             <div>
-              <div className="pace-eyebrow mb-2">Your day</div>
-              {taskItems.length === 0 ? (
+              <div className="pace-eyebrow mb-2">Agenda</div>
+              {restAgenda.length === 0 ? (
                 <div className="pace-card text-center text-[14px] text-muted-foreground">
                   Nothing planned yet. Add an intention below to get started.
                 </div>
               ) : (
                 <ul className="space-y-2">
-                  {taskItems.map(ev => {
+                  {restAgenda.map(ev => {
                     const dc = domainClass(ev.domain);
                     const conflict = summary.conflictIds.has(ev.id);
                     const done = ev.status === 'done';
+                    const isRest = ev.kind !== 'task' && ev.kind !== 'focus';
+
+                    if (isRest) {
+                      // Inline rest block, full agenda width, distinct neutral
+                      // styling so it reads as protected time.
+                      return (
+                        <li key={ev.id}>
+                          <button onClick={() => setOpen(ev)}
+                            className={`w-full text-left rounded-2xl ${dc.bg} border border-border/30 px-3 py-2.5 flex items-center gap-2`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
+                            <span className="text-[13px] font-medium">{ev.title}</span>
+                            <span className="text-[11px] text-muted-foreground uppercase tracking-wider ml-1">Rest</span>
+                            <span className="ml-auto text-[12px] text-muted-foreground">{fmtRange(ev.startMin, ev.endMin)}</span>
+                          </button>
+                        </li>
+                      );
+                    }
+
+                    const t = ev.taskId ? taskById.get(ev.taskId) : undefined;
+                    const buf = t ? bufferMinutes(t) : 0;
                     return (
                       <li key={ev.id}>
                         <button onClick={() => setOpen(ev)}
@@ -431,7 +496,13 @@ export default function CalendarView() {
                           </button>
                           <span className={`w-1 self-stretch rounded-full ${dc.bar} shrink-0`} />
                           <div className="min-w-0 flex-1">
-                            <div className={`text-[15px] font-medium leading-snug ${done ? 'line-through' : ''}`}>{ev.title}</div>
+                            <div className="flex items-baseline gap-2">
+                              <div className={`text-[15px] font-medium leading-snug truncate ${done ? 'line-through' : ''}`}>{ev.title}</div>
+                              <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{fmtRange(ev.startMin, ev.endMin)}</span>
+                            </div>
+                            {buf > 0 && (
+                              <div className="mt-0.5 text-[11px] text-muted-foreground">+{fmtMin(buf)} buffer</div>
+                            )}
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
                               <span className={`inline-flex items-center gap-1 ${dc.text}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
@@ -456,27 +527,6 @@ export default function CalendarView() {
                 </ul>
               )}
             </div>
-
-            {/* Rest & care */}
-            {restItems.length > 0 && (
-              <div>
-                <div className="pace-eyebrow mb-2">Rest & care</div>
-                <ul className="space-y-1.5">
-                  {restItems.map(ev => {
-                    const dc = domainClass(ev.domain);
-                    return (
-                      <li key={ev.id}>
-                        <button onClick={() => setOpen(ev)} className={`w-full text-left rounded-2xl ${dc.bg} border border-border/30 px-3 py-2 flex items-center gap-2`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />
-                          <span className="text-[14px] font-medium">{ev.title}</span>
-                          <span className="ml-auto text-[12px] text-muted-foreground">{fmtRange(ev.startMin, ev.endMin)}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
           </div>
         );
       })()}
