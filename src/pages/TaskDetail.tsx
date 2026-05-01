@@ -73,11 +73,7 @@ export default function TaskDetail() {
 
   async function reschedule() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    await update({
-      scheduled_date: toISODate(tomorrow),
-      reschedule_count: (task.reschedule_count || 0) + 1,
-      status: 'rescheduled',
-    });
+    await update(buildReschedulePatch(task!, toISODate(tomorrow)));
     toast.success('Moved to tomorrow. Progress preserved.');
   }
 
