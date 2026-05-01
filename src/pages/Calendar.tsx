@@ -635,7 +635,7 @@ export default function CalendarView() {
                                 {ev.domain === 'rest' ? 'Rest' : DOMAIN_LABEL[ev.domain as Domain]}
                               </span>
                               {ev.duration_minutes != null && <span>· {fmtMin(ev.duration_minutes)}</span>}
-                              {ev.energy && <span>· {ev.energy} energy</span>}
+                              {ev.effort_level && <span>· {ev.effort_level} effort</span>}
                               {ev.others_rely && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> shared</span>}
                               {(ev.reschedule_count ?? 0) >= 2 && <span className="pace-chip !py-0.5 !px-1.5 !text-[11px]">Rescheduled {ev.reschedule_count}×</span>}
                               {conflict && <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]"><AlertTriangle className="w-3 h-3" /> overlaps rest</span>}
@@ -884,7 +884,7 @@ export default function CalendarView() {
               <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
                 {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
                 {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
-                {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
+                
               </div>
 
               {open.next_action && (
