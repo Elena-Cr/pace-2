@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTasks } from '@/hooks/useTasks';
+import { useTaskSuggestions } from '@/hooks/useTaskSuggestions';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, DOMAIN_COLOR_VAR, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 import { workloadByDate } from '@/lib/scheduling';
