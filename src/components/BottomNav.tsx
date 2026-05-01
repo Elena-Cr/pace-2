@@ -1,11 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, CalendarDays, Plus, Timer, BarChart3 } from 'lucide-react';
+import { Home, CalendarDays, Plus, ListTodo, BarChart3 } from 'lucide-react';
 
 const items = [
   { to: '/', icon: Home, label: 'Today' },
-  { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
+  { to: '/tasks', icon: ListTodo, label: 'Tasks' },
   { to: '/capture', icon: Plus, label: '', fab: true },
-  { to: '/focus', icon: Timer, label: 'Focus' },
+  { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { to: '/workload', icon: BarChart3, label: 'Workload' },
 ];
 

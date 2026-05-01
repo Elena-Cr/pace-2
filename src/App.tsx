@@ -11,6 +11,7 @@ import Replan from "./pages/Replan";
 import Focus from "./pages/Focus";
 import Workload from "./pages/Workload";
 import CalendarView from "./pages/Calendar";
+import Tasks from "./pages/Tasks";
 import TaskDetail from "./pages/TaskDetail";
 import Onboarding from "./pages/Onboarding";
 import Settings from "./pages/Settings";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/focus" element={<RequireAuth><Focus /></RequireAuth>} />
             <Route path="/workload" element={<RequireAuth><Workload /></RequireAuth>} />
             <Route path="/calendar" element={<RequireAuth><CalendarView /></RequireAuth>} />
+            <Route path="/tasks" element={<RequireAuth><Tasks /></RequireAuth>} />
             <Route path="/task/:id" element={<RequireAuth><TaskDetail /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
