@@ -57,8 +57,16 @@ export function useTaskMutations() {
 
   const update = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Task> }) => {
+      // Auto-stamp completed_at when status transitions to/from done so Home
+      // can rely on it rather than the noisier updated_at column.
+      const finalPatch: Partial<Task> = { ...patch };
+      if (patch.status === 'done' && finalPatch.completed_at === undefined) {
+        finalPatch.completed_at = new Date().toISOString();
+      } else if (patch.status && patch.status !== 'done' && finalPatch.completed_at === undefined) {
+        finalPatch.completed_at = null;
+      }
       const { data, error } = await supabase.from('tasks')
-        .update(patch as any).eq('id', id).select().single();
+        .update(finalPatch as any).eq('id', id).select().single();
       if (error) throw error;
       return rowToTask(data);
     },
