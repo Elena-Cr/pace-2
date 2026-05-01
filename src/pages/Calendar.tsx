@@ -313,7 +313,7 @@ export default function CalendarView() {
   const events: CalEvent[] = useMemo(() => {
     const list: CalEvent[] = [];
     days.forEach((d, di) => {
-      fixedBlocks.forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
+      fixedBlocksFor(d).forEach((b, bi) => list.push({ ...b, id: `fix-${di}-${bi}`, day: di }));
     });
     const taskById = new Map(tasks.map(t => [t.id, t] as const));
     const dayByDate = new Map(days.map((d, i) => [toISODate(d), i] as const));
