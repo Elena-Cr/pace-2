@@ -255,7 +255,16 @@ export default function CalendarView() {
   }
 
   function shiftWeek(delta: number) {
-    const d = new Date(weekStart); d.setDate(d.getDate() + delta * 7); setWeekStart(d);
+    if (view === 'week') {
+      const d = new Date(centerDate); d.setDate(d.getDate() + delta); setCenterDate(d);
+    } else {
+      const d = new Date(weekStart); d.setDate(d.getDate() + delta * 7); setWeekStart(d);
+    }
+  }
+  function resetCenter() {
+    const d = new Date(); d.setHours(0,0,0,0);
+    if (view === 'week') setCenterDate(d);
+    else setWeekStart(startOfWeek(d));
   }
 
   // Drag & drop reschedule
