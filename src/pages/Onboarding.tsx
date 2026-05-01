@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
+import { useUserProfile, TimeBlock, EnergyPattern, EnergyLevel, DEFAULT_ENERGY_PATTERN } from '@/hooks/useUserProfile';
 import { fmtMin } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
+
+const ENERGY_LEVELS: EnergyLevel[] = ['Low', 'Med', 'High'];
 
 const DEFAULT_BLOCKS: TimeBlock[] = [
   { label: 'Sleep', start: '23:30', end: '07:30', kind: 'sleep' },
@@ -22,6 +24,7 @@ export default function Onboarding() {
   const [capacityMin, setCapacityMin] = useState(profile?.daily_capacity_minutes ?? 330);
   const [tasksPerDay, setTasksPerDay] = useState(profile?.preferred_tasks_per_day ?? 4);
   const [blocks, setBlocks] = useState<TimeBlock[]>(profile?.default_time_blocks ?? DEFAULT_BLOCKS);
+  const [energyPattern, setEnergyPattern] = useState<EnergyPattern>(profile?.energy_pattern ?? DEFAULT_ENERGY_PATTERN);
   const [busy, setBusy] = useState(false);
 
   // Side-effect navigation runs in an effect, not the render body, so we never
@@ -49,11 +52,16 @@ export default function Onboarding() {
       daily_capacity_minutes: capacityMin,
       preferred_tasks_per_day: tasksPerDay,
       default_time_blocks: blocks,
+      energy_pattern: energyPattern,
       onboarding_completed: true,
     });
     setBusy(false);
     toast.success('Welcome aboard.');
     nav('/', { replace: true });
+  }
+
+  function patchPattern(p: Partial<EnergyPattern>) {
+    setEnergyPattern(prev => ({ ...prev, ...p }));
   }
 
   const steps = [
