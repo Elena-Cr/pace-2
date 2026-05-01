@@ -5,8 +5,12 @@ import { useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus, Sparkles, Repeat, Users } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat, Users, CalendarIcon } from 'lucide-react';
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
@@ -25,7 +29,9 @@ export default function Capture() {
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
   const [deadline, setDeadline] = useState('');
-  const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog'>('backlog');
+  const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
+  const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [estimate, setEstimate] = useState<number | ''>('');
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
@@ -90,6 +96,8 @@ export default function Capture() {
       else if (when === 'tomorrow') {
         const d = new Date(); d.setDate(d.getDate() + 1);
         scheduled_date = toISODate(d);
+      } else if (when === 'pick' && pickedDate) {
+        scheduled_date = toISODate(pickedDate);
       }
       await insert.mutateAsync({
         title: title.trim(),
@@ -204,7 +212,7 @@ export default function Capture() {
 
         <div>
           <label className="pace-field-label">When?</label>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 flex-wrap">
             {([
               { k: 'today', label: 'Today' },
               { k: 'tomorrow', label: 'Tomorrow' },
@@ -215,6 +223,35 @@ export default function Capture() {
                 {opt.label}
               </button>
             ))}
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    when === 'pick' && pickedDate ? 'pace-chip-filled' : 'pace-chip',
+                    'inline-flex items-center gap-1.5'
+                  )}
+                >
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  {when === 'pick' && pickedDate ? format(pickedDate, 'MMM d') : 'Pick a date'}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={pickedDate}
+                  onSelect={(d) => {
+                    if (d) {
+                      setPickedDate(d);
+                      setWhen('pick');
+                      setDatePopoverOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
