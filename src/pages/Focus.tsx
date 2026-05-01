@@ -51,6 +51,7 @@ export default function Focus() {
   const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
   // After "Needs more time" we prompt to optionally reschedule the remainder.
   const [moreTimeReschedule, setMoreTimeReschedule] = useState(false);
+  const [rescheduleRemainderOpen, setRescheduleRemainderOpen] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
