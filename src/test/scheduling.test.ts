@@ -91,3 +91,31 @@ describe('capacity helpers', () => {
     expect(capacityState(101, 100)).toBe('over');
   });
 });
+
+import { buildReschedulePatch, progressForStatus } from '@/lib/scheduling';
+
+describe('reschedule', () => {
+  it('preserves progress, subtasks, notes, next_action', () => {
+    const task = make({
+      id: 'a', progress: 50, subtasks: [{ id: 's1', title: 'x', done: true }],
+      next_action: 'open the doc', notes: 'hi', reschedule_count: 1,
+    });
+    const patch = buildReschedulePatch(task, '2026-05-02');
+    expect(patch.scheduled_date).toBe('2026-05-02');
+    expect(patch.reschedule_count).toBe(2);
+    expect(patch.status).toBe('rescheduled');
+    expect((patch as any).progress).toBeUndefined();
+    expect((patch as any).subtasks).toBeUndefined();
+    expect((patch as any).next_action).toBeUndefined();
+    expect((patch as any).notes).toBeUndefined();
+  });
+});
+
+describe('progressForStatus', () => {
+  it('does not lower progress when moving forward', () => {
+    expect(progressForStatus('in_progress', 80)).toBe(50);
+  });
+  it('returns current for rescheduled', () => {
+    expect(progressForStatus('rescheduled', 40)).toBe(40);
+  });
+});
