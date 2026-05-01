@@ -15,7 +15,8 @@ export default function Focus() {
   const initialMinutes: number = loc.state?.minutes ?? 25;
   const taskIdHint: string | undefined = loc.state?.taskId;
 
-  const [task, setTask] = useState<Task | null>(null);
+  const { data: allTasks = [] } = useTasks();
+  const { update } = useTaskMutations();
   const [planned, setPlanned] = useState(initialMinutes);
   const [secondsLeft, setSecondsLeft] = useState(initialMinutes * 60);
   const [running, setRunning] = useState(false);
@@ -27,16 +28,14 @@ export default function Focus() {
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
-  useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+  // Pick the focus task: explicit hint, else first open non-rest task by useTasks ordering.
+  const task = useMemo<Task | null>(() => {
+    const candidates = allTasks.filter(t => t.status !== 'done' && !t.is_rest);
+    if (taskIdHint) return candidates.find(t => t.id === taskIdHint) ?? null;
+    return candidates[0] ?? null;
+  }, [allTasks, taskIdHint]);
 
-  useEffect(() => {
-    if (!user) return;
-    const q = supabase.from('tasks').select('*').neq('status', 'done').eq('is_rest', false);
-    (taskIdHint
-      ? q.eq('id', taskIdHint).maybeSingle()
-      : q.order('priority', { ascending: true }).order('deadline', { ascending: true, nullsFirst: false }).limit(1).maybeSingle()
-    ).then(({ data }) => setTask(data ? rowToTask(data) : null));
-  }, [user, taskIdHint]);
+  useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
   useEffect(() => {
     if (!running) return;
