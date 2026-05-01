@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTasks } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
-import type { Task } from '@/lib/scheduling';
-import { rowsToTasks, workloadByDate } from '@/lib/scheduling';
+import { workloadByDate } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 
@@ -28,22 +27,20 @@ export default function Workload() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
   const nav = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data: allTasks = [] } = useTasks();
   const [reflection, setReflection] = useState<number | null>(null);
 
   const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  useEffect(() => {
-    if (!user) return;
+  // Limit to the visible 2-week window (this week + next).
+  const tasks = useMemo(() => {
     const start = toISODate(startOfWeek());
     const end = new Date(); end.setDate(end.getDate() + 14);
-    supabase.from('tasks').select('*')
-      .gte('scheduled_date', start)
-      .lte('scheduled_date', toISODate(end))
-      .then(({ data }) => setTasks(rowsToTasks(data)));
-  }, [user]);
+    const endIso = toISODate(end);
+    return allTasks.filter(t => t.scheduled_date && t.scheduled_date >= start && t.scheduled_date <= endIso);
+  }, [allTasks]);
 
   const week = useMemo(() => {
     const start = startOfWeek();
