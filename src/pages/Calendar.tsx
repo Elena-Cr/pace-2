@@ -327,20 +327,27 @@ export default function CalendarView() {
         </button>
       </div>
 
-      {/* Day picker for day view */}
+      {/* Day picker for day view — fixed 7 across, no horizontal scroll.
+          Each chip has a stable height: an always-present 6px indicator row
+          below the date number, so adding/removing a status dot never
+          changes the chip's overall size. */}
       {view === 'day' && (
-        <div className="mt-3 flex gap-1 overflow-x-auto -mx-1 px-1">
+        <div className="mt-3 flex gap-1">
           {days.map((d, i) => {
             const active = i === dayIdx;
             const summary = daySummary[i];
+            const dotClass =
+              summary.state === 'over' ? 'bg-[hsl(var(--attention))]' :
+              summary.state === 'close' ? 'bg-[hsl(var(--warning))]' :
+              'bg-transparent';
             return (
               <button key={i} onClick={() => setDayIdx(i)}
-                className={`shrink-0 px-3 py-2 rounded-2xl text-center min-w-[56px] ${active ? 'bg-primary text-primary-foreground' : 'bg-card border border-border/60'}`}>
-                <div className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{DAYS[i]}</div>
-                <div className="text-[15px] font-semibold">{d.getDate()}</div>
-                {summary.state !== 'balanced' && (
-                  <div className={`mt-0.5 inline-block w-1.5 h-1.5 rounded-full ${summary.state === 'over' ? 'bg-[hsl(var(--attention))]' : 'bg-[hsl(var(--warning))]'}`} />
-                )}
+                className={`flex-1 min-w-0 px-1 py-2 rounded-2xl text-center ${active ? 'bg-muted-foreground/15 border border-muted-foreground/40' : 'bg-card border border-border/60'}`}>
+                <div className="text-[9px] font-semibold uppercase tracking-wider opacity-80 truncate">{DAYS[i]}</div>
+                <div className="text-[14px] font-semibold leading-tight">{d.getDate()}</div>
+                <div className="h-1.5 mt-0.5 flex items-center justify-center" aria-hidden="true">
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                </div>
               </button>
             );
           })}
