@@ -56,6 +56,8 @@ export default function Plan() {
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
   // Seed slider with capacity row when present, otherwise from the user profile default.
+  // Energy and per-period overrides default to the user's typical pattern when
+  // there's no row yet for today.
   useEffect(() => {
     if (capacityRow) {
       setCapacityMin(Math.round(Number(capacityRow.available_hours) * 60));
@@ -64,12 +66,21 @@ export default function Plan() {
       setMorningEnergy(capacityRow.morning_energy ?? null);
       setAfternoonEnergy(capacityRow.afternoon_energy ?? null);
       setEveningEnergy(capacityRow.evening_energy ?? null);
-      // Auto-expand the period section if the user has set any override.
       if (capacityRow.morning_energy || capacityRow.afternoon_energy || capacityRow.evening_energy) {
         setShowPeriodEnergy(true);
       }
     } else if (userProfile) {
       setCapacityMin(userProfile.daily_capacity_minutes);
+      const pat = userProfile.energy_pattern;
+      if (pat) {
+        setEnergyLevel(pat.whole ?? 'Med');
+        if (pat.mode === 'period') {
+          setMorningEnergy(pat.morning ?? null);
+          setAfternoonEnergy(pat.afternoon ?? null);
+          setEveningEnergy(pat.evening ?? null);
+          setShowPeriodEnergy(true);
+        }
+      }
     }
   }, [capacityRow, userProfile]);
 
