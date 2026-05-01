@@ -40,7 +40,7 @@ export default function Home() {
   async function load() {
     const today = todayISO();
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+    const tomorrowStr = toISODate(tomorrow);
 
     const { data, error } = await supabase
       .from('tasks').select('*')

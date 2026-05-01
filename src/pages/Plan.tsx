@@ -63,7 +63,7 @@ export default function Plan() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const t = tasks.find(x => x.id === taskId);
     const { error } = await supabase.from('tasks').update({
-      scheduled_date: tomorrow.toISOString().slice(0, 10),
+      scheduled_date: toISODate(tomorrow),
       reschedule_count: (t?.reschedule_count || 0) + 1,
       status: 'rescheduled',
     }).eq('id', taskId);

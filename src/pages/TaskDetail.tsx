@@ -79,7 +79,7 @@ export default function TaskDetail() {
   async function reschedule() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     await update({
-      scheduled_date: tomorrow.toISOString().slice(0, 10),
+      scheduled_date: toISODate(tomorrow),
       reschedule_count: (task.reschedule_count || 0) + 1,
       status: 'rescheduled',
     });

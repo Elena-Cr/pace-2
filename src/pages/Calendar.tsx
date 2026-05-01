@@ -97,9 +97,9 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (!user) return;
-    const start = days[0].toISOString().slice(0, 10);
+    const start = toISODate(days[0]);
     const end = new Date(days[6]); end.setDate(end.getDate() + 1);
-    const endIso = end.toISOString().slice(0, 10);
+    const endIso = toISODate(end);
     supabase.from('tasks').select('*')
       .gte('scheduled_date', start).lt('scheduled_date', endIso)
       .then(({ data }) => setTasks(data ?? []));
@@ -122,10 +122,10 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (!user || view !== 'month') return;
-    const start = monthGrid[0].toISOString().slice(0, 10);
+    const start = toISODate(monthGrid[0]);
     const end = new Date(monthGrid[41]); end.setDate(end.getDate() + 1);
     supabase.from('tasks').select('*')
-      .gte('scheduled_date', start).lt('scheduled_date', end.toISOString().slice(0, 10))
+      .gte('scheduled_date', start).lt('scheduled_date', toISODate(end))
       .then(({ data }) => setMonthTasks(data ?? []));
   }, [user, monthAnchor, view]);
 
@@ -138,7 +138,7 @@ export default function CalendarView() {
     tasks.forEach((t, i) => {
       const dateStr = t.scheduled_date as string | null;
       if (!dateStr) return;
-      const di = days.findIndex(d => d.toISOString().slice(0, 10) === dateStr);
+      const di = days.findIndex(d => toISODate(d) === dateStr);
       if (di < 0) return;
       const minutes = t.duration_minutes || 45;
       // synthetic start time: stagger across the day so blocks don't fully stack
@@ -163,7 +163,7 @@ export default function CalendarView() {
 
   // Compute per-day workload + conflicts
   const daySummary = days.map((d, di) => {
-    const date = d.toISOString().slice(0, 10);
+    const date = toISODate(d);
     const cap = capacities[date];
     const availH = cap ? Number(cap.available_hours) : 5.5;
     const energy = cap?.energy_level ?? 'Med';
@@ -207,7 +207,7 @@ export default function CalendarView() {
     const ev = events.find(e => e.id === drag.id);
     setDrag(null);
     if (!ev || !ev.taskId || ev.day === targetDay) return;
-    const newDate = days[targetDay].toISOString().slice(0, 10);
+    const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
     const { error } = await supabase.from('tasks').update({
       scheduled_date: newDate,
@@ -538,7 +538,7 @@ export default function CalendarView() {
               {monthGrid.map((d, i) => {
                 const inMonth = d.getMonth() === monthIdx;
                 const isToday = d.toDateString() === todayStr;
-                const dateStr = d.toISOString().slice(0, 10);
+                const dateStr = toISODate(d);
                 const items = byDate[dateStr] || [];
                 return (
                   <button key={i}
@@ -642,7 +642,7 @@ export default function CalendarView() {
     if (!user) return;
     const title = window.prompt('New intention');
     if (!title?.trim()) return;
-    const date = days[dayI].toISOString().slice(0, 10);
+    const date = toISODate(days[dayI]);
     const { data, error } = await supabase.from('tasks').insert({
       user_id: user.id, title: title.trim(),
       domain: 'personal', priority: 'should', status: 'not_started',

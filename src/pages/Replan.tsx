@@ -45,7 +45,7 @@ export default function Replan() {
     if (kind === 'reschedule') {
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
       await supabase.from('tasks').update({
-        scheduled_date: tomorrow.toISOString().slice(0, 10),
+        scheduled_date: toISODate(tomorrow),
         reschedule_count: (t.reschedule_count || 0) + 1,
         status: 'rescheduled',
         last_mood: mood,
