@@ -115,6 +115,7 @@ export default function Plan() {
   const capacityMinutes = effectiveCapacityMinutes(
     capacityReady ? { available_hours: (capacityMin as number) / 60, energy_level: energyLevel } : null,
     profileCapMin,
+    { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
   );
   const pct = Math.min(150, Math.round((plannedMinutes / Math.max(1, capacityMinutes)) * 100));
   const over = capacityReady && plannedMinutes > capacityMinutes;

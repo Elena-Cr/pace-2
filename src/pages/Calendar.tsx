@@ -350,6 +350,7 @@ export default function CalendarView() {
     const capMin = effectiveCapacityMinutes(
       cap ? { available_hours: Number(cap.available_hours), energy_level: cap.energy_level ?? 'Med' } : null,
       profileCapMin,
+      { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
     );
     const availH = capMin / 60;
     const energy = cap?.energy_level ?? 'Med';
