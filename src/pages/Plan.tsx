@@ -133,22 +133,23 @@ export default function Plan() {
     return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
   }, [tasks, userProfile, today]);
 
-  // Per-task energy hint: if a task has an `energy` value and the period
-  // override at its scheduled start_time matches, surface a soft hint.
-  // Informational only — no scheduling change.
+  // Energy hint per task: if any period override matches the user's
+  // typical pattern's "high" slot, surface a soft hint at the task's
+  // scheduled time. Purely informational — no scheduling change.
   const energyHintByTaskId = useMemo(() => {
-    const events = getScheduledEvents(tasks).filter(e => e.date === today && e.taskId);
     const map = new Map<string, string>();
+    const events = getScheduledEvents(tasks).filter(e => e.date === today && e.taskId);
     events.forEach(e => {
       const t = tasks.find(x => x.id === e.taskId);
-      if (!t || !t.energy) return;
+      if (!t) return;
       const h = Math.floor(e.startMin / 60);
       const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
       const periodEnergy = period === 'morning' ? morningEnergy
         : period === 'afternoon' ? afternoonEnergy
         : eveningEnergy;
-      if (periodEnergy && periodEnergy === t.energy) {
-        map.set(t.id, `${t.energy} energy — good fit for ${period}`);
+      // Hint only when this period is High and the task is heavier than light.
+      if (periodEnergy === 'High' && (t.effort_level === 'Heavy' || (t.duration_minutes ?? 0) >= 60)) {
+        map.set(t.id, `High energy ${period} — good fit for this`);
       }
     });
     return map;
