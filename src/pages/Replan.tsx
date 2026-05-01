@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
+import { Mood, MOOD_LABEL, ReplanReason, todayISO, toISODate } from '@/lib/pace';
 import { getMissed, buildReschedulePatch } from '@/lib/scheduling';
+import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
