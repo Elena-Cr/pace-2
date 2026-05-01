@@ -85,10 +85,10 @@ export default function Focus() {
 
   async function reschedule() {
     if (task) {
-      await update.mutateAsync({ id: task.id, patch: {
-        status: 'rescheduled',
-        reschedule_count: (task.reschedule_count || 0) + 1,
-      } as any });
+      await update.mutateAsync({
+        id: task.id,
+        patch: buildReschedulePatch(task, task.scheduled_date ?? todayISO()),
+      });
     }
     nav('/replan');
   }
