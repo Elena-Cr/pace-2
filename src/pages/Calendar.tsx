@@ -242,18 +242,20 @@ export default function CalendarView() {
     if (!ev || !ev.taskId || ev.day === targetDay) return;
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
-    const { error } = await supabase.from('tasks').update({
-      scheduled_date: newDate,
-      reschedule_count: (t?.reschedule_count || 0) + 1,
-    }).eq('id', ev.taskId);
-    if (error) { toast.error(error.message); return; }
-    setTasks(arr => arr.map(x => x.id === ev.taskId ? { ...x, scheduled_date: newDate, reschedule_count: (x.reschedule_count || 0) + 1 } : x));
-    setReplanFor({ taskId: ev.taskId, title: ev.title });
+    try {
+      await update.mutateAsync({ id: ev.taskId, patch: {
+        scheduled_date: newDate,
+        reschedule_count: (t?.reschedule_count || 0) + 1,
+      } as any });
+      setReplanFor({ taskId: ev.taskId, title: ev.title });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not move.');
+    }
   }
 
   async function setReplanReason(reason: ReplanReason | null) {
     if (!replanFor) return;
-    if (reason) await supabase.from('tasks').update({ replanning_reason: reason }).eq('id', replanFor.taskId);
+    if (reason) await update.mutateAsync({ id: replanFor.taskId, patch: { replanning_reason: reason } as any });
     toast.success('Task moved. Progress preserved.');
     setReplanFor(null);
   }
