@@ -42,13 +42,10 @@ export default function Replan() {
     }
     if (kind === 'reschedule') {
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      await update.mutateAsync({ id, patch: {
-        scheduled_date: toISODate(tomorrow),
-        reschedule_count: (t.reschedule_count || 0) + 1,
-        status: 'rescheduled',
-        last_mood: mood,
-        replanning_reason: reason,
-      } as any });
+      await update.mutateAsync({ id, patch: buildReschedulePatch(t, toISODate(tomorrow), {
+        reason: reason ?? undefined,
+        mood: mood ?? undefined,
+      }) });
       toast.success('Carried to tomorrow. Progress preserved.');
       return;
     }
