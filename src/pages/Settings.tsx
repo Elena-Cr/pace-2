@@ -159,8 +159,31 @@ export default function Settings() {
                       <option value="sleep">Sleep</option>
                       <option value="meal">Meal</option>
                       <option value="recovery">Recovery</option>
+                      <option value="custom">Custom</option>
                     </select>
                   </div>
+                </div>
+                {/* Day-of-week filter. Empty selection = applies every day. */}
+                <div>
+                  <label className="pace-field-label">Days</label>
+                  <div className="flex gap-1">
+                    {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((label, dow) => {
+                      const selected = !b.days || b.days.length === 0 || b.days.includes(dow);
+                      return (
+                        <button
+                          key={dow}
+                          type="button"
+                          onClick={() => toggleDay(i, dow)}
+                          aria-pressed={selected}
+                          className={`flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[11px] font-medium ${selected ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground border border-border/60'}`}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="pace-meta mt-1">
+                    {(!b.days || b.days.length === 0) ? 'Applies every day.' : `Applies on ${b.days.length} of 7 days.`}
+                  </p>
                 </div>
               </div>
             ))}
