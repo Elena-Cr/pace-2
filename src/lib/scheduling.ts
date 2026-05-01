@@ -2,7 +2,11 @@
 // All views (Home, Plan, Calendar, Workload) should use these helpers
 // so a task always appears on the same day everywhere.
 
-import type { Domain, Status } from './pace';
+import type { Domain, Status, Subtask } from './pace';
+import { toISODate } from './pace';
+
+export type { Subtask } from './pace';
+export { toISODate } from './pace';
 
 export type Task = {
   id: string;
@@ -26,7 +30,7 @@ export type Task = {
   reschedule_count: number;
   involves_others: boolean;
   others_rely: boolean;
-  subtasks: any;
+  subtasks: Subtask[];
   replanning_reason: string | null;
   last_mood: string | null;
   created_at: string;
@@ -49,12 +53,7 @@ export type CalEvent = {
 };
 
 // ---------- Date helpers ----------
-export function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
-}
+// toISODate is re-exported from ./pace above (single source of truth).
 
 export function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
