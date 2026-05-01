@@ -83,15 +83,14 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
     setBusy(true);
-    const buffer = effort === 'Heavy' ? 0.2 : 0.1;
-    const suggested = estimate ? Math.round(estimate * (1 + buffer)) : null;
+    const { toISODate } = await import('@/lib/pace');
     const { error } = await supabase.from('tasks').insert({
       user_id: user.id,
       title: title.trim(),
       domain,
       priority,
       deadline: deadline ? new Date(deadline).toISOString() : null,
-      duration_minutes: suggested,
+      duration_minutes: estimate ? Number(estimate) : null,
       energy,
       effort_level: effort,
       next_action: nextAction || null,
@@ -99,7 +98,7 @@ export default function Capture() {
       involves_others: involvesOthers,
       others_rely: othersRely,
       subtasks: subtasks as any,
-      scheduled_date: new Date().toISOString().slice(0, 10),
+      scheduled_date: toISODate(new Date()),
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
