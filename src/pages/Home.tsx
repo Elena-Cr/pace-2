@@ -119,6 +119,8 @@ export default function Home() {
   );
   const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0);
   const capState = capacityState(plannedMin, capMin);
+  const ratio = plannedMin / Math.max(1, capMin);
+  const energy = capacity?.energy_level ?? 'Med';
   const capLabel = capState === 'over' ? 'Over capacity' : capState === 'close' ? 'Close to capacity' : 'Balanced';
   const capChipClass = capState === 'over'
     ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]'
