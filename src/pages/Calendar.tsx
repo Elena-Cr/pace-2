@@ -243,11 +243,9 @@ export default function CalendarView() {
     if (!ev || !ev.taskId || ev.day === targetDay) return;
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
+    if (!t) return;
     try {
-      await update.mutateAsync({ id: ev.taskId, patch: {
-        scheduled_date: newDate,
-        reschedule_count: (t?.reschedule_count || 0) + 1,
-      } as any });
+      await update.mutateAsync({ id: ev.taskId, patch: buildReschedulePatch(t, newDate) });
       setReplanFor({ taskId: ev.taskId, title: ev.title });
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
