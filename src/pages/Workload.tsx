@@ -61,8 +61,17 @@ export default function Workload() {
   }, {} as Record<Domain, number>);
   const grandTotal = Object.values(totalsByDomain).reduce((a, b) => a + b, 0);
 
-  // Non-deadline high-value
-  const noDeadline = tasks.filter(t => !t.deadline && t.priority === 'must' && t.status !== 'done');
+  // Non-deadline high-value: priority "must" OR a stem that matches a
+  // recurring template from the user's history.
+  const recurringStems = useMemo(
+    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
+    [templates],
+  );
+  const noDeadline = tasks.filter(t =>
+    !t.deadline
+    && t.status !== 'done'
+    && (t.priority === 'must' || recurringStems.has(stem(t.title)))
+  );
 
   return (
     <AppShell>
