@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, X, MoveRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, MoveRight } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
@@ -8,9 +8,10 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
 import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -487,18 +488,30 @@ export default function CalendarView() {
             {visibleDays.map(di => {
               const dayEvs = visibleEvents.filter(e => e.day === di);
               const summary = daySummary[di];
+              // Lay out overlapping events into side-by-side columns so two
+              // tasks in the same hour don't stack on top of each other.
+              const laidOut = layoutEventsForDay(dayEvs);
               return (
                 <div key={di}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(di)}
-                  className="flex-1 min-w-0 relative border-l border-border/40">
-                  {/* Hour lines + click-to-add */}
+                  // Single click handler computes the hour from the y-offset.
+                  // Replaces 18 separate <button> hour cells per day so keyboard
+                  // users don't get a tab stop at every empty slot.
+                  onClick={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const hour = START_HOUR + Math.floor(y / HOUR_PX);
+                    if (hour >= START_HOUR && hour < END_HOUR) createAt(di, hour);
+                  }}
+                  className="flex-1 min-w-0 relative border-l border-border/40 cursor-pointer">
+                  {/* Hour grid lines (visual only — not focusable). */}
                   {HOURS.map((h, i) => (
-                    <button key={h}
-                      onClick={() => createAt(di, h)}
-                      className="absolute left-0 right-0 border-t border-border/30 hover:bg-muted/40 transition"
-                      style={{ top: i * HOUR_PX, height: HOUR_PX }}
-                      aria-label={`Add at ${h}:00`} />
+                    <div key={h}
+                      aria-hidden="true"
+                      className="absolute left-0 right-0 border-t border-border/30 pointer-events-none"
+                      style={{ top: i * HOUR_PX, height: HOUR_PX }} />
                   ))}
 
                   {/* Overbooking ribbon */}
@@ -509,27 +522,29 @@ export default function CalendarView() {
                   )}
 
                   {/* Events */}
-                  {dayEvs.map(ev => {
+                  {laidOut.map(ev => {
                     const top = ((ev.startMin - START_HOUR * 60) / 60) * HOUR_PX;
                     const height = Math.max(22, ((ev.endMin - ev.startMin) / 60) * HOUR_PX - 2);
                     const dc = domainClass(ev.domain);
                     const conflict = summary.conflictIds.has(ev.id);
                     const isFixed = !!ev.fixed;
+                    const widthPct = 100 / ev.columnCount;
+                    const leftPct = ev.column * widthPct;
                     return (
                       <button
                         key={ev.id}
                         draggable={!isFixed}
                         onDragStart={() => setDrag({ id: ev.id })}
-                        onClick={() => setOpen(ev)}
-                        className={`absolute left-0.5 right-0.5 rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
-                        style={{ top, height, zIndex: 5 }}>
+                        onClick={(e) => { e.stopPropagation(); setOpen(ev); }}
+                        className={`absolute rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
+                        style={{ top, height, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`, zIndex: 5 }}>
                         <div className="flex gap-1 items-start">
                           <span className={`w-0.5 self-stretch rounded-full ${dc.bar} shrink-0`} />
                           <div className="min-w-0 flex-1">
                             <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
                             <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
                             <div className="flex gap-1 mt-0.5 flex-wrap items-center">
-                              {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" />}
+                              {ev.others_rely && <Users className="w-2.5 h-2.5 text-muted-foreground" aria-label="Others rely on this" />}
                               {(ev.reschedule_count ?? 0) >= 2 && (
                                 <span className="text-[9px] text-muted-foreground" aria-label={`Rescheduled ${ev.reschedule_count} times`}>↻{ev.reschedule_count}</span>
                               )}
@@ -608,63 +623,65 @@ export default function CalendarView() {
         <Plus className="w-4 h-4" /> Add intention
       </button>
 
-      {/* Detail modal */}
-      {open && (
-        <div className="fixed inset-0 z-40 bg-foreground/30 flex items-end sm:items-center justify-center p-3" onClick={() => setOpen(null)}>
-          <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-2">
-              <div>
+      {/* Detail dialog — shadcn Dialog gives us focus trap + Escape for free. */}
+      <Dialog open={!!open} onOpenChange={(o) => { if (!o) setOpen(null); }}>
+        <DialogContent className="max-w-md rounded-3xl">
+          {open && (
+            <>
+              <DialogHeader>
                 <div className="pace-tag flex items-center">
                   <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${domainClass(open.domain).bar}`} />
                   {open.domain === 'rest' ? 'Rest / Recovery' : DOMAIN_LABEL[open.domain]} · {fmtRange(open.startMin, open.endMin)}
                 </div>
-                <div className="pace-title mt-1">{open.title}</div>
+                <DialogTitle className="pace-title mt-1 text-left">{open.title}</DialogTitle>
+                <DialogDescription className="sr-only">Event details</DialogDescription>
+              </DialogHeader>
+
+              {open.status && (
+                <div className="mt-1"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
+              )}
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+                {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
+                {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
+                {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
               </div>
-              <button onClick={() => setOpen(null)} className="p-1.5 rounded-full hover:bg-muted"><X className="w-4 h-4" /></button>
-            </div>
 
-            {open.status && (
-              <div className="mt-3"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
-            )}
+              {open.next_action && (
+                <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>
+              )}
+              {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-              {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
-              {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
-              {open.energy && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Energy</div>{open.energy}</div>}
-            </div>
+              {open.taskId && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm">Edit</button>
+                  <button onClick={() => { setOpen(null); nav('/replan'); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
+                  <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
+                </div>
+              )}
+              {open.fixed && (
+                <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            {open.next_action && (
-              <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>
-            )}
-            {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
-
-            {open.taskId && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={() => { setOpen(null); nav(`/task/${open.taskId}`); }} className="pace-btn pace-btn-sm">Edit</button>
-                <button onClick={() => { setOpen(null); nav('/replan'); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
-                <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
-              </div>
-            )}
-            {open.fixed && (
-              <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
-            )}
+      {/* Replan reason dialog */}
+      <Dialog open={!!replanFor} onOpenChange={(o) => { if (!o) setReplanReason(null); }}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Task moved. What changed?</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              Optional — helps you spot patterns.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-1">
+            <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
           </div>
-        </div>
-      )}
-
-      {/* Replan reason prompt */}
-      {replanFor && (
-        <div className="fixed inset-0 z-50 bg-foreground/30 flex items-end sm:items-center justify-center p-3" onClick={() => setReplanReason(null)}>
-          <div className="bg-card rounded-3xl p-5 w-full max-w-md animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="pace-title">Task moved. What changed?</div>
-            <div className="text-[13px] text-muted-foreground mt-1">Optional — helps you spot patterns.</div>
-            <div className="mt-3">
-              <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
-            </div>
-            <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
-          </div>
-        </div>
-      )}
+          <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 
