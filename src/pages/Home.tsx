@@ -89,7 +89,8 @@ export default function Home() {
   }, []);
   const missed = useMemo(() => getMissed(tasks, todayStr), [tasks, todayStr]);
   const doneToday = useMemo(() => getDoneOnDate(tasks, todayStr), [tasks, todayStr]);
-  const tomorrowCount = useMemo(() => getTomorrowTasks(tasks, tomorrowStr).length, [tasks, tomorrowStr]);
+  const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
+  const tomorrowCount = tomorrowTasks.length;
 
   async function nudge(id: string, kind: 'start' | 'reschedule' | 'block') {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
