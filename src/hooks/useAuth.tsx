@@ -36,12 +36,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        supabase.from('profiles').select('id, display_name, avatar_url').eq('id', session.user.id).maybeSingle()
+        // Validate the session against the server. If the user was deleted
+        // (or the token is otherwise invalid), getUser returns an error and
+        // we sign out locally to avoid a stranded "logged-in but no data" state.
+        const { data: { user: verified }, error } = await supabase.auth.getUser();
+        if (error || !verified) {
+          await supabase.auth.signOut();
+          setSession(null); setUser(null); setProfile(null);
+          setLoading(false);
+          return;
+        }
+        setSession(session);
+        setUser(verified);
+        supabase.from('profiles').select('id, display_name, avatar_url').eq('id', verified.id).maybeSingle()
           .then(({ data }) => setProfile(data as Profile | null));
+      } else {
+        setSession(null); setUser(null);
       }
       setLoading(false);
     });
