@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
+import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, fmtMin, formatDeadline } from '@/lib/pace';
-import type { Task } from '@/lib/scheduling';
 import {
-  rowsToTasks,
   getTodayTasks,
   getTomorrowTasks,
   getMissed,
