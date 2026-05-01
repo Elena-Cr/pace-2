@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTasks, useTaskMutations } from '@/hooks/useTasks';
+import { useDailyCapacity, useUpsertCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import { todayISO, fmtMin, toISODate, formatDeadline } from '@/lib/pace';
-import type { Task } from '@/lib/scheduling';
 import {
-  rowsToTasks,
   getTodayTasks,
   getBacklog,
   calculateDailyWorkload,
