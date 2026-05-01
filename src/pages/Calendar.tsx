@@ -494,15 +494,25 @@ export default function CalendarView() {
             const stateClass = s.state === 'over' ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]' :
                                s.state === 'close' ? 'bg-[hsl(var(--warning)/0.22)] text-[hsl(206_7%_20%)]' :
                                'bg-[hsl(var(--success)/0.18)] text-[hsl(var(--success))]';
+            const weekdayShort = d.toLocaleDateString([], { weekday: 'short' });
+            const goToDay = () => {
+              setWeekStart(startOfWeek(d));
+              setDayIdx((d.getDay() + 6) % 7);
+              setView('day');
+            };
             return (
               <div key={di} className="flex-1 min-w-0 px-1">
                 <div className={`text-center ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{DAYS[di]}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{weekdayShort}</div>
                   <div className="text-[15px] font-semibold">{d.getDate()}</div>
                 </div>
-                <div className={`mt-1 rounded-lg px-1.5 py-1 text-[10px] text-center ${stateClass}`}>
+                <button
+                  type="button"
+                  onClick={goToDay}
+                  className={`mt-1 w-full rounded-lg px-1.5 py-1 text-[10px] text-center ${stateClass} ${s.state !== 'balanced' ? 'hover:opacity-90 cursor-pointer' : 'cursor-default'}`}
+                  aria-label={s.state !== 'balanced' ? `${stateLabel} — open day view to see details` : stateLabel}>
                   {stateLabel}
-                </div>
+                </button>
                 <div className="text-[10px] text-muted-foreground text-center mt-0.5">
                   {fmtMin(s.planned)} / {fmtMin(s.capMin)}
                 </div>
