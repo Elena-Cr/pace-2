@@ -517,7 +517,7 @@ export default function Home() {
       <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
         {FILTERS.map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)}
-            className={filter === f.k ? 'pace-chip-filled shrink-0' : 'pace-chip shrink-0'}>{f.label}</button>
+            className={filter === f.k ? 'pace-chip-selected shrink-0' : 'pace-chip shrink-0'}>{f.label}</button>
         ))}
       </div>
 
