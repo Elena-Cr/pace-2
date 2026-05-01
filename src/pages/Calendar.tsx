@@ -679,11 +679,16 @@ export default function CalendarView() {
     const title = window.prompt('New intention');
     if (!title?.trim()) return;
     const date = toISODate(days[dayI]);
+    const startTime = `${String(hour).padStart(2, '0')}:00:00`;
+    const endTime = `${String(hour + 1).padStart(2, '0')}:00:00`;
     try {
       await insert.mutateAsync({
         title: title.trim(),
         domain: 'personal', priority: 'should', status: 'not_started',
-        scheduled_date: date, duration_minutes: 60,
+        scheduled_date: date,
+        duration_minutes: 60,
+        start_time: startTime,
+        end_time: endTime,
       } as any);
       toast.success('Added to your plan.');
     } catch (err: any) {
