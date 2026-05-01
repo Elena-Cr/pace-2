@@ -221,24 +221,14 @@ export default function TaskDetail() {
           </div>
 
           <div>
-            <label className="pace-field-label">Estimates</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number" min={5} step={5}
-                className="pace-field"
-                placeholder="Time · minutes"
-                value={eDuration}
-                onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
-              />
-              <select
-                className="pace-field"
-                value={eEnergy ?? ''}
-                onChange={e => setEEnergy(e.target.value || null)}
-              >
-                <option value="">Energy · any</option>
-                {ENERGIES.map(x => <option key={x} value={x}>Energy · {x}</option>)}
-              </select>
-            </div>
+            <label className="pace-field-label">Time estimate</label>
+            <input
+              type="number" min={5} step={5}
+              className="pace-field"
+              placeholder="Minutes"
+              value={eDuration}
+              onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
+            />
             <div className="mt-3">
               <div className="pace-field-label">Effort level</div>
               <div className="flex gap-1.5">
