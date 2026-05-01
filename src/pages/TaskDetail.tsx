@@ -60,7 +60,6 @@ export default function TaskDetail() {
     setEPriority(task.priority);
     setEDeadline(toDatetimeLocal(task.deadline));
     setEDuration(task.duration_minutes ?? '');
-    setEEnergy(task.energy);
     setEEffort(task.effort_level);
     setEScheduledDate(task.scheduled_date ?? '');
     setEOthers(!!(task.involves_others || task.others_rely));
@@ -80,7 +79,6 @@ export default function TaskDetail() {
           priority: ePriority,
           deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
           duration_minutes: eDuration === '' ? null : Number(eDuration),
-          energy: eEnergy,
           effort_level: eEffort,
           scheduled_date: eScheduledDate || null,
           involves_others: eOthers,
