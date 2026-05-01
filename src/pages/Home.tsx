@@ -99,8 +99,10 @@ export default function Home() {
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
 
-  // Capacity math
-  const capH = capacity ? Number(capacity.available_hours) : 5.5;
+  // Capacity math — daily override (daily_capacity row) takes precedence,
+  // otherwise fall back to user's profile default.
+  const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+  const capH = capacity ? Number(capacity.available_hours) : profileCapMin / 60;
   const energy = capacity?.energy_level ?? 'Med';
   const mult = energy === 'Low' ? 0.75 : energy === 'High' ? 1.1 : 1;
   const capMin = Math.round(capH * 60 * mult);
