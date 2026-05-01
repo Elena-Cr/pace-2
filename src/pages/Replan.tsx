@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
-import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO } from '@/lib/pace';
+import { Mood, MOOD_LABEL, ReplanReason, REPLAN_REASON_LABEL, todayISO, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
 
 const MOODS: Mood[] = ['fine','tired','overwhelmed','frustrated','unsure'];
@@ -45,7 +45,7 @@ export default function Replan() {
     if (kind === 'reschedule') {
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
       await supabase.from('tasks').update({
-        scheduled_date: tomorrow.toISOString().slice(0, 10),
+        scheduled_date: toISODate(tomorrow),
         reschedule_count: (t.reschedule_count || 0) + 1,
         status: 'rescheduled',
         last_mood: mood,

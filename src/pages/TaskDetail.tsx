@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/AppShell';
 import {
   DOMAIN_LABEL, STATUS_LABEL, Status, Subtask,
-  formatDeadline, fmtMin, todayISO,
+  formatDeadline, fmtMin, todayISO, toISODate,
 } from '@/lib/pace';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Timer, Trash2 } from 'lucide-react';
@@ -79,7 +79,7 @@ export default function TaskDetail() {
   async function reschedule() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     await update({
-      scheduled_date: tomorrow.toISOString().slice(0, 10),
+      scheduled_date: toISODate(tomorrow),
       reschedule_count: (task.reschedule_count || 0) + 1,
       status: 'rescheduled',
     });

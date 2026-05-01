@@ -80,8 +80,17 @@ export function formatDeadline(iso: string | null): string {
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+// Local-date ISO (YYYY-MM-DD) — never use toISOString().slice(0,10),
+// which returns the UTC date and can be off-by-one in non-UTC timezones.
+export function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 export function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return toISODate(new Date());
 }
 
 export function fmtMin(min: number) {
