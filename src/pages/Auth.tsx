@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
+
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -41,11 +41,6 @@ export default function Auth() {
     }
   }
 
-  async function google() {
-    setBusy(true);
-    const result = await lovable.auth.signInWithOAuth('google', { redirect_uri: window.location.origin });
-    if (result.error) { toast.error('Google sign-in failed'); setBusy(false); }
-  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-background">
@@ -86,15 +81,6 @@ export default function Auth() {
             {busy ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
 
-          <div className="flex items-center gap-2 my-1">
-            <div className="flex-1 h-px bg-foreground/15" />
-            <span className="text-[12px] text-muted-foreground">or</span>
-            <div className="flex-1 h-px bg-foreground/15" />
-          </div>
-
-          <button type="button" onClick={google} disabled={busy} className="pace-btn w-full">
-            Continue with Google
-          </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
