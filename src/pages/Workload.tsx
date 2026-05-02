@@ -54,7 +54,10 @@ export default function Workload() {
     });
   }, [tasks]);
 
-  const maxMin = Math.max(60, dailyCapMin, ...week.map(d => d.total));
+  // Scale: at least capacity + 2h headroom, but grow if any day exceeds that
+  // so the tallest bar always fills the chart and shorter days stay proportional.
+  const weekMax = Math.max(0, ...week.map(d => d.total));
+  const maxMin = Math.max(60, dailyCapMin + 120, weekMax);
   const totalsByDomain = DOMAINS.reduce((acc, d) => {
     acc[d] = week.reduce((s, w) => s + w.totals[d], 0);
     return acc;
