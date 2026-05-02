@@ -12,6 +12,7 @@ import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildResch
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import DayEnergyPicker from '@/components/DayEnergyPicker';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -550,7 +551,15 @@ export default function CalendarView() {
                   <div className="pace-eyebrow">{DAYS[dayIdx]}</div>
                   <div className="pace-title mt-0.5">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
                 </div>
-                <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                <div className="flex items-center gap-2">
+                  <DayEnergyPicker
+                    date={summary.date}
+                    current={summary.energy}
+                    availableHours={summary.availH}
+                    size="md"
+                  />
+                  <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                </div>
               </div>
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
             </div>
@@ -693,6 +702,14 @@ export default function CalendarView() {
                 </button>
                 <div className="text-[10px] text-muted-foreground text-center mt-0.5">
                   {fmtMin(s.planned)} / {fmtMin(s.capMin)}
+                </div>
+                <div className="mt-1 flex justify-center">
+                  <DayEnergyPicker
+                    date={s.date}
+                    current={s.energy}
+                    availableHours={s.availH}
+                    size="sm"
+                  />
                 </div>
               </div>
             );
