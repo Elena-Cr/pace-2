@@ -12,6 +12,7 @@ import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildResch
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import DayEnergyPicker from '@/components/DayEnergyPicker';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
