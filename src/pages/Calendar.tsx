@@ -551,7 +551,15 @@ export default function CalendarView() {
                   <div className="pace-eyebrow">{DAYS[dayIdx]}</div>
                   <div className="pace-title mt-0.5">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
                 </div>
-                <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                <div className="flex items-center gap-2">
+                  <DayEnergyPicker
+                    date={summary.date}
+                    current={summary.energy}
+                    availableHours={summary.availH}
+                    size="md"
+                  />
+                  <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                </div>
               </div>
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
             </div>
