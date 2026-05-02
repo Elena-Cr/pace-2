@@ -703,6 +703,14 @@ export default function CalendarView() {
                 <div className="text-[10px] text-muted-foreground text-center mt-0.5">
                   {fmtMin(s.planned)} / {fmtMin(s.capMin)}
                 </div>
+                <div className="mt-1 flex justify-center">
+                  <DayEnergyPicker
+                    date={s.date}
+                    current={s.energy}
+                    availableHours={s.availH}
+                    size="sm"
+                  />
+                </div>
               </div>
             );
           })}
