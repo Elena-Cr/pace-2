@@ -100,12 +100,12 @@ export default function Workload() {
           {week.map(w => {
             const isToday = w.iso === todayISO();
             return (
-              <div key={w.iso} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+              <div key={w.iso} className="flex-1 flex flex-col items-center gap-1.5 min-w-0 h-full">
                 <div className="w-full flex-1 flex items-end">
-                  <div className="w-full rounded-t-lg overflow-hidden flex flex-col-reverse" style={{ height: '100%' }}>
+                  <div className="w-full rounded-t-lg overflow-hidden flex flex-col-reverse" style={{ height: `${(w.total / maxMin) * 100}%`, minHeight: w.total > 0 ? 4 : 0 }}>
                     {DOMAINS.map(d => {
-                      const h = (w.totals[d] / maxMin) * 100;
-                      if (h <= 0) return null;
+                      if (w.totals[d] <= 0) return null;
+                      const h = (w.totals[d] / Math.max(1, w.total)) * 100;
                       return <div key={d} style={{ height: `${h}%`, background: DOMAIN_COLOR_VAR[d], minHeight: 2 }} />;
                     })}
                     {w.total === 0 && <div className="h-1 rounded-t-lg bg-muted" />}
