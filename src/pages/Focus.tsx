@@ -76,16 +76,28 @@ export default function Focus() {
     [allTasks],
   );
 
+  // Which task in the picker is expanded to show its subtasks.
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  // Currently-focused subtask id (initialised from nav state hint).
+  const [activeSubtaskId, setActiveSubtaskId] = useState<string | null>(subtaskIdHint ?? null);
+
+  // Sync activeSubtaskId when the route hint changes (e.g. via chooseTask).
+  useEffect(() => { setActiveSubtaskId(subtaskIdHint ?? null); }, [subtaskIdHint, taskIdHint]);
+
+  // Subtasks of the current focus task (live-read so toggles reflect immediately).
+  const subtasks: Subtask[] = Array.isArray(task?.subtasks) ? (task!.subtasks as Subtask[]) : [];
+  const activeSubtask = subtasks.find(s => s.id === activeSubtaskId) ?? null;
+
   // True when the timer is at its initial state and no session has started.
   const isIdle = !running && !sessionId && secondsLeft === planned * 60 && !overrunPrompt && !completionCheck && !breakMode;
 
-  function chooseTask(id: string) {
+  function chooseTask(id: string, subId?: string | null) {
     if (sessionId || running) {
       // A session is in flight — confirm before swapping subjects.
       setPendingSwitchId(id);
       return;
     }
-    nav('/focus', { state: { taskId: id }, replace: true });
+    nav('/focus', { state: { taskId: id, subtaskId: subId ?? null }, replace: true });
   }
 
   function confirmSwitch() {
@@ -98,6 +110,14 @@ export default function Focus() {
     setSessionId(null);
     setSecondsLeft(planned * 60);
     nav('/focus', { state: { taskId: id }, replace: true });
+  }
+
+  // Toggle a subtask's done state and persist to the task. Subtask state
+  // persists independently of the parent task's overall completion.
+  async function toggleSubtask(sid: string) {
+    if (!task) return;
+    const next = subtasks.map(s => s.id === sid ? { ...s, done: !s.done } : s);
+    await update.mutateAsync({ id: task.id, patch: { subtasks: next } as any });
   }
 
 
