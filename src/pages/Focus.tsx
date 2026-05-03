@@ -53,6 +53,7 @@ export default function Focus() {
   // After "Needs more time" we prompt to optionally reschedule the remainder.
   const [moreTimeReschedule, setMoreTimeReschedule] = useState(false);
   const [rescheduleRemainderOpen, setRescheduleRemainderOpen] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
@@ -182,10 +183,8 @@ export default function Focus() {
     setRunning(false);
   }
 
-  async function reschedule() {
-    // Navigate to Replan with the task pre-selected; the date-picker dialog
-    // there is the single place where reschedules actually happen.
-    nav('/replan', { state: { taskId: task?.id } });
+  function reschedule() {
+    if (task) setRescheduleOpen(true);
   }
 
   async function markBlocked() {
@@ -253,7 +252,9 @@ export default function Focus() {
       toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
       nav('/');
     } else {
-      nav('/replan');
+      // 'replan' outcome: open the reschedule modal instead of navigating away.
+      setCompletionCheck(false);
+      if (task) setRescheduleOpen(true);
     }
   }
 
@@ -514,7 +515,7 @@ export default function Focus() {
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => complete('completed')} className="pace-btn-primary">Task completed</button>
               <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
-              <button onClick={() => complete('replan')} className="pace-btn">Should be replanned</button>
+              <button onClick={() => complete('replan')} className="pace-btn">Reschedule</button>
               <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
             </div>
           </div>
@@ -559,6 +560,12 @@ export default function Focus() {
         taskId={rescheduleRemainderOpen ? (task?.id ?? null) : null}
         open={rescheduleRemainderOpen}
         onClose={() => { setRescheduleRemainderOpen(false); nav('/'); }}
+      />
+
+      <RescheduleDialog
+        taskId={rescheduleOpen ? (task?.id ?? null) : null}
+        open={rescheduleOpen}
+        onClose={() => setRescheduleOpen(false)}
       />
 
     </AppShell>
