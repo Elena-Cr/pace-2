@@ -20,6 +20,7 @@ import {
   getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
+  getNoDeadlineHighValue,
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
