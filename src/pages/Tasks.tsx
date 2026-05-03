@@ -192,27 +192,42 @@ export default function Tasks() {
         <ul className="space-y-3">
           {filtered.map(t => {
             const warnings = warningsFor(t);
+            const canSchedule = !t.scheduled_date && t.status !== 'done' && !t.is_rest;
             return (
               <li key={t.id} className="space-y-1.5">
                 <TaskCard task={t} onOpen={() => nav(`/task/${t.id}`)} />
-                {warnings.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 px-1">
-                    {warnings.map(w => (
-                      <span
-                        key={w}
-                        className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--attention)/0.15)] text-[hsl(var(--attention))] px-2 py-0.5 text-[11px] font-medium"
-                      >
-                        {w === 'unscheduled' ? <CalendarX className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                        {WARNING_LABEL[w]}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center gap-1.5 px-1">
+                  {warnings.map(w => (
+                    <span
+                      key={w}
+                      className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--attention)/0.15)] text-[hsl(var(--attention))] px-2 py-0.5 text-[11px] font-medium"
+                    >
+                      {w === 'unscheduled' ? <CalendarX className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                      {WARNING_LABEL[w]}
+                    </span>
+                  ))}
+                  {canSchedule && (
+                    <button
+                      onClick={() => setScheduleId(t.id)}
+                      className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 text-[11px] font-medium"
+                    >
+                      <CalendarPlus className="w-3 h-3" />
+                      Schedule
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}
         </ul>
       )}
+
+      <RescheduleDialog
+        taskId={scheduleId}
+        open={!!scheduleId}
+        onClose={() => setScheduleId(null)}
+        mode="schedule"
+      />
     </AppShell>
   );
 }
