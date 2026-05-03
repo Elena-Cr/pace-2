@@ -271,12 +271,9 @@ export default function TaskDetail() {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <span className="pace-tag flex items-center">
-          <span className={`priority-dot ${task.priority}`} />
-          {task.domain ? DOMAIN_LABEL[task.domain] : 'Uncategorized'} · {formatDeadline(task.deadline)}
-        </span>
-        <div className="flex items-center gap-1.5">
+      <div className="mt-3 flex items-start justify-between gap-2">
+        <TaskMeta task={task} />
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
           <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit task">
             <Pencil className="w-3.5 h-3.5" /> Edit
