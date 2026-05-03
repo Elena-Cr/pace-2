@@ -77,34 +77,47 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       return;
     }
     try {
-      const patch = buildReschedulePatch(task, selected, {
-        reason: reason ?? undefined,
-        mood: mood ?? undefined,
-      });
-      // Persist (or clear) the chosen time slot alongside the date change.
-      (patch as any).start_time = hasRange ? `${startTime}:00` : null;
-      (patch as any).end_time = hasRange ? `${endTime}:00` : null;
+      let patch: any;
+      if (isSchedule) {
+        // First-time scheduling: just set the date. Don't bump the
+        // reschedule counter or change status.
+        patch = { scheduled_date: selected };
+      } else {
+        patch = buildReschedulePatch(task, selected, {
+          reason: reason ?? undefined,
+          mood: mood ?? undefined,
+        });
+      }
+      patch.start_time = hasRange ? `${startTime}:00` : null;
+      patch.end_time = hasRange ? `${endTime}:00` : null;
       await update.mutateAsync({ id: task.id, patch });
-      toast.success('Task moved. Progress preserved.');
+      toast.success(isSchedule ? 'Task scheduled.' : 'Task moved. Progress preserved.');
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
     }
   }
 
+  const title = isSchedule ? 'When would you like to do this?' : 'When works better?';
+  const description = isSchedule
+    ? "Pick a day in the next two weeks. Add a time if you'd like."
+    : "Pick any day in the next two weeks. We'll keep your progress and notes.";
+  const ctaLabel = isSchedule ? 'Schedule task' : 'Move to selected date';
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="pace-title text-left">When works better?</DialogTitle>
+          <DialogTitle className="pace-title text-left">{title}</DialogTitle>
           <DialogDescription className="text-[13px] text-muted-foreground text-left">
-            Pick any day in the next two weeks. We'll keep your progress and notes.
+            {description}
           </DialogDescription>
         </DialogHeader>
 
         {task && (
           <div className="mt-1 text-[13px] text-muted-foreground">
-            Moving <span className="font-medium text-foreground">{task.title}</span>
+            {isSchedule ? 'Scheduling' : 'Moving'}{' '}
+            <span className="font-medium text-foreground">{task.title}</span>
           </div>
         )}
 
