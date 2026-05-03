@@ -14,6 +14,7 @@ import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import TaskMeta from '@/components/TaskMeta';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
