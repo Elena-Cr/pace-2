@@ -259,7 +259,72 @@ export default function Capture() {
         )}
 
         <div>
+          <label className="pace-field-label">When would you like to work on this?</label>
+          <div className="flex gap-1.5 flex-wrap">
+            {([
+              { k: 'today', label: 'Today' },
+              { k: 'tomorrow', label: 'Tomorrow' },
+              { k: 'backlog', label: 'Backlog' },
+            ] as const).map(opt => (
+              <button key={opt.k} type="button" onClick={() => setWhen(opt.k)}
+                className={when === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
+                {opt.label}
+              </button>
+            ))}
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    when === 'pick' && pickedDate ? 'pace-chip-filled' : 'pace-chip',
+                    'inline-flex items-center gap-1.5'
+                  )}
+                >
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  {when === 'pick' && pickedDate ? format(pickedDate, 'MMM d') : 'Pick a date'}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={pickedDate}
+                  onSelect={(d) => {
+                    if (d) {
+                      setPickedDate(d);
+                      setWhen('pick');
+                      setDatePopoverOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {scheduledISO && (
+            <div className="mt-3">
+              <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
+                <Clock className="w-3 h-3" /> Pick a start and end time
+              </div>
+              <TimeRangePicker
+                startTime={startTime}
+                endTime={endTime}
+                onChange={(s, e) => { setStartTime(s); setEndTime(e); }}
+                date={scheduledISO}
+                tasks={tasks}
+                blocks={userProfile?.default_time_blocks ?? []}
+                required
+              />
+            </div>
+          )}
+        </div>
+
+        <div>
           <label className="pace-field-label">Time estimate</label>
+          {hasTimeRange && (
+            <p className="pace-meta mt-0.5 mb-1.5">From your selected start and end time. Edit to ask to move the end time.</p>
+          )}
           <div className="flex gap-2">
             <div className="flex-1">
               <input
@@ -271,9 +336,9 @@ export default function Capture() {
                 value={estHours}
                 onChange={e => {
                   const v = e.target.value;
-                  if (v === '') return setEstHours('');
+                  if (v === '') return requestEstimateChange('', estMinutes);
                   const n = Math.max(0, Math.floor(Number(v)));
-                  setEstHours(Number.isNaN(n) ? '' : n);
+                  requestEstimateChange(Number.isNaN(n) ? '' : n, estMinutes);
                 }}
               />
             </div>
@@ -288,11 +353,11 @@ export default function Capture() {
                 value={estMinutes}
                 onChange={e => {
                   const v = e.target.value;
-                  if (v === '') return setEstMinutes('');
+                  if (v === '') return requestEstimateChange(estHours, '');
                   let n = Math.max(0, Math.floor(Number(v)));
-                  if (Number.isNaN(n)) return setEstMinutes('');
+                  if (Number.isNaN(n)) return requestEstimateChange(estHours, '');
                   if (n > 59) n = 59;
-                  setEstMinutes(n);
+                  requestEstimateChange(estHours, n);
                 }}
               />
             </div>
