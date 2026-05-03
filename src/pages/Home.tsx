@@ -388,7 +388,7 @@ export default function Home() {
       {/* Important without a deadline */}
       {noDeadlineHighValue.length > 0 && (
         <button
-          onClick={() => nav('/workload')}
+          onClick={() => nav('/tasks?group=no_deadline')}
           className="pace-card-soft mt-3 w-full text-left flex items-center justify-between gap-2"
         >
           <span className="text-[13px]">
