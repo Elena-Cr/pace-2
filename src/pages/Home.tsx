@@ -7,6 +7,7 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
+import RescheduleDialog from '@/components/RescheduleDialog';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
@@ -19,7 +20,6 @@ import {
   getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
-  buildReschedulePatch,
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ export default function Home() {
   const todayStr = todayISO();
   const { data: capacity = null } = useDailyCapacity(todayStr);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
 
   // Sync filter ↔ URL.
   useEffect(() => {
@@ -94,11 +95,9 @@ export default function Home() {
 
   async function nudge(id: string, kind: 'start' | 'reschedule' | 'block' | 'tiny') {
     if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
+    if (kind === 'reschedule') { setRescheduleId(id); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
-    if (kind === 'reschedule') {
-      await update.mutateAsync({ id, patch: buildReschedulePatch(t, todayISO()) });
-      toast.success('Carried to today.');
-    } else if (kind === 'tiny') {
+    if (kind === 'tiny') {
       await update.mutateAsync({ id, patch: {
         duration_minutes: 10,
         scheduled_date: todayISO(),
@@ -505,7 +504,7 @@ export default function Home() {
             );
           })}
           {missed.length > 3 && (
-            <button onClick={() => nav('/replan')} className="pace-btn-ghost w-full">See {missed.length - 3} more in Replan</button>
+            <div className="text-[12px] text-muted-foreground text-center">+{missed.length - 3} more need attention</div>
           )}
         </div>
       )}
@@ -555,6 +554,11 @@ export default function Home() {
           </div>
         )}
       </div>
+      <RescheduleDialog
+        taskId={rescheduleId}
+        open={!!rescheduleId}
+        onClose={() => setRescheduleId(null)}
+      />
     </AppShell>
   );
 }
