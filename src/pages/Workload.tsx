@@ -101,8 +101,25 @@ export default function Workload() {
 
       {/* Stacked bars */}
       <div className="mt-5 pace-card">
-        <div className="flex items-center justify-between mb-3">
-          <div className="pace-eyebrow">By day</div>
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setWeekOffset(o => o - 1)}
+              aria-label="Previous week"
+              className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="pace-eyebrow">{weekRangeLabel}</div>
+            <button
+              onClick={() => setWeekOffset(o => o + 1)}
+              aria-label="Next week"
+              className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            {weekOffset !== 0 && (
+              <button onClick={() => setWeekOffset(0)} className="ml-1 text-[11px] font-medium text-primary">Today</button>
+            )}
+          </div>
           <div className="pace-meta">capacity {fmtMin(dailyCapMin)}/day</div>
         </div>
         <div className="relative flex items-end gap-2 h-44">
