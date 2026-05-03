@@ -84,7 +84,7 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-md rounded-3xl">
+      <DialogContent className="max-w-md rounded-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="pace-title text-left">When works better?</DialogTitle>
           <DialogDescription className="text-[13px] text-muted-foreground text-left">
