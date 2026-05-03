@@ -424,7 +424,6 @@ export default function TaskDetail() {
               {task.notes || 'Add notes'}
             </button>
           )}
-        </div>
       </div>
 
       {(task.reschedule_count ?? 0) >= 2 && (
