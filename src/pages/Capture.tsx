@@ -101,7 +101,8 @@ export default function Capture() {
 
   async function save() {
     if (!user) return;
-    if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
+    if (!title.trim()) { toast.error('Add a title to start.'); return; }
+    if (!estimate || Number(estimate) <= 0) { toast.error('Add a time estimate.'); return; }
     setBusy(true);
     try {
       let scheduled_date: string | null = null;
