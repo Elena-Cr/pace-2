@@ -31,6 +31,8 @@ export default function Capture() {
   const nav = useNavigate();
   const { user } = useAuth();
   const { insert } = useTaskMutations();
+  const { data: tasks = [] } = useTasks();
+  const { profile: userProfile } = useUserProfile();
   const [title, setTitle] = useState('');
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
@@ -38,9 +40,13 @@ export default function Capture() {
   const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
   const [estimate, setEstimate] = useState<number | ''>('');
   const [estHours, setEstHours] = useState<number | ''>('');
   const [estMinutes, setEstMinutes] = useState<number | ''>('');
+  // Pending estimate edit awaiting user confirmation when a time range is set.
+  const [pendingEstimate, setPendingEstimate] = useState<{ h: number | ''; m: number | '' } | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
