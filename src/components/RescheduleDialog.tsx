@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { buildReschedulePatch, workloadByDate } from '@/lib/scheduling';
 import { Mood, ReplanReason, fmtMin, toISODate, todayISO } from '@/lib/pace';
 import { toast } from 'sonner';
+import TimeRangePicker, { timeStringToMin } from '@/components/TimeRangePicker';
+import { Clock } from 'lucide-react';
 
 type Props = {
   taskId: string | null;
