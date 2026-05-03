@@ -237,10 +237,58 @@ export function getTaskRestConflicts(events: CalEvent[]): Set<string> {
 
 // ---------- Calendar event building ----------
 // If a task has start_time, place it there. Otherwise stagger around 9am.
-function timeStringToMin(s: string | null): number | null {
+export function timeStringToMin(s: string | null): number | null {
   if (!s) return null;
   const [h, m] = s.split(':').map(Number);
   return h * 60 + (m || 0);
+}
+
+// HH:MM (zero-padded). Wraps modulo 24h.
+export function minToTimeString(min: number): string {
+  const m = ((Math.round(min) % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hh = String(Math.floor(m / 60)).padStart(2, '0');
+  const mm = String(m % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+// Find tasks/blocks that overlap a proposed [startMin,endMin) on a given date.
+// Used by Capture and the Reschedule dialog so the user can see — but still
+// override — overlaps with other scheduled work or rest time.
+export type ScheduleConflict = {
+  title: string;
+  startMin: number;
+  endMin: number;
+  kind: CalEventKind;
+};
+
+export function findScheduleConflicts(opts: {
+  date: string;
+  startMin: number;
+  endMin: number;
+  tasks: Task[];
+  blocks?: DefaultBlock[];
+  excludeTaskId?: string | null;
+}): ScheduleConflict[] {
+  const { date, startMin, endMin, tasks, blocks, excludeTaskId } = opts;
+  if (endMin <= startMin) return [];
+  const out: ScheduleConflict[] = [];
+  tasks.forEach(t => {
+    if (t.scheduled_date !== date) return;
+    if (excludeTaskId && t.id === excludeTaskId) return;
+    if (t.status === 'done') return;
+    const s = timeStringToMin(t.start_time);
+    const e = timeStringToMin(t.end_time);
+    if (s == null || e == null) return;
+    if (startMin < e && endMin > s) {
+      out.push({ title: t.title, startMin: s, endMin: e, kind: t.is_rest ? 'rest' : 'task' });
+    }
+  });
+  expandTimeBlocks(blocks ?? [], date).forEach(b => {
+    if (startMin < b.endMin && endMin > b.startMin) {
+      out.push({ title: b.title, startMin: b.startMin, endMin: b.endMin, kind: b.kind });
+    }
+  });
+  return out;
 }
 
 export function getScheduledEvents(tasks: Task[]): CalEvent[] {
