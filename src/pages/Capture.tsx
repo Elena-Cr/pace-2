@@ -463,6 +463,21 @@ export default function Capture() {
         </button>
         <button onClick={() => nav(-1)} className="pace-btn w-full">Cancel</button>
       </div>
+
+      <AlertDialog open={!!pendingEstimate} onOpenChange={(o) => { if (!o) cancelEstimateChange(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will also move the end time to <span className="font-medium text-foreground">{pendingNewEnd ?? '—'}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelEstimateChange}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmEstimateChange}>Yes, move end time</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
