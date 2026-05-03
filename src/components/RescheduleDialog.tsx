@@ -173,15 +173,17 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
           />
         </div>
 
-        <div className="mt-3">
-          <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
-          <ReplanReasonChips selected={reason} onSelect={setReason} />
-        </div>
+        {!isSchedule && (
+          <div className="mt-3">
+            <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
+            <ReplanReasonChips selected={reason} onSelect={setReason} />
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2">
           <button onClick={onClose} className="pace-btn pace-btn-sm flex-1">Cancel</button>
           <button onClick={confirm} className="pace-btn-primary pace-btn-sm flex-1">
-            Move to selected date
+            {ctaLabel}
           </button>
         </div>
       </DialogContent>
