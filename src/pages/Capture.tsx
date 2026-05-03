@@ -103,15 +103,16 @@ export default function Capture() {
     setEstimate(total > 0 ? total : '');
   }, [estHours, estMinutes]);
 
-  // User edits the hour/minute fields. If a time range is active, ask before
-  // moving the end time. Otherwise just apply directly.
-  function requestEstimateChange(nextH: number | '', nextM: number | '') {
-    if (hasTimeRange) {
-      setPendingEstimate({ h: nextH, m: nextM });
-    } else {
-      setEstHours(nextH);
-      setEstMinutes(nextM);
-    }
+  // When the user blurs out of an estimate field, if a time range is set and
+  // they actually changed the total minutes, ask before moving the end time.
+  function checkEstimateOnBlur() {
+    if (!hasTimeRange) return;
+    const rangeDur = durationMinutesFromRange(startTime, endTime);
+    const h = typeof estHours === 'number' ? estHours : 0;
+    const m = typeof estMinutes === 'number' ? estMinutes : 0;
+    const typed = h * 60 + m;
+    if (rangeDur == null || typed === rangeDur || typed <= 0) return;
+    setPendingEstimate({ h: estHours, m: estMinutes });
   }
 
   const pendingNewEnd = useMemo(() => {
@@ -126,12 +127,19 @@ export default function Capture() {
 
   function confirmEstimateChange() {
     if (!pendingEstimate) return;
-    setEstHours(pendingEstimate.h);
-    setEstMinutes(pendingEstimate.m);
     if (pendingNewEnd) setEndTime(pendingNewEnd);
     setPendingEstimate(null);
   }
-  function cancelEstimateChange() { setPendingEstimate(null); }
+  function cancelEstimateChange() {
+    // Revert the typed values back to whatever the range implies.
+    const dur = durationMinutesFromRange(startTime, endTime);
+    if (dur != null) {
+      setEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+      setEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+    }
+    setPendingEstimate(null);
+  }
+
 
 
   function applySuggestion(s: Suggestion, presetTitle?: string) {
