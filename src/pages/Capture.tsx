@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useTaskMutations } from '@/hooks/useTasks';
+import { useTaskMutations, useTasks } from '@/hooks/useTasks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus, Sparkles, Repeat, Users, CalendarIcon } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat, Users, CalendarIcon, Clock } from 'lucide-react';
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import TimeRangePicker, { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
