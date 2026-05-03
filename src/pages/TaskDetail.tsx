@@ -393,19 +393,9 @@ export default function TaskDetail() {
         </div>
       </div>
 
-      {/* Estimates summary */}
+      {/* Notes */}
       <div className="mt-4 pace-card">
-        <div className="pace-eyebrow mb-2">Estimates</div>
-        <div className="flex flex-wrap gap-1.5 text-[13px]">
-          {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
-          {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
-          
-          {(task.involves_others || task.others_rely) && (
-            <span className="pace-chip"><Users className="w-3 h-3" /> Others involved</span>
-          )}
-          {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
-        </div>
-        <div className="mt-3">
+        <div className="pace-eyebrow mb-2">Notes</div>
           {editingNotes ? (
             <div className="space-y-2">
               <textarea
