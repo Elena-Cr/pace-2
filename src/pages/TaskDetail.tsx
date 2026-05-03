@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTask, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import TaskMeta from '@/components/TaskMeta';
 import {
   DOMAIN_LABEL, STATUS_LABEL, PRIORITY_LABEL, Status, Priority, Domain, Subtask,
   formatDeadline, fmtMin, toISODate,
