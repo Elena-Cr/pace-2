@@ -14,7 +14,8 @@ import {
   type Task,
   type TaskWarning,
 } from '@/lib/scheduling';
-import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, Flag } from 'lucide-react';
+import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, Flag, CalendarPlus } from 'lucide-react';
+import RescheduleDialog from '@/components/RescheduleDialog';
 
 type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'no_deadline' | 'scheduled' | 'done';
 type DomainFilter = 'all' | Domain | 'none';
