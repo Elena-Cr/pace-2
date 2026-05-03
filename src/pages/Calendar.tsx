@@ -14,6 +14,7 @@ import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import TaskMeta from '@/components/TaskMeta';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -28,12 +29,18 @@ type CalEvent = {
   domain: Domain | 'rest';
   kind: CalKind;
   status?: Status;
+  priority?: 'must' | 'should' | 'could';
   next_action?: string | null;
   duration_minutes?: number | null;
   effort_level?: string | null;
   notes?: string | null;
+  involves_others?: boolean;
   others_rely?: boolean;
   reschedule_count?: number;
+  scheduled_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  deadline?: string | null;
   // time
   day: number;        // 0..6 (week index)
   startMin: number;   // minutes from 00:00
@@ -331,12 +338,18 @@ export default function CalendarView() {
         domain: ev.domain,
         kind: ev.kind,
         status: ev.status,
+        priority: t.priority,
         next_action: t.next_action,
         duration_minutes: t.duration_minutes,
         effort_level: t.effort_level,
         notes: t.notes,
+        involves_others: t.involves_others,
         others_rely: t.others_rely,
         reschedule_count: t.reschedule_count,
+        scheduled_date: t.scheduled_date,
+        start_time: t.start_time,
+        end_time: t.end_time,
+        deadline: t.deadline,
         day: di,
         startMin: ev.startMin,
         endMin: ev.endMin,
@@ -906,11 +919,30 @@ export default function CalendarView() {
                 <div className="mt-1"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
               )}
 
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-                {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
-                {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
-                
-              </div>
+              {open.taskId ? (
+                <div className="mt-3">
+                  <TaskMeta
+                    task={{
+                      domain: open.domain === 'rest' ? null : open.domain,
+                      priority: open.priority,
+                      scheduled_date: open.scheduled_date,
+                      start_time: open.start_time,
+                      end_time: open.end_time,
+                      deadline: open.deadline,
+                      duration_minutes: open.duration_minutes ?? null,
+                      effort_level: open.effort_level ?? null,
+                      involves_others: open.involves_others,
+                      others_rely: open.others_rely,
+                      reschedule_count: open.reschedule_count,
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+                  {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
+                  {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
+                </div>
+              )}
 
               {open.next_action && (
                 <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>

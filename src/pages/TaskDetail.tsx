@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTask, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import TaskMeta from '@/components/TaskMeta';
 import {
   DOMAIN_LABEL, STATUS_LABEL, PRIORITY_LABEL, Status, Priority, Domain, Subtask,
   formatDeadline, fmtMin, toISODate,
@@ -271,12 +272,9 @@ export default function TaskDetail() {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <span className="pace-tag flex items-center">
-          <span className={`priority-dot ${task.priority}`} />
-          {task.domain ? DOMAIN_LABEL[task.domain] : 'Uncategorized'} · {formatDeadline(task.deadline)}
-        </span>
-        <div className="flex items-center gap-1.5">
+      <div className="mt-3 flex items-start justify-between gap-2">
+        <TaskMeta task={task} />
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
           <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit task">
             <Pencil className="w-3.5 h-3.5" /> Edit
@@ -395,19 +393,9 @@ export default function TaskDetail() {
         </div>
       </div>
 
-      {/* Estimates summary */}
+      {/* Notes */}
       <div className="mt-4 pace-card">
-        <div className="pace-eyebrow mb-2">Estimates</div>
-        <div className="flex flex-wrap gap-1.5 text-[13px]">
-          {task.duration_minutes && <span className="pace-chip">{fmtMin(task.duration_minutes)}</span>}
-          {task.effort_level && <span className="pace-chip">Effort · {task.effort_level}</span>}
-          
-          {(task.involves_others || task.others_rely) && (
-            <span className="pace-chip"><Users className="w-3 h-3" /> Others involved</span>
-          )}
-          {task.reschedule_count > 0 && <span className="pace-chip">Rescheduled {task.reschedule_count}×</span>}
-        </div>
-        <div className="mt-3">
+        <div className="pace-eyebrow mb-2">Notes</div>
           {editingNotes ? (
             <div className="space-y-2">
               <textarea
@@ -436,7 +424,6 @@ export default function TaskDetail() {
               {task.notes || 'Add notes'}
             </button>
           )}
-        </div>
       </div>
 
       {(task.reschedule_count ?? 0) >= 2 && (
