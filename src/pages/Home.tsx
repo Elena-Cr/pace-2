@@ -165,7 +165,8 @@ export default function Home() {
     profileCapMin,
     { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
   );
-  const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0);
+  const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0)
+    + doneToday.reduce((s, t) => s + (t.duration_minutes || 0), 0);
   const capState = capacityState(plannedMin, capMin);
   const ratio = plannedMin / Math.max(1, capMin);
   const energy = capacity?.energy_level ?? 'Med';
@@ -194,7 +195,8 @@ export default function Home() {
     })[0];
   }, [real]);
 
-  const completionPct = real.length === 0 ? 0 : Math.round((doneToday.length / (real.length + doneToday.length)) * 100);
+  const totalToday = real.length + doneToday.length;
+  const completionPct = totalToday === 0 ? 0 : Math.round((doneToday.length / totalToday) * 100);
 
   // Up next rest block (smart hint)
   const restHint = useMemo(() => {
