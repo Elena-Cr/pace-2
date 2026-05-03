@@ -33,6 +33,8 @@ export default function Capture() {
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [estimate, setEstimate] = useState<number | ''>('');
+  const [estHours, setEstHours] = useState<number | ''>('');
+  const [estMinutes, setEstMinutes] = useState<number | ''>('');
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
