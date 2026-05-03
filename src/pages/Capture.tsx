@@ -166,16 +166,14 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Add a title to start.'); return; }
     if (!estimate || Number(estimate) <= 0) { toast.error('Add a time estimate.'); return; }
+    if (scheduledISO && !hasTimeRange) {
+      toast.error('Pick a start and end time for this day.');
+      return;
+    }
     setBusy(true);
     try {
-      let scheduled_date: string | null = null;
-      if (when === 'today') scheduled_date = toISODate(new Date());
-      else if (when === 'tomorrow') {
-        const d = new Date(); d.setDate(d.getDate() + 1);
-        scheduled_date = toISODate(d);
-      } else if (when === 'pick' && pickedDate) {
-        scheduled_date = toISODate(pickedDate);
-      }
+      const start_time = hasTimeRange && scheduledISO ? `${startTime}:00` : null;
+      const end_time = hasTimeRange && scheduledISO ? `${endTime}:00` : null;
       await insert.mutateAsync({
         title: title.trim(),
         domain,
@@ -188,7 +186,9 @@ export default function Capture() {
         involves_others: othersInvolved,
         others_rely: othersInvolved,
         subtasks,
-        scheduled_date,
+        scheduled_date: scheduledISO,
+        start_time,
+        end_time,
       } as any);
       toast.success('Captured.');
       nav('/');
