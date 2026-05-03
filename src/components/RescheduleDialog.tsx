@@ -59,14 +59,22 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
   async function confirm() {
     if (!task) return;
     if (selected < todayISO()) { toast.error('Pick today or a later date.'); return; }
+    const hasRange = !!startTime && !!endTime
+      && timeStringToMin(endTime)! > timeStringToMin(startTime)!;
+    const hadRange = !!startTime || !!endTime;
+    if (hadRange && !hasRange) {
+      toast.error('End time must be after start time.');
+      return;
+    }
     try {
-      await update.mutateAsync({
-        id: task.id,
-        patch: buildReschedulePatch(task, selected, {
-          reason: reason ?? undefined,
-          mood: mood ?? undefined,
-        }),
+      const patch = buildReschedulePatch(task, selected, {
+        reason: reason ?? undefined,
+        mood: mood ?? undefined,
       });
+      // Persist (or clear) the chosen time slot alongside the date change.
+      (patch as any).start_time = hasRange ? `${startTime}:00` : null;
+      (patch as any).end_time = hasRange ? `${endTime}:00` : null;
+      await update.mutateAsync({ id: task.id, patch });
       toast.success('Task moved. Progress preserved.');
       onClose();
     } catch (err: any) {
