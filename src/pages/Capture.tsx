@@ -63,11 +63,22 @@ export default function Capture() {
   const debouncedStem = useMemo(() => stem(debouncedTitle), [debouncedTitle]);
   const showSuggestion = !!(suggestion && appliedFor !== debouncedStem && !dismissed.has(debouncedStem));
 
+  // Sync separate hours/minutes inputs into the single estimate value
+  useEffect(() => {
+    const h = typeof estHours === 'number' ? estHours : 0;
+    const m = typeof estMinutes === 'number' ? estMinutes : 0;
+    const total = h * 60 + m;
+    setEstimate(total > 0 ? total : '');
+  }, [estHours, estMinutes]);
+
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
     if (!domain && s.domain) setDomain(s.domain);
     if (priority === 'should' && s.priority) setPriority(s.priority);
-    if (estimate === '' && s.duration_minutes) setEstimate(s.duration_minutes);
+    if (estimate === '' && s.duration_minutes) {
+      setEstHours(Math.floor(s.duration_minutes / 60) || '');
+      setEstMinutes(s.duration_minutes % 60 || '');
+    }
     if (!effort && s.effort_level) setEffort(s.effort_level);
     if (!nextAction && s.next_action) setNextAction(s.next_action);
     if (!othersInvolved && (s.involves_others || s.others_rely)) setOthersInvolved(true);
