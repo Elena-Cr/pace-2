@@ -21,6 +21,7 @@ const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function RescheduleDialog({ taskId, open, onClose, mood }: Props) {
   const { data: tasks = [] } = useTasks();
+  const { profile } = useUserProfile();
   const { update } = useTaskMutations();
   const task = useMemo(() => tasks.find(t => t.id === taskId) ?? null, [tasks, taskId]);
 
@@ -29,14 +30,18 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
   }, []);
   const [selected, setSelected] = useState<string>(tomorrowISO);
   const [reason, setReason] = useState<ReplanReason | undefined>(undefined);
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
 
   // Reset selection whenever a new task opens.
-  useMemo(() => {
+  useEffect(() => {
     if (open) {
       setSelected(tomorrowISO);
       setReason(undefined);
+      setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
+      setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
     }
-  }, [open, tomorrowISO]);
+  }, [open, tomorrowISO, task?.start_time, task?.end_time]);
 
   // Next 14 days starting tomorrow, with planned workload per day.
   const loads = useMemo(() => workloadByDate(tasks.filter(t => !t.is_rest)), [tasks]);
