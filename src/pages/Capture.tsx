@@ -140,7 +140,6 @@ export default function Capture() {
     <AppShell>
       <div className="pace-eyebrow">New intention</div>
       <h1 className="pace-screen-title mt-1">Capture</h1>
-      <p className="pace-meta mt-1">Just a title is enough — you can estimate later.</p>
 
       <div className="mt-6 space-y-4">
         {/* Recurring templates from past tasks */}
