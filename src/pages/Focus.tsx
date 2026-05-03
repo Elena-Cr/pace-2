@@ -17,6 +17,7 @@ export default function Focus() {
   const nav = useNavigate();
   const loc = useLocation() as any;
   const taskIdHint: string | undefined = loc.state?.taskId;
+  const subtaskIdHint: string | undefined = loc.state?.subtaskId;
 
   const { data: allTasks = [] } = useTasks();
   const { update } = useTaskMutations();
