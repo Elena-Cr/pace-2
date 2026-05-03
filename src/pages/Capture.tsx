@@ -33,6 +33,8 @@ export default function Capture() {
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [estimate, setEstimate] = useState<number | ''>('');
+  const [estHours, setEstHours] = useState<number | ''>('');
+  const [estMinutes, setEstMinutes] = useState<number | ''>('');
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
@@ -61,11 +63,22 @@ export default function Capture() {
   const debouncedStem = useMemo(() => stem(debouncedTitle), [debouncedTitle]);
   const showSuggestion = !!(suggestion && appliedFor !== debouncedStem && !dismissed.has(debouncedStem));
 
+  // Sync separate hours/minutes inputs into the single estimate value
+  useEffect(() => {
+    const h = typeof estHours === 'number' ? estHours : 0;
+    const m = typeof estMinutes === 'number' ? estMinutes : 0;
+    const total = h * 60 + m;
+    setEstimate(total > 0 ? total : '');
+  }, [estHours, estMinutes]);
+
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
     if (!domain && s.domain) setDomain(s.domain);
     if (priority === 'should' && s.priority) setPriority(s.priority);
-    if (estimate === '' && s.duration_minutes) setEstimate(s.duration_minutes);
+    if (estimate === '' && s.duration_minutes) {
+      setEstHours(Math.floor(s.duration_minutes / 60) || '');
+      setEstMinutes(s.duration_minutes % 60 || '');
+    }
     if (!effort && s.effort_level) setEffort(s.effort_level);
     if (!nextAction && s.next_action) setNextAction(s.next_action);
     if (!othersInvolved && (s.involves_others || s.others_rely)) setOthersInvolved(true);
@@ -88,7 +101,8 @@ export default function Capture() {
 
   async function save() {
     if (!user) return;
-    if (!title.trim()) { toast.error('Just a title is enough to start.'); return; }
+    if (!title.trim()) { toast.error('Add a title to start.'); return; }
+    if (!estimate || Number(estimate) <= 0) { toast.error('Add a time estimate.'); return; }
     setBusy(true);
     try {
       let scheduled_date: string | null = null;
@@ -126,7 +140,6 @@ export default function Capture() {
     <AppShell>
       <div className="pace-eyebrow">New intention</div>
       <h1 className="pace-screen-title mt-1">Capture</h1>
-      <p className="pace-meta mt-1">Just a title is enough — you can estimate later.</p>
 
       <div className="mt-6 space-y-4">
         {/* Recurring templates from past tasks */}
@@ -183,6 +196,47 @@ export default function Capture() {
         )}
 
         <div>
+          <label className="pace-field-label">Time estimate</label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                className="pace-field"
+                placeholder="Hours"
+                value={estHours}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') return setEstHours('');
+                  const n = Math.max(0, Math.floor(Number(v)));
+                  setEstHours(Number.isNaN(n) ? '' : n);
+                }}
+              />
+            </div>
+            <div className="flex-1">
+              <input
+                type="number"
+                min={0}
+                max={59}
+                step={1}
+                className="pace-field"
+                placeholder="Minutes"
+                value={estMinutes}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') return setEstMinutes('');
+                  let n = Math.max(0, Math.floor(Number(v)));
+                  if (Number.isNaN(n)) return setEstMinutes('');
+                  if (n > 59) n = 59;
+                  setEstMinutes(n);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
           <label className="pace-field-label">Domain</label>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
@@ -206,12 +260,7 @@ export default function Capture() {
         </div>
 
         <div>
-          <label className="pace-field-label">Deadline (optional)</label>
-          <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
-        </div>
-
-        <div>
-          <label className="pace-field-label">When?</label>
+          <label className="pace-field-label">When would you like to work on this?</label>
           <div className="flex gap-1.5 flex-wrap">
             {([
               { k: 'today', label: 'Today' },
@@ -256,34 +305,34 @@ export default function Capture() {
         </div>
 
         <button type="button" onClick={() => setShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
-          {showAdvanced ? 'Hide details' : 'Add estimates & details'}
+          {showAdvanced ? 'Hide other details' : 'View other details'}
         </button>
 
         {showAdvanced && (
           <div className="space-y-4 animate-fade-in">
             <div>
-              <label className="pace-field-label">Time estimate</label>
-              <input type="number" min={5} step={5} className="pace-field" placeholder="Minutes"
-                value={estimate} onChange={e => setEstimate(e.target.value ? Number(e.target.value) : '')} />
-              <div className="mt-3">
-                <div className="pace-field-label">Effort level</div>
-                <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
-                <div className="flex gap-1.5 mt-1.5">
-                  {EFFORTS.map(e => (
-                    <button key={e} onClick={() => setEffort(e === effort ? null : e)}
-                      className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                  ))}
-                </div>
+              <label className="pace-field-label">Deadline (optional)</label>
+              <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
+            </div>
+
+            <div>
+              <div className="pace-field-label">Effort level (optional)</div>
+              <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+              <div className="flex gap-1.5 mt-1.5">
+                {EFFORTS.map(e => (
+                  <button key={e} onClick={() => setEffort(e === effort ? null : e)}
+                    className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                ))}
               </div>
             </div>
 
             <div>
-              <label className="pace-field-label">Smallest next action</label>
+              <label className="pace-field-label">Smallest next action (optional)</label>
               <input className="pace-field" value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="e.g. open the assignment page" />
             </div>
 
             <div>
-              <label className="pace-field-label">Next steps (subtasks)</label>
+              <label className="pace-field-label">Next steps (optional)</label>
               <div className="flex gap-2">
                 <input className="pace-field" value={subInput}
                   onChange={e => setSubInput(e.target.value)}
@@ -310,7 +359,7 @@ export default function Capture() {
               onClick={() => setOthersInvolved(v => !v)}
               className={`${othersInvolved ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
             >
-              <Users className="w-3.5 h-3.5" /> Involves or relies on others
+              <Users className="w-3.5 h-3.5" /> Involves or relies on others (optional)
             </button>
 
             <div>
