@@ -106,6 +106,40 @@ export function todayISO() {
   return toISODate(new Date());
 }
 
+// Format a scheduled date (+ optional start/end time) as a friendly label
+// like "Today 9:00 – 10:30", "Tomorrow", or "Mon, May 5 · 14:00". Returns
+// an empty string when the task isn't scheduled.
+function fmtClock(t: string | null): string {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hh = Number(h), mm = Number(m || 0);
+  if (Number.isNaN(hh)) return '';
+  const am = hh < 12; const h12 = ((hh + 11) % 12) + 1;
+  return `${h12}${mm ? ':' + String(mm).padStart(2, '0') : ''}${am ? 'a' : 'p'}`;
+}
+
+export function formatScheduledWhen(
+  scheduledDate: string | null,
+  startTime: string | null,
+  endTime: string | null,
+): string {
+  if (!scheduledDate) return '';
+  const [y, m, d] = scheduledDate.split('-').map(Number);
+  if (!y) return '';
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+  let label: string;
+  if (dt.getTime() === now.getTime()) label = 'Today';
+  else if (dt.getTime() === tomorrow.getTime()) label = 'Tomorrow';
+  else label = dt.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  const s = fmtClock(startTime);
+  const e = fmtClock(endTime);
+  if (s && e) return `${label}, ${s} – ${e}`;
+  if (s) return `${label}, ${s}`;
+  return label;
+}
+
 export function fmtMin(min: number) {
   if (!min) return '—';
   const h = Math.floor(min / 60); const m = min % 60;
