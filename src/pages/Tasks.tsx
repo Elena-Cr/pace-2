@@ -59,6 +59,7 @@ export default function Tasks() {
   const initialGroup: GroupKey = isGroupKey(searchParams.get('group')) ? (searchParams.get('group') as GroupKey) : 'action';
   const [group, setGroup] = useState<GroupKey>(initialGroup);
   const [domain, setDomain] = useState<DomainFilter>('all');
+  const [scheduleId, setScheduleId] = useState<string | null>(null);
   const today = todayISO();
 
   // Sync group ↔ URL so deep-links from Home (e.g. ?group=no_deadline) work.
