@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { buildReschedulePatch, workloadByDate } from '@/lib/scheduling';
 import { Mood, ReplanReason, fmtMin, toISODate, todayISO } from '@/lib/pace';
 import { toast } from 'sonner';
+import TimeRangePicker, { timeStringToMin } from '@/components/TimeRangePicker';
+import { Clock } from 'lucide-react';
 
 type Props = {
   taskId: string | null;
@@ -18,6 +21,7 @@ const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function RescheduleDialog({ taskId, open, onClose, mood }: Props) {
   const { data: tasks = [] } = useTasks();
+  const { profile } = useUserProfile();
   const { update } = useTaskMutations();
   const task = useMemo(() => tasks.find(t => t.id === taskId) ?? null, [tasks, taskId]);
 
@@ -26,14 +30,18 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
   }, []);
   const [selected, setSelected] = useState<string>(tomorrowISO);
   const [reason, setReason] = useState<ReplanReason | undefined>(undefined);
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
 
   // Reset selection whenever a new task opens.
-  useMemo(() => {
+  useEffect(() => {
     if (open) {
       setSelected(tomorrowISO);
       setReason(undefined);
+      setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
+      setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
     }
-  }, [open, tomorrowISO]);
+  }, [open, tomorrowISO, task?.start_time, task?.end_time]);
 
   // Next 14 days starting tomorrow, with planned workload per day.
   const loads = useMemo(() => workloadByDate(tasks.filter(t => !t.is_rest)), [tasks]);
@@ -51,14 +59,22 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
   async function confirm() {
     if (!task) return;
     if (selected < todayISO()) { toast.error('Pick today or a later date.'); return; }
+    const hasRange = !!startTime && !!endTime
+      && timeStringToMin(endTime)! > timeStringToMin(startTime)!;
+    const hadRange = !!startTime || !!endTime;
+    if (hadRange && !hasRange) {
+      toast.error('End time must be after start time.');
+      return;
+    }
     try {
-      await update.mutateAsync({
-        id: task.id,
-        patch: buildReschedulePatch(task, selected, {
-          reason: reason ?? undefined,
-          mood: mood ?? undefined,
-        }),
+      const patch = buildReschedulePatch(task, selected, {
+        reason: reason ?? undefined,
+        mood: mood ?? undefined,
       });
+      // Persist (or clear) the chosen time slot alongside the date change.
+      (patch as any).start_time = hasRange ? `${startTime}:00` : null;
+      (patch as any).end_time = hasRange ? `${endTime}:00` : null;
+      await update.mutateAsync({ id: task.id, patch });
       toast.success('Task moved. Progress preserved.');
       onClose();
     } catch (err: any) {
@@ -117,6 +133,21 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
               );
             })}
           </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
+            <Clock className="w-3 h-3" /> Pick a start and end time (optional)
+          </div>
+          <TimeRangePicker
+            startTime={startTime}
+            endTime={endTime}
+            onChange={(s, e) => { setStartTime(s); setEndTime(e); }}
+            date={selected}
+            tasks={tasks}
+            blocks={profile?.default_time_blocks ?? []}
+            excludeTaskId={task?.id ?? null}
+          />
         </div>
 
         <div className="mt-3">

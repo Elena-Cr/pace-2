@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useTaskMutations } from '@/hooks/useTasks';
+import { useTaskMutations, useTasks } from '@/hooks/useTasks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus, Sparkles, Repeat, Users, CalendarIcon } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat, Users, CalendarIcon, Clock } from 'lucide-react';
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import TimeRangePicker, { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const DOMAINS: { k: Domain; label: string }[] = [
   { k: 'academic', label: 'Academic' },
@@ -25,6 +31,8 @@ export default function Capture() {
   const nav = useNavigate();
   const { user } = useAuth();
   const { insert } = useTaskMutations();
+  const { data: tasks = [] } = useTasks();
+  const { profile: userProfile } = useUserProfile();
   const [title, setTitle] = useState('');
   const [domain, setDomain] = useState<Domain | null>(null);
   const [priority, setPriority] = useState<Priority>('should');
@@ -32,9 +40,13 @@ export default function Capture() {
   const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
   const [estimate, setEstimate] = useState<number | ''>('');
   const [estHours, setEstHours] = useState<number | ''>('');
   const [estMinutes, setEstMinutes] = useState<number | ''>('');
+  // Pending estimate edit awaiting user confirmation when a time range is set.
+  const [pendingEstimate, setPendingEstimate] = useState<{ h: number | ''; m: number | '' } | null>(null);
   const [effort, setEffort] = useState<string | null>(null);
   // difficulty removed — using effort_level only
   const [nextAction, setNextAction] = useState('');
@@ -63,6 +75,26 @@ export default function Capture() {
   const debouncedStem = useMemo(() => stem(debouncedTitle), [debouncedTitle]);
   const showSuggestion = !!(suggestion && appliedFor !== debouncedStem && !dismissed.has(debouncedStem));
 
+  // The currently chosen scheduled date (null when "backlog").
+  const scheduledISO = useMemo<string | null>(() => {
+    if (when === 'today') return toISODate(new Date());
+    if (when === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d); }
+    if (when === 'pick' && pickedDate) return toISODate(pickedDate);
+    return null;
+  }, [when, pickedDate]);
+
+  const hasTimeRange = !!startTime && !!endTime
+    && (timeStringToMin(endTime)! > timeStringToMin(startTime)!);
+
+  // When the user picks a start/end range, derive the estimate from it.
+  useEffect(() => {
+    if (!hasTimeRange) return;
+    const dur = durationMinutesFromRange(startTime, endTime);
+    if (dur == null) return;
+    setEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+    setEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+  }, [startTime, endTime, hasTimeRange]);
+
   // Sync separate hours/minutes inputs into the single estimate value
   useEffect(() => {
     const h = typeof estHours === 'number' ? estHours : 0;
@@ -70,6 +102,37 @@ export default function Capture() {
     const total = h * 60 + m;
     setEstimate(total > 0 ? total : '');
   }, [estHours, estMinutes]);
+
+  // User edits the hour/minute fields. If a time range is active, ask before
+  // moving the end time. Otherwise just apply directly.
+  function requestEstimateChange(nextH: number | '', nextM: number | '') {
+    if (hasTimeRange) {
+      setPendingEstimate({ h: nextH, m: nextM });
+    } else {
+      setEstHours(nextH);
+      setEstMinutes(nextM);
+    }
+  }
+
+  const pendingNewEnd = useMemo(() => {
+    if (!pendingEstimate || !hasTimeRange) return null;
+    const h = typeof pendingEstimate.h === 'number' ? pendingEstimate.h : 0;
+    const m = typeof pendingEstimate.m === 'number' ? pendingEstimate.m : 0;
+    const total = h * 60 + m;
+    if (total <= 0) return null;
+    const startMin = timeStringToMin(startTime)!;
+    return minToTimeString(startMin + total);
+  }, [pendingEstimate, hasTimeRange, startTime]);
+
+  function confirmEstimateChange() {
+    if (!pendingEstimate) return;
+    setEstHours(pendingEstimate.h);
+    setEstMinutes(pendingEstimate.m);
+    if (pendingNewEnd) setEndTime(pendingNewEnd);
+    setPendingEstimate(null);
+  }
+  function cancelEstimateChange() { setPendingEstimate(null); }
+
 
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
@@ -103,16 +166,14 @@ export default function Capture() {
     if (!user) return;
     if (!title.trim()) { toast.error('Add a title to start.'); return; }
     if (!estimate || Number(estimate) <= 0) { toast.error('Add a time estimate.'); return; }
+    if (scheduledISO && !hasTimeRange) {
+      toast.error('Pick a start and end time for this day.');
+      return;
+    }
     setBusy(true);
     try {
-      let scheduled_date: string | null = null;
-      if (when === 'today') scheduled_date = toISODate(new Date());
-      else if (when === 'tomorrow') {
-        const d = new Date(); d.setDate(d.getDate() + 1);
-        scheduled_date = toISODate(d);
-      } else if (when === 'pick' && pickedDate) {
-        scheduled_date = toISODate(pickedDate);
-      }
+      const start_time = hasTimeRange && scheduledISO ? `${startTime}:00` : null;
+      const end_time = hasTimeRange && scheduledISO ? `${endTime}:00` : null;
       await insert.mutateAsync({
         title: title.trim(),
         domain,
@@ -125,7 +186,9 @@ export default function Capture() {
         involves_others: othersInvolved,
         others_rely: othersInvolved,
         subtasks,
-        scheduled_date,
+        scheduled_date: scheduledISO,
+        start_time,
+        end_time,
       } as any);
       toast.success('Captured.');
       nav('/');
@@ -196,70 +259,6 @@ export default function Capture() {
         )}
 
         <div>
-          <label className="pace-field-label">Time estimate</label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="number"
-                min={0}
-                step={1}
-                className="pace-field"
-                placeholder="Hours"
-                value={estHours}
-                onChange={e => {
-                  const v = e.target.value;
-                  if (v === '') return setEstHours('');
-                  const n = Math.max(0, Math.floor(Number(v)));
-                  setEstHours(Number.isNaN(n) ? '' : n);
-                }}
-              />
-            </div>
-            <div className="flex-1">
-              <input
-                type="number"
-                min={0}
-                max={59}
-                step={1}
-                className="pace-field"
-                placeholder="Minutes"
-                value={estMinutes}
-                onChange={e => {
-                  const v = e.target.value;
-                  if (v === '') return setEstMinutes('');
-                  let n = Math.max(0, Math.floor(Number(v)));
-                  if (Number.isNaN(n)) return setEstMinutes('');
-                  if (n > 59) n = 59;
-                  setEstMinutes(n);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label className="pace-field-label">Domain</label>
-          <div className="flex flex-wrap gap-1.5">
-            {DOMAINS.map(d => (
-              <button key={d.k} onClick={() => setDomain(d.k)}
-                className={domain === d.k ? 'pace-chip-filled' : 'pace-chip'}>{d.label}</button>
-            ))}
-            <button onClick={() => setDomain(null)} className={`pace-chip-dashed ${domain === null ? 'opacity-100' : 'opacity-70'}`}>Decide later</button>
-          </div>
-        </div>
-
-        <div>
-          <label className="pace-field-label">Priority</label>
-          <div className="flex gap-1.5">
-            {(['must','should','could'] as Priority[]).map(p => (
-              <button key={p} onClick={() => setPriority(p)}
-                className={priority === p ? 'pace-chip-filled' : 'pace-chip'}>
-                <span className={`priority-dot ${p}`} />{PRIORITY_LABEL[p]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <label className="pace-field-label">When would you like to work on this?</label>
           <div className="flex gap-1.5 flex-wrap">
             {([
@@ -302,8 +301,91 @@ export default function Capture() {
               </PopoverContent>
             </Popover>
           </div>
+
+          {scheduledISO && (
+            <div className="mt-3">
+              <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
+                <Clock className="w-3 h-3" /> Pick a start and end time
+              </div>
+              <TimeRangePicker
+                startTime={startTime}
+                endTime={endTime}
+                onChange={(s, e) => { setStartTime(s); setEndTime(e); }}
+                date={scheduledISO}
+                tasks={tasks}
+                blocks={userProfile?.default_time_blocks ?? []}
+                required
+              />
+            </div>
+          )}
         </div>
 
+        <div>
+          <label className="pace-field-label">Time estimate</label>
+          {hasTimeRange && (
+            <p className="pace-meta mt-0.5 mb-1.5">From your selected start and end time. Edit to ask to move the end time.</p>
+          )}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                className="pace-field"
+                placeholder="Hours"
+                value={estHours}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') return requestEstimateChange('', estMinutes);
+                  const n = Math.max(0, Math.floor(Number(v)));
+                  requestEstimateChange(Number.isNaN(n) ? '' : n, estMinutes);
+                }}
+              />
+            </div>
+            <div className="flex-1">
+              <input
+                type="number"
+                min={0}
+                max={59}
+                step={1}
+                className="pace-field"
+                placeholder="Minutes"
+                value={estMinutes}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') return requestEstimateChange(estHours, '');
+                  let n = Math.max(0, Math.floor(Number(v)));
+                  if (Number.isNaN(n)) return requestEstimateChange(estHours, '');
+                  if (n > 59) n = 59;
+                  requestEstimateChange(estHours, n);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="pace-field-label">Domain</label>
+          <div className="flex flex-wrap gap-1.5">
+            {DOMAINS.map(d => (
+              <button key={d.k} onClick={() => setDomain(d.k)}
+                className={domain === d.k ? 'pace-chip-filled' : 'pace-chip'}>{d.label}</button>
+            ))}
+            <button onClick={() => setDomain(null)} className={`pace-chip-dashed ${domain === null ? 'opacity-100' : 'opacity-70'}`}>Decide later</button>
+          </div>
+        </div>
+
+        <div>
+          <label className="pace-field-label">Priority</label>
+          <div className="flex gap-1.5">
+            {(['must','should','could'] as Priority[]).map(p => (
+              <button key={p} onClick={() => setPriority(p)}
+                className={priority === p ? 'pace-chip-filled' : 'pace-chip'}>
+                <span className={`priority-dot ${p}`} />{PRIORITY_LABEL[p]}
+              </button>
+            ))}
+          </div>
+        </div>
         <button type="button" onClick={() => setShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
           {showAdvanced ? 'Hide other details' : 'View other details'}
         </button>
@@ -381,6 +463,21 @@ export default function Capture() {
         </button>
         <button onClick={() => nav(-1)} className="pace-btn w-full">Cancel</button>
       </div>
+
+      <AlertDialog open={!!pendingEstimate} onOpenChange={(o) => { if (!o) cancelEstimateChange(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will also move the end time to <span className="font-medium text-foreground">{pendingNewEnd ?? '—'}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelEstimateChange}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmEstimateChange}>Yes, move end time</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
