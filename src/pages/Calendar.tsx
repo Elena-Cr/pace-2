@@ -918,11 +918,30 @@ export default function CalendarView() {
                 <div className="mt-1"><span className={`status-chip status-${open.status}`}>{STATUS_LABEL[open.status]}</span></div>
               )}
 
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-                {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
-                {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
-                
-              </div>
+              {open.taskId ? (
+                <div className="mt-3">
+                  <TaskMeta
+                    task={{
+                      domain: open.domain === 'rest' ? null : open.domain,
+                      priority: open.priority,
+                      scheduled_date: open.scheduled_date,
+                      start_time: open.start_time,
+                      end_time: open.end_time,
+                      deadline: open.deadline,
+                      duration_minutes: open.duration_minutes ?? null,
+                      effort_level: open.effort_level ?? null,
+                      involves_others: open.involves_others,
+                      others_rely: open.others_rely,
+                      reschedule_count: open.reschedule_count,
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+                  {open.duration_minutes != null && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Estimate</div>{fmtMin(open.duration_minutes)}</div>}
+                  {open.effort_level && <div className="bg-muted rounded-xl px-3 py-2"><div className="pace-eyebrow">Effort</div>{open.effort_level}</div>}
+                </div>
+              )}
 
               {open.next_action && (
                 <div className="mt-3 text-[14px] text-muted-foreground"><span className="font-medium text-foreground">Next:</span> {open.next_action}</div>
