@@ -15,11 +15,21 @@ type Props = {
   onClose: () => void;
   /** Optional mood to attach to the reschedule patch. */
   mood?: Mood | null;
+  /**
+   * 'reschedule' (default) bumps reschedule_count and sets status to
+   * 'rescheduled'. 'schedule' is for tasks that have never been scheduled —
+   * it just sets the date/time without counting as a reschedule.
+   */
+  mode?: 'reschedule' | 'schedule';
 };
 
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function RescheduleDialog({ taskId, open, onClose, mood }: Props) {
+export default function RescheduleDialog({ taskId, open, onClose, mood, mode = 'reschedule' }: Props) {
+  // If this is a brand-new schedule on a task that's never been planned, fall
+  // back to 'schedule' semantics regardless of the prop so the counter never
+  // bumps for first-time scheduling. This keeps callers simple.
+  const isSchedule = (mode === 'schedule');
   const { data: tasks = [] } = useTasks();
   const { profile } = useUserProfile();
   const { update } = useTaskMutations();
