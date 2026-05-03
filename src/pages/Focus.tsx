@@ -272,7 +272,15 @@ export default function Focus() {
     <AppShell>
       <div className="pace-eyebrow">Focusing on</div>
       <h1 className="pace-screen-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
-      {task?.next_action && (
+      {activeSubtask && (
+        <div className="mt-2 text-[14px] flex items-start gap-1.5">
+          <ChevronRight className="w-3.5 h-3.5 mt-1 shrink-0 text-primary" />
+          <span className={activeSubtask.done ? 'line-through text-muted-foreground' : 'text-foreground'}>
+            {activeSubtask.title}
+          </span>
+        </div>
+      )}
+      {task?.next_action && !activeSubtask && (
         <div className="mt-2 text-[14px] text-muted-foreground flex items-start gap-1.5">
           <ArrowRight className="w-3.5 h-3.5 mt-1 shrink-0" />
           <span>{task.next_action}</span>
