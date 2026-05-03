@@ -386,52 +386,6 @@ export default function Capture() {
             ))}
           </div>
         </div>
-
-        <div>
-          <label className="pace-field-label">When would you like to work on this?</label>
-          <div className="flex gap-1.5 flex-wrap">
-            {([
-              { k: 'today', label: 'Today' },
-              { k: 'tomorrow', label: 'Tomorrow' },
-              { k: 'backlog', label: 'Backlog' },
-            ] as const).map(opt => (
-              <button key={opt.k} type="button" onClick={() => setWhen(opt.k)}
-                className={when === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
-                {opt.label}
-              </button>
-            ))}
-            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    when === 'pick' && pickedDate ? 'pace-chip-filled' : 'pace-chip',
-                    'inline-flex items-center gap-1.5'
-                  )}
-                >
-                  <CalendarIcon className="w-3.5 h-3.5" />
-                  {when === 'pick' && pickedDate ? format(pickedDate, 'MMM d') : 'Pick a date'}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={pickedDate}
-                  onSelect={(d) => {
-                    if (d) {
-                      setPickedDate(d);
-                      setWhen('pick');
-                      setDatePopoverOpen(false);
-                    }
-                  }}
-                  initialFocus
-                  className={cn('p-3 pointer-events-auto')}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
         <button type="button" onClick={() => setShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
           {showAdvanced ? 'Hide other details' : 'View other details'}
         </button>
