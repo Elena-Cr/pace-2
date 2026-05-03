@@ -149,11 +149,7 @@ export default function Home() {
     [templates],
   );
   const noDeadlineHighValue = useMemo(
-    () => tasks.filter(t =>
-      !t.deadline
-      && t.status !== 'done'
-      && (t.priority === 'must' || recurringStems.has(stem(t.title)))
-    ),
+    () => getNoDeadlineHighValue(tasks, recurringStems, stem),
     [tasks, recurringStems],
   );
 
