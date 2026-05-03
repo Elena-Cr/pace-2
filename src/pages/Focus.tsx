@@ -5,18 +5,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
-import { todayISO, DOMAIN_COLOR_VAR, type Domain, fmtMin } from '@/lib/pace';
+import { todayISO, DOMAIN_COLOR_VAR, type Domain, type Subtask, fmtMin } from '@/lib/pace';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import RescheduleDialog from '@/components/RescheduleDialog';
 
 import { toast } from 'sonner';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronRight } from 'lucide-react';
 
 export default function Focus() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const loc = useLocation() as any;
   const taskIdHint: string | undefined = loc.state?.taskId;
+  const subtaskIdHint: string | undefined = loc.state?.subtaskId;
 
   const { data: allTasks = [] } = useTasks();
   const { update } = useTaskMutations();
@@ -75,16 +76,28 @@ export default function Focus() {
     [allTasks],
   );
 
+  // Which task in the picker is expanded to show its subtasks.
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  // Currently-focused subtask id (initialised from nav state hint).
+  const [activeSubtaskId, setActiveSubtaskId] = useState<string | null>(subtaskIdHint ?? null);
+
+  // Sync activeSubtaskId when the route hint changes (e.g. via chooseTask).
+  useEffect(() => { setActiveSubtaskId(subtaskIdHint ?? null); }, [subtaskIdHint, taskIdHint]);
+
+  // Subtasks of the current focus task (live-read so toggles reflect immediately).
+  const subtasks: Subtask[] = Array.isArray(task?.subtasks) ? (task!.subtasks as Subtask[]) : [];
+  const activeSubtask = subtasks.find(s => s.id === activeSubtaskId) ?? null;
+
   // True when the timer is at its initial state and no session has started.
   const isIdle = !running && !sessionId && secondsLeft === planned * 60 && !overrunPrompt && !completionCheck && !breakMode;
 
-  function chooseTask(id: string) {
+  function chooseTask(id: string, subId?: string | null) {
     if (sessionId || running) {
       // A session is in flight — confirm before swapping subjects.
       setPendingSwitchId(id);
       return;
     }
-    nav('/focus', { state: { taskId: id }, replace: true });
+    nav('/focus', { state: { taskId: id, subtaskId: subId ?? null }, replace: true });
   }
 
   function confirmSwitch() {
@@ -97,6 +110,14 @@ export default function Focus() {
     setSessionId(null);
     setSecondsLeft(planned * 60);
     nav('/focus', { state: { taskId: id }, replace: true });
+  }
+
+  // Toggle a subtask's done state and persist to the task. Subtask state
+  // persists independently of the parent task's overall completion.
+  async function toggleSubtask(sid: string) {
+    if (!task) return;
+    const next = subtasks.map(s => s.id === sid ? { ...s, done: !s.done } : s);
+    await update.mutateAsync({ id: task.id, patch: { subtasks: next } as any });
   }
 
 
@@ -251,7 +272,15 @@ export default function Focus() {
     <AppShell>
       <div className="pace-eyebrow">Focusing on</div>
       <h1 className="pace-screen-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
-      {task?.next_action && (
+      {activeSubtask && (
+        <div className="mt-2 text-[14px] flex items-start gap-1.5">
+          <ChevronRight className="w-3.5 h-3.5 mt-1 shrink-0 text-primary" />
+          <span className={activeSubtask.done ? 'line-through text-muted-foreground' : 'text-foreground'}>
+            {activeSubtask.title}
+          </span>
+        </div>
+      )}
+      {task?.next_action && !activeSubtask && (
         <div className="mt-2 text-[14px] text-muted-foreground flex items-start gap-1.5">
           <ArrowRight className="w-3.5 h-3.5 mt-1 shrink-0" />
           <span>{task.next_action}</span>
@@ -294,26 +323,97 @@ export default function Focus() {
               Nothing open on today's plan. Add an intention from Home.
             </div>
           ) : (
-            <ul className="mt-2 max-h-48 overflow-y-auto space-y-1 -mx-1 px-1">
+            <ul className="mt-2 max-h-64 overflow-y-auto space-y-1 -mx-1 px-1">
               {todayOpen.map(t => {
                 const dom = (t.domain || 'personal') as Domain;
                 const active = task?.id === t.id;
+                const subs: Subtask[] = Array.isArray(t.subtasks) ? (t.subtasks as Subtask[]) : [];
+                const expanded = expandedTaskId === t.id || (active && subs.length > 0);
                 return (
                   <li key={t.id}>
-                    <button
-                      onClick={() => chooseTask(t.id)}
-                      className={`w-full text-left flex items-center gap-2 px-2 py-2 rounded-xl border transition ${active ? 'border-primary/50 bg-primary/5' : 'border-border/40 hover:bg-muted/40'}`}>
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
-                      <span className="text-[14px] truncate flex-1 min-w-0">{t.title}</span>
-                      {t.duration_minutes != null && (
-                        <span className="text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
+                    <div className={`rounded-xl border transition ${active ? 'border-primary/50 bg-primary/5' : 'border-border/40 hover:bg-muted/40'}`}>
+                      <div className="flex items-center gap-1 px-2 py-2">
+                        <button
+                          onClick={() => chooseTask(t.id, null)}
+                          className="text-left flex items-center gap-2 flex-1 min-w-0">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
+                          <span className="text-[14px] truncate flex-1 min-w-0">{t.title}</span>
+                          {t.duration_minutes != null && (
+                            <span className="text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
+                          )}
+                        </button>
+                        {subs.length > 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setExpandedTaskId(expanded ? null : t.id); }}
+                            className="pace-btn-ghost pace-btn-sm shrink-0"
+                            aria-label={expanded ? 'Hide subtasks' : 'Show subtasks'}
+                          >
+                            {subs.filter(s => !s.done).length}/{subs.length}
+                          </button>
+                        )}
+                      </div>
+                      {expanded && subs.length > 0 && (
+                        <ul className="pl-7 pr-2 pb-2 space-y-0.5">
+                          {subs.map(s => {
+                            const sActive = active && activeSubtaskId === s.id;
+                            return (
+                              <li key={s.id}>
+                                <button
+                                  onClick={() => chooseTask(t.id, s.id)}
+                                  disabled={s.done}
+                                  className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] transition ${sActive ? 'bg-primary/10 text-foreground' : 'hover:bg-muted/60'} ${s.done ? 'opacity-50' : ''}`}>
+                                  <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
+                                  <span className={`truncate ${s.done ? 'line-through' : ''}`}>{s.title}</span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
                       )}
-                    </button>
+                    </div>
                   </li>
                 );
               })}
             </ul>
           )}
+        </div>
+      )}
+
+      {/* Subtask checklist for the active task — visible whenever a task is
+          selected so progress can be ticked off during the session. State
+          persists independently of the parent task's overall completion. */}
+      {task && subtasks.length > 0 && (
+        <div className="pace-card mb-3">
+          <div className="flex items-center justify-between">
+            <div className="pace-eyebrow">Subtasks</div>
+            <span className="pace-meta">{subtasks.filter(s => s.done).length}/{subtasks.length} done</span>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {subtasks.map(s => {
+              const sActive = activeSubtaskId === s.id;
+              return (
+                <li key={s.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${sActive ? 'bg-primary/5' : ''}`}>
+                  <button
+                    onClick={() => toggleSubtask(s.id)}
+                    aria-label={s.done ? `Mark ${s.title} not done` : `Mark ${s.title} done`}
+                    className={`w-4 h-4 rounded-full border-[1.5px] inline-flex items-center justify-center shrink-0 ${
+                      s.done ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                    }`}>
+                    {s.done && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                  </button>
+                  <button
+                    onClick={() => !s.done && setActiveSubtaskId(sActive ? null : s.id)}
+                    disabled={s.done}
+                    className="text-left flex-1 min-w-0">
+                    <span className={`text-[14px] truncate ${s.done ? 'line-through text-muted-foreground' : ''}`}>{s.title}</span>
+                  </button>
+                  {sActive && !s.done && (
+                    <span className="text-[10px] uppercase tracking-wide text-primary shrink-0">Now</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 

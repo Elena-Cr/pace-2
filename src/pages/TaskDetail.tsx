@@ -358,17 +358,28 @@ export default function TaskDetail() {
         <ul className="space-y-1.5">
           {subtasks.map(s => (
             <li key={s.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2">
-              <button onClick={() => toggleSub(s.id)} className="flex items-center gap-2 text-left flex-1">
+              <button onClick={() => toggleSub(s.id)} className="flex items-center gap-2 text-left flex-1 min-w-0">
                 <span className={`w-4 h-4 rounded-full border-[1.5px] inline-flex items-center justify-center shrink-0 ${
                   s.done ? 'bg-primary border-primary' : 'border-muted-foreground/40'
                 }`}>
                   {s.done && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                 </span>
-                <span className={`text-[14px] ${s.done ? 'line-through text-muted-foreground' : ''}`}>{s.title}</span>
+                <span className={`text-[14px] truncate ${s.done ? 'line-through text-muted-foreground' : ''}`}>{s.title}</span>
               </button>
-              <button onClick={() => removeSub(s.id)} aria-label="Remove">
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                {!s.done && (
+                  <button
+                    onClick={() => nav('/focus', { state: { taskId: task.id, subtaskId: s.id } })}
+                    className="pace-btn-ghost pace-btn-sm"
+                    aria-label={`Focus on ${s.title}`}
+                  >
+                    <Timer className="w-3.5 h-3.5" /> Focus
+                  </button>
+                )}
+                <button onClick={() => removeSub(s.id)} aria-label="Remove">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
             </li>
           ))}
           {subtasks.length === 0 && (
