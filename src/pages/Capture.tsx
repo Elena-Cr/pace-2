@@ -342,11 +342,12 @@ export default function Capture() {
                 className="pace-field"
                 placeholder="Hours"
                 value={estHours}
+                onBlur={checkEstimateOnBlur}
                 onChange={e => {
                   const v = e.target.value;
-                  if (v === '') return requestEstimateChange('', estMinutes);
+                  if (v === '') return setEstHours('');
                   const n = Math.max(0, Math.floor(Number(v)));
-                  requestEstimateChange(Number.isNaN(n) ? '' : n, estMinutes);
+                  setEstHours(Number.isNaN(n) ? '' : n);
                 }}
               />
             </div>
@@ -359,13 +360,14 @@ export default function Capture() {
                 className="pace-field"
                 placeholder="Minutes"
                 value={estMinutes}
+                onBlur={checkEstimateOnBlur}
                 onChange={e => {
                   const v = e.target.value;
-                  if (v === '') return requestEstimateChange(estHours, '');
+                  if (v === '') return setEstMinutes('');
                   let n = Math.max(0, Math.floor(Number(v)));
-                  if (Number.isNaN(n)) return requestEstimateChange(estHours, '');
+                  if (Number.isNaN(n)) return setEstMinutes('');
                   if (n > 59) n = 59;
-                  requestEstimateChange(estHours, n);
+                  setEstMinutes(n);
                 }}
               />
             </div>
