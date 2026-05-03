@@ -28,12 +28,18 @@ type CalEvent = {
   domain: Domain | 'rest';
   kind: CalKind;
   status?: Status;
+  priority?: 'must' | 'should' | 'could';
   next_action?: string | null;
   duration_minutes?: number | null;
   effort_level?: string | null;
   notes?: string | null;
+  involves_others?: boolean;
   others_rely?: boolean;
   reschedule_count?: number;
+  scheduled_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  deadline?: string | null;
   // time
   day: number;        // 0..6 (week index)
   startMin: number;   // minutes from 00:00
