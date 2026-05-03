@@ -301,7 +301,6 @@ export default function Plan() {
             {heavyTask && (
               <button onClick={() => move(heavyTask.id)} className="pace-btn-primary pace-btn-sm">Move "{heavyTask.title.slice(0, 22)}"</button>
             )}
-            <button onClick={() => nav('/replan')} className="pace-btn pace-btn-sm">Replan together</button>
           </div>
         </div>
       )}
