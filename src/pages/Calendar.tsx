@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
+import RescheduleDialog from '@/components/RescheduleDialog';
 
 function timeStrToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -199,6 +200,7 @@ export default function CalendarView() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [open, setOpen] = useState<CalEvent | null>(null);
   const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   // Tracks the event id currently being dropped so we can hide it from the
   // source slot immediately, before the mutation round-trip completes.
@@ -568,7 +570,7 @@ export default function CalendarView() {
             {attentionItems.length > 0 && (
               <NeedsAttention
                 items={attentionItems}
-                onReschedule={(ev) => { setOpen(null); nav('/replan', { state: { taskId: ev.taskId } }); }}
+                onReschedule={(ev) => { setOpen(null); if (ev.taskId) setRescheduleId(ev.taskId); }}
                 onReduce={async (ev) => {
                   if (!ev.taskId) return;
                   try {
@@ -918,7 +920,7 @@ export default function CalendarView() {
               {open.taskId && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm">Edit</button>
-                  <button onClick={() => { setOpen(null); nav('/replan'); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
+                  <button onClick={() => { const id = open.taskId; setOpen(null); if (id) setRescheduleId(id); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
                   <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
                 </div>
               )}
@@ -945,6 +947,12 @@ export default function CalendarView() {
           <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
         </DialogContent>
       </Dialog>
+
+      <RescheduleDialog
+        taskId={rescheduleId}
+        open={!!rescheduleId}
+        onClose={() => setRescheduleId(null)}
+      />
     </AppShell>
   );
 
