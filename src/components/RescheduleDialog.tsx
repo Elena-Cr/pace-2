@@ -136,6 +136,21 @@ export default function RescheduleDialog({ taskId, open, onClose, mood }: Props)
         </div>
 
         <div className="mt-3">
+          <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
+            <Clock className="w-3 h-3" /> Pick a start and end time (optional)
+          </div>
+          <TimeRangePicker
+            startTime={startTime}
+            endTime={endTime}
+            onChange={(s, e) => { setStartTime(s); setEndTime(e); }}
+            date={selected}
+            tasks={tasks}
+            blocks={profile?.default_time_blocks ?? []}
+            excludeTaskId={task?.id ?? null}
+          />
+        </div>
+
+        <div className="mt-3">
           <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
           <ReplanReasonChips selected={reason} onSelect={setReason} />
         </div>
