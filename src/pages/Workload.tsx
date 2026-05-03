@@ -6,6 +6,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, DOMAIN_COLOR_VAR, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { workloadByDate } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
@@ -24,25 +25,31 @@ export default function Workload() {
   const { data: allTasks = [] } = useTasks();
   const { templates } = useTaskSuggestions(user?.id);
   const [reflection, setReflection] = useState<number | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  // Limit to the visible 2-week window (this week + next).
+  const weekStart = useMemo(() => {
+    const s = startOfWeek();
+    s.setDate(s.getDate() + weekOffset * 7);
+    return s;
+  }, [weekOffset]);
+
+  // Limit to the visible week window.
   const tasks = useMemo(() => {
-    const start = toISODate(startOfWeek());
-    const end = new Date(); end.setDate(end.getDate() + 14);
+    const start = toISODate(weekStart);
+    const end = new Date(weekStart); end.setDate(weekStart.getDate() + 6);
     const endIso = toISODate(end);
     return allTasks.filter(t => t.scheduled_date && t.scheduled_date >= start && t.scheduled_date <= endIso);
-  }, [allTasks]);
+  }, [allTasks, weekStart]);
 
   const week = useMemo(() => {
-    const start = startOfWeek();
     // Total minutes per day comes from the shared helper so every view agrees.
     const totalsByDate = workloadByDate(tasks.filter(t => !t.is_rest));
     return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(start); d.setDate(start.getDate() + i);
+      const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
       const iso = toISODate(d);
       const dayTasks = tasks.filter(t => t.scheduled_date === iso && !t.is_rest);
       const totals: Record<Domain, number> = { academic: 0, work: 0, social: 0, personal: 0 };
@@ -52,7 +59,18 @@ export default function Workload() {
       });
       return { date: d, iso, totals, rest: 0, total: totalsByDate[iso] || 0, count: dayTasks.length };
     });
-  }, [tasks]);
+  }, [tasks, weekStart]);
+
+  const weekEnd = useMemo(() => {
+    const e = new Date(weekStart); e.setDate(weekStart.getDate() + 6); return e;
+  }, [weekStart]);
+  const weekRangeLabel = weekOffset === 0
+    ? 'This week'
+    : weekOffset === 1
+    ? 'Next week'
+    : weekOffset === -1
+    ? 'Last week'
+    : `${weekStart.toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
 
   // Scale: at least capacity + 2h headroom, but grow if any day exceeds that
   // so the tallest bar always fills the chart and shorter days stay proportional.
