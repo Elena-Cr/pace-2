@@ -7,7 +7,7 @@ import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, DOMAIN_COLOR_VAR, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { workloadByDate } from '@/lib/scheduling';
+import { workloadByDate, getNoDeadlineHighValue } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 
@@ -82,16 +82,16 @@ export default function Workload() {
   }, {} as Record<Domain, number>);
   const grandTotal = Object.values(totalsByDomain).reduce((a, b) => a + b, 0);
 
-  // Non-deadline high-value: priority "must" OR a stem that matches a
-  // recurring template from the user's history.
+  // Non-deadline high-value: shared helper so Home, Workload, and Tasks
+  // all show the same count. Uses the full task list (not week-filtered)
+  // since these tasks are by definition not yet on the calendar.
   const recurringStems = useMemo(
     () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
     [templates],
   );
-  const noDeadline = tasks.filter(t =>
-    !t.deadline
-    && t.status !== 'done'
-    && (t.priority === 'must' || recurringStems.has(stem(t.title)))
+  const noDeadline = useMemo(
+    () => getNoDeadlineHighValue(allTasks, recurringStems, stem),
+    [allTasks, recurringStems],
   );
 
   return (

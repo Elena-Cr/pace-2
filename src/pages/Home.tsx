@@ -20,6 +20,7 @@ import {
   getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
+  getNoDeadlineHighValue,
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
@@ -148,11 +149,7 @@ export default function Home() {
     [templates],
   );
   const noDeadlineHighValue = useMemo(
-    () => tasks.filter(t =>
-      !t.deadline
-      && t.status !== 'done'
-      && (t.priority === 'must' || recurringStems.has(stem(t.title)))
-    ),
+    () => getNoDeadlineHighValue(tasks, recurringStems, stem),
     [tasks, recurringStems],
   );
 
@@ -391,7 +388,7 @@ export default function Home() {
       {/* Important without a deadline */}
       {noDeadlineHighValue.length > 0 && (
         <button
-          onClick={() => nav('/workload')}
+          onClick={() => nav('/tasks?group=no_deadline')}
           className="pace-card-soft mt-3 w-full text-left flex items-center justify-between gap-2"
         >
           <span className="text-[13px]">

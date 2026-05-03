@@ -1,13 +1,22 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
+import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
+import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { todayISO, DOMAIN_LABEL, type Domain } from '@/lib/pace';
-import { getBacklog, getMissed, type Task } from '@/lib/scheduling';
-import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer } from 'lucide-react';
+import {
+  getBacklog,
+  getMissed,
+  getNoDeadlineHighValue,
+  getTaskWarnings,
+  type Task,
+  type TaskWarning,
+} from '@/lib/scheduling';
+import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, Flag } from 'lucide-react';
 
-type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'scheduled' | 'done';
+type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'no_deadline' | 'scheduled' | 'done';
 type DomainFilter = 'all' | Domain | 'none';
 
 const GROUPS: { k: GroupKey; label: string; icon: any }[] = [
@@ -15,6 +24,7 @@ const GROUPS: { k: GroupKey; label: string; icon: any }[] = [
   { k: 'all', label: 'All', icon: ListTodo },
   { k: 'backlog', label: 'Backlog', icon: Inbox },
   { k: 'missed', label: 'Missed', icon: AlertTriangle },
+  { k: 'no_deadline', label: 'No deadline', icon: Flag },
   { k: 'scheduled', label: 'Scheduled', icon: CalendarClock },
   { k: 'done', label: 'Completed', icon: CheckCircle2 },
 ];
@@ -28,29 +38,66 @@ const DOMAIN_FILTERS: { k: DomainFilter; label: string }[] = [
   { k: 'none', label: 'Uncategorized' },
 ];
 
+const WARNING_LABEL: Record<TaskWarning, string> = {
+  missed: 'Missed — past scheduled day',
+  blocked: 'Blocked',
+  unscheduled: 'Not scheduled yet',
+  no_deadline: 'No deadline set',
+};
+
+function isGroupKey(s: string | null): s is GroupKey {
+  return !!s && ['action','all','backlog','missed','no_deadline','scheduled','done'].includes(s);
+}
+
 export default function Tasks() {
   const nav = useNavigate();
+  const { user } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
-  const [group, setGroup] = useState<GroupKey>('action');
+  const { templates } = useTaskSuggestions(user?.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialGroup: GroupKey = isGroupKey(searchParams.get('group')) ? (searchParams.get('group') as GroupKey) : 'action';
+  const [group, setGroup] = useState<GroupKey>(initialGroup);
   const [domain, setDomain] = useState<DomainFilter>('all');
   const today = todayISO();
+
+  // Sync group ↔ URL so deep-links from Home (e.g. ?group=no_deadline) work.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (group === 'action') next.delete('group');
+    else next.set('group', group);
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group]);
+
+  const recurringStems = useMemo(
+    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
+    [templates],
+  );
 
   const counts = useMemo(() => {
     const backlog = getBacklog(tasks).filter(t => !t.is_rest);
     const missed = getMissed(tasks, today);
-    const action = [...backlog, ...missed];
+    const noDeadline = getNoDeadlineHighValue(tasks, recurringStems, stem);
+    // "Needs action" = anything with at least one warning (missed, blocked,
+    // unscheduled, or important-without-a-deadline). Dedupe by id.
+    const noDeadlineIds = new Set(noDeadline.map(t => t.id));
+    const merged = new Map<string, Task>();
+    [...backlog, ...missed].forEach(t => merged.set(t.id, t));
+    noDeadline.forEach(t => merged.set(t.id, t));
+    const action = Array.from(merged.values());
     const scheduled = tasks.filter(t => t.scheduled_date && t.scheduled_date >= today && t.status !== 'done' && !t.is_rest);
     const done = tasks.filter(t => t.status === 'done');
     const all = tasks.filter(t => !t.is_rest);
-    return { action, all, backlog, missed, scheduled, done };
-  }, [tasks, today]);
+    return { action, all, backlog, missed, no_deadline: noDeadline, scheduled, done, _noDeadlineIds: noDeadlineIds };
+  }, [tasks, today, recurringStems]);
 
   const filtered = useMemo(() => {
-    let list: Task[] = counts[group] ?? [];
+    let list: Task[] = (counts as any)[group] ?? [];
     if (domain !== 'all') {
       list = list.filter(t => domain === 'none' ? !t.domain : t.domain === domain);
     }
-    // Sort: missed/overdue first by deadline, then by scheduled date, then deadline.
     return [...list].sort((a, b) => {
       const ad = a.deadline ? new Date(a.deadline).getTime() : Infinity;
       const bd = b.deadline ? new Date(b.deadline).getTime() : Infinity;
@@ -60,6 +107,13 @@ export default function Tasks() {
       return ad - bd;
     });
   }, [counts, group, domain]);
+
+  function warningsFor(t: Task): TaskWarning[] {
+    const base = getTaskWarnings(t, today);
+    // Only surface "no deadline" when the task is in our high-value set —
+    // not every task without a deadline is a problem.
+    return base.filter(w => w !== 'no_deadline' || counts._noDeadlineIds.has(t.id));
+  }
 
   return (
     <AppShell>
@@ -82,7 +136,7 @@ export default function Tasks() {
       <section aria-label="Task group" className="mb-3">
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {GROUPS.map(({ k, label, icon: Icon }) => {
-            const n = counts[k]?.length ?? 0;
+            const n = (counts as any)[k]?.length ?? 0;
             const active = group === k;
             return (
               <button
@@ -118,6 +172,12 @@ export default function Tasks() {
         </div>
       </section>
 
+      {group === 'no_deadline' && (
+        <p className="text-[13px] text-muted-foreground mb-3">
+          Important tasks (high priority or recurring) that don't have a deadline yet.
+        </p>
+      )}
+
       {isLoading ? (
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : filtered.length === 0 ? (
@@ -128,11 +188,27 @@ export default function Tasks() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {filtered.map(t => (
-            <li key={t.id}>
-              <TaskCard task={t} onOpen={() => nav(`/task/${t.id}`)} />
-            </li>
-          ))}
+          {filtered.map(t => {
+            const warnings = warningsFor(t);
+            return (
+              <li key={t.id} className="space-y-1.5">
+                <TaskCard task={t} onOpen={() => nav(`/task/${t.id}`)} />
+                {warnings.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 px-1">
+                    {warnings.map(w => (
+                      <span
+                        key={w}
+                        className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--attention)/0.15)] text-[hsl(var(--attention))] px-2 py-0.5 text-[11px] font-medium"
+                      >
+                        {w === 'unscheduled' ? <CalendarX className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                        {WARNING_LABEL[w]}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </AppShell>

@@ -92,6 +92,34 @@ export function getMissed(tasks: Task[], today: string): Task[] {
   );
 }
 
+// Open, non-rest tasks without a deadline that are either marked "must"
+// or whose title stem matches a recurring template from history. Single
+// source of truth shared by Home, Workload and Tasks so counts match.
+export function getNoDeadlineHighValue(
+  tasks: Task[],
+  recurringStems: Set<string>,
+  stemFn: (s: string) => string,
+): Task[] {
+  return tasks.filter(t =>
+    !t.is_rest
+    && !t.deadline
+    && t.status !== 'done'
+    && (t.priority === 'must' || recurringStems.has(stemFn(t.title)))
+  );
+}
+
+// What's "wrong" with a task in a backlog/needs-attention list. Used to
+// render explanatory chips so the user understands why each task surfaces.
+export type TaskWarning = 'missed' | 'blocked' | 'unscheduled' | 'no_deadline';
+export function getTaskWarnings(t: Task, today: string): TaskWarning[] {
+  const out: TaskWarning[] = [];
+  if (t.status === 'blocked') out.push('blocked');
+  else if (t.scheduled_date && t.scheduled_date < today && t.status !== 'done' && !t.is_rest) out.push('missed');
+  if (!t.scheduled_date && t.status !== 'done') out.push('unscheduled');
+  if (!t.deadline && t.status !== 'done') out.push('no_deadline');
+  return out;
+}
+
 // Open, non-rest tasks scheduled for the given day.
 export function getTodayTasks(tasks: Task[], today: string): Task[] {
   return tasks.filter(
