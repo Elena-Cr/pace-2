@@ -196,6 +196,47 @@ export default function Capture() {
         )}
 
         <div>
+          <label className="pace-field-label">Time estimate</label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                className="pace-field"
+                placeholder="Hours"
+                value={estHours}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') return setEstHours('');
+                  const n = Math.max(0, Math.floor(Number(v)));
+                  setEstHours(Number.isNaN(n) ? '' : n);
+                }}
+              />
+            </div>
+            <div className="flex-1">
+              <input
+                type="number"
+                min={0}
+                max={59}
+                step={1}
+                className="pace-field"
+                placeholder="Minutes"
+                value={estMinutes}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '') return setEstMinutes('');
+                  let n = Math.max(0, Math.floor(Number(v)));
+                  if (Number.isNaN(n)) return setEstMinutes('');
+                  if (n > 59) n = 59;
+                  setEstMinutes(n);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
           <label className="pace-field-label">Domain</label>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
@@ -219,12 +260,7 @@ export default function Capture() {
         </div>
 
         <div>
-          <label className="pace-field-label">Deadline (optional)</label>
-          <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
-        </div>
-
-        <div>
-          <label className="pace-field-label">When?</label>
+          <label className="pace-field-label">When would you like to work on this?</label>
           <div className="flex gap-1.5 flex-wrap">
             {([
               { k: 'today', label: 'Today' },
@@ -269,34 +305,34 @@ export default function Capture() {
         </div>
 
         <button type="button" onClick={() => setShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
-          {showAdvanced ? 'Hide details' : 'Add estimates & details'}
+          {showAdvanced ? 'Hide other details' : 'View other details'}
         </button>
 
         {showAdvanced && (
           <div className="space-y-4 animate-fade-in">
             <div>
-              <label className="pace-field-label">Time estimate</label>
-              <input type="number" min={5} step={5} className="pace-field" placeholder="Minutes"
-                value={estimate} onChange={e => setEstimate(e.target.value ? Number(e.target.value) : '')} />
-              <div className="mt-3">
-                <div className="pace-field-label">Effort level</div>
-                <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
-                <div className="flex gap-1.5 mt-1.5">
-                  {EFFORTS.map(e => (
-                    <button key={e} onClick={() => setEffort(e === effort ? null : e)}
-                      className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                  ))}
-                </div>
+              <label className="pace-field-label">Deadline (optional)</label>
+              <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
+            </div>
+
+            <div>
+              <div className="pace-field-label">Effort level (optional)</div>
+              <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+              <div className="flex gap-1.5 mt-1.5">
+                {EFFORTS.map(e => (
+                  <button key={e} onClick={() => setEffort(e === effort ? null : e)}
+                    className={effort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                ))}
               </div>
             </div>
 
             <div>
-              <label className="pace-field-label">Smallest next action</label>
+              <label className="pace-field-label">Smallest next action (optional)</label>
               <input className="pace-field" value={nextAction} onChange={e => setNextAction(e.target.value)} placeholder="e.g. open the assignment page" />
             </div>
 
             <div>
-              <label className="pace-field-label">Next steps (subtasks)</label>
+              <label className="pace-field-label">Next steps (optional)</label>
               <div className="flex gap-2">
                 <input className="pace-field" value={subInput}
                   onChange={e => setSubInput(e.target.value)}
@@ -323,7 +359,7 @@ export default function Capture() {
               onClick={() => setOthersInvolved(v => !v)}
               className={`${othersInvolved ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
             >
-              <Users className="w-3.5 h-3.5" /> Involves or relies on others
+              <Users className="w-3.5 h-3.5" /> Involves or relies on others (optional)
             </button>
 
             <div>
