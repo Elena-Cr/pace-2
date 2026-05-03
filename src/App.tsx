@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Capture from "./pages/Capture";
 import Plan from "./pages/Plan";
-import Replan from "./pages/Replan";
+
 import Focus from "./pages/Focus";
 import Workload from "./pages/Workload";
 import CalendarView from "./pages/Calendar";
@@ -33,7 +33,7 @@ const App = () => (
             <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
             <Route path="/capture" element={<RequireAuth><Capture /></RequireAuth>} />
             <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
-            <Route path="/replan" element={<RequireAuth><Replan /></RequireAuth>} />
+            
             <Route path="/focus" element={<RequireAuth><Focus /></RequireAuth>} />
             <Route path="/workload" element={<RequireAuth><Workload /></RequireAuth>} />
             <Route path="/calendar" element={<RequireAuth><CalendarView /></RequireAuth>} />
