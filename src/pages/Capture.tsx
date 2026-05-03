@@ -75,6 +75,26 @@ export default function Capture() {
   const debouncedStem = useMemo(() => stem(debouncedTitle), [debouncedTitle]);
   const showSuggestion = !!(suggestion && appliedFor !== debouncedStem && !dismissed.has(debouncedStem));
 
+  // The currently chosen scheduled date (null when "backlog").
+  const scheduledISO = useMemo<string | null>(() => {
+    if (when === 'today') return toISODate(new Date());
+    if (when === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d); }
+    if (when === 'pick' && pickedDate) return toISODate(pickedDate);
+    return null;
+  }, [when, pickedDate]);
+
+  const hasTimeRange = !!startTime && !!endTime
+    && (timeStringToMin(endTime)! > timeStringToMin(startTime)!);
+
+  // When the user picks a start/end range, derive the estimate from it.
+  useEffect(() => {
+    if (!hasTimeRange) return;
+    const dur = durationMinutesFromRange(startTime, endTime);
+    if (dur == null) return;
+    setEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+    setEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+  }, [startTime, endTime, hasTimeRange]);
+
   // Sync separate hours/minutes inputs into the single estimate value
   useEffect(() => {
     const h = typeof estHours === 'number' ? estHours : 0;
@@ -82,6 +102,37 @@ export default function Capture() {
     const total = h * 60 + m;
     setEstimate(total > 0 ? total : '');
   }, [estHours, estMinutes]);
+
+  // User edits the hour/minute fields. If a time range is active, ask before
+  // moving the end time. Otherwise just apply directly.
+  function requestEstimateChange(nextH: number | '', nextM: number | '') {
+    if (hasTimeRange) {
+      setPendingEstimate({ h: nextH, m: nextM });
+    } else {
+      setEstHours(nextH);
+      setEstMinutes(nextM);
+    }
+  }
+
+  const pendingNewEnd = useMemo(() => {
+    if (!pendingEstimate || !hasTimeRange) return null;
+    const h = typeof pendingEstimate.h === 'number' ? pendingEstimate.h : 0;
+    const m = typeof pendingEstimate.m === 'number' ? pendingEstimate.m : 0;
+    const total = h * 60 + m;
+    if (total <= 0) return null;
+    const startMin = timeStringToMin(startTime)!;
+    return minToTimeString(startMin + total);
+  }, [pendingEstimate, hasTimeRange, startTime]);
+
+  function confirmEstimateChange() {
+    if (!pendingEstimate) return;
+    setEstHours(pendingEstimate.h);
+    setEstMinutes(pendingEstimate.m);
+    if (pendingNewEnd) setEndTime(pendingNewEnd);
+    setPendingEstimate(null);
+  }
+  function cancelEstimateChange() { setPendingEstimate(null); }
+
 
   function applySuggestion(s: Suggestion, presetTitle?: string) {
     if (presetTitle) setTitle(presetTitle);
