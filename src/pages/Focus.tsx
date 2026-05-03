@@ -5,12 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
 import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
-import { todayISO, DOMAIN_COLOR_VAR, type Domain, fmtMin } from '@/lib/pace';
+import { todayISO, DOMAIN_COLOR_VAR, type Domain, type Subtask, fmtMin } from '@/lib/pace';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import RescheduleDialog from '@/components/RescheduleDialog';
 
 import { toast } from 'sonner';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronRight } from 'lucide-react';
 
 export default function Focus() {
   const { user, loading } = useAuth();
