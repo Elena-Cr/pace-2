@@ -8,7 +8,7 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
 import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes, resolveProfileEnergy } from '@/lib/scheduling';
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -363,13 +363,17 @@ export default function CalendarView() {
     const date = toISODate(d);
     const cap = capacities[date];
     const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+    const profileEnergy = resolveProfileEnergy(userProfile?.energy_pattern);
+    const effectiveOverride = cap
+      ? { available_hours: Number(cap.available_hours), energy_level: cap.energy_level ?? profileEnergy }
+      : { available_hours: profileCapMin / 60, energy_level: profileEnergy };
     const capMin = effectiveCapacityMinutes(
-      cap ? { available_hours: Number(cap.available_hours), energy_level: cap.energy_level ?? 'Med' } : null,
+      effectiveOverride,
       profileCapMin,
       { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
     );
     const availH = capMin / 60;
-    const energy = cap?.energy_level ?? 'Med';
+    const energy = cap?.energy_level ?? profileEnergy;
     const taskEvents = events.filter(e => e.day === di && e.kind === 'task');
     const planned = taskEvents.reduce((s, e) => s + (e.endMin - e.startMin), 0);
     const restEvents = events.filter(e => e.day === di && e.kind !== 'task');

@@ -21,6 +21,7 @@ import {
   effectiveCapacityMinutes,
   capacityState,
   getNoDeadlineHighValue,
+  resolveProfileEnergy,
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
@@ -154,10 +155,15 @@ export default function Home() {
   );
 
   // Capacity math — daily override (daily_capacity row) takes precedence,
-  // otherwise fall back to user's profile default.
+  // otherwise fall back to the user's profile default capacity + typical
+  // energy pattern so changes in Settings/Onboarding immediately reflect here.
   const profileCapMin = userProfile?.daily_capacity_minutes ?? 330;
+  const profileEnergy = resolveProfileEnergy(userProfile?.energy_pattern);
+  const effectiveOverride = capacity
+    ? { available_hours: Number(capacity.available_hours), energy_level: capacity.energy_level ?? profileEnergy }
+    : { available_hours: profileCapMin / 60, energy_level: profileEnergy };
   const capMin = effectiveCapacityMinutes(
-    capacity ? { available_hours: Number(capacity.available_hours), energy_level: capacity.energy_level ?? 'Med' } : null,
+    effectiveOverride,
     profileCapMin,
     { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
   );
@@ -165,7 +171,7 @@ export default function Home() {
     + doneToday.reduce((s, t) => s + (t.duration_minutes || 0), 0);
   const capState = capacityState(plannedMin, capMin);
   const ratio = plannedMin / Math.max(1, capMin);
-  const energy = capacity?.energy_level ?? 'Med';
+  const energy = capacity?.energy_level ?? profileEnergy;
   const capLabel = capState === 'over' ? 'Over capacity' : capState === 'close' ? 'Close to capacity' : 'Balanced';
   const capChipClass = capState === 'over'
     ? 'bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))]'
