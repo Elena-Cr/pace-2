@@ -160,11 +160,63 @@ export type EnergyLevel = 'Low' | 'Med' | 'High';
 // Resolve the user's typical daily energy from their profile pattern.
 // Used as the fallback when no daily_capacity row exists for a given date,
 // so changes saved in Settings/Onboarding flow into capacity math + display.
+//
+// When `mode === 'period'`, the per-period values (morning/afternoon/evening)
+// are honored. Pass `opts.hour` (0-23) to pick the period for a specific
+// moment (e.g. "now" on the Home screen). Without a hint, we pick the most
+// common period value so a day-level summary still reflects the user's
+// settings (falling back to `whole` when periods are empty).
+export type PeriodKey = 'morning' | 'afternoon' | 'evening';
+
+export function periodForHour(hour: number): PeriodKey {
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
+}
+
 export function resolveProfileEnergy(
-  pattern: { mode?: 'whole' | 'period'; whole?: string | null } | null | undefined,
+  pattern:
+    | {
+        mode?: 'whole' | 'period';
+        whole?: string | null;
+        morning?: string | null;
+        afternoon?: string | null;
+        evening?: string | null;
+      }
+    | null
+    | undefined,
+  opts: { hour?: number; period?: PeriodKey } = {},
 ): string {
   if (!pattern) return 'Med';
-  return (pattern.whole as string) ?? 'Med';
+  const whole = (pattern.whole as string) ?? 'Med';
+  if (pattern.mode !== 'period') return whole;
+
+  const get = (k: PeriodKey) => (pattern[k] as string | null | undefined) ?? whole;
+
+  // Specific period requested → use it directly.
+  const period = opts.period ?? (opts.hour != null ? periodForHour(opts.hour) : null);
+  if (period) return get(period);
+
+  // No hint → pick the most common across periods so a day-level value
+  // still reflects per-period settings. Ties prefer the period that's
+  // explicitly set (not falling back to `whole`).
+  const vals: Array<{ v: string; explicit: boolean }> = (['morning', 'afternoon', 'evening'] as PeriodKey[])
+    .map(k => ({ v: get(k), explicit: (pattern[k] as string | null | undefined) != null }));
+  const counts = new Map<string, { n: number; explicit: number }>();
+  vals.forEach(({ v, explicit }) => {
+    const c = counts.get(v) ?? { n: 0, explicit: 0 };
+    c.n += 1; if (explicit) c.explicit += 1;
+    counts.set(v, c);
+  });
+  let best = whole;
+  let bestScore = -1;
+  let bestExplicit = -1;
+  counts.forEach((c, v) => {
+    if (c.n > bestScore || (c.n === bestScore && c.explicit > bestExplicit)) {
+      best = v; bestScore = c.n; bestExplicit = c.explicit;
+    }
+  });
+  return best;
 }
 
 export function energyMultiplier(level: string | null | undefined, pct = 10): number {
