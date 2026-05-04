@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useTask, useTaskMutations } from '@/hooks/useTasks';
+import { useTask, useTaskMutations, useTasks } from '@/hooks/useTasks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import RescheduleDialog from '@/components/RescheduleDialog';
 import TaskMeta from '@/components/TaskMeta';
+import TimeRangePicker, { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DOMAIN_LABEL, STATUS_LABEL, PRIORITY_LABEL, Status, Priority, Domain, Subtask,
   formatDeadline, fmtMin, toISODate,
 } from '@/lib/pace';
 import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users } from 'lucide-react';
+import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users, CalendarIcon, Clock } from 'lucide-react';
 
 const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
@@ -32,6 +42,8 @@ export default function TaskDetail() {
   const nav = useNavigate();
   const { user, loading } = useAuth();
   const { data: task } = useTask(id);
+  const { data: allTasks = [] } = useTasks();
+  const { profile: userProfile } = useUserProfile();
   const { update: updateMut, remove: removeMut } = useTaskMutations();
   const [subInput, setSubInput] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
@@ -46,13 +58,93 @@ export default function TaskDetail() {
   const [eDomain, setEDomain] = useState<Domain | null>(null);
   const [ePriority, setEPriority] = useState<Priority>('should');
   const [eDeadline, setEDeadline] = useState('');
-  const [eDuration, setEDuration] = useState<number | ''>('');
   const [eEffort, setEEffort] = useState<string | null>(null);
-  const [eScheduledDate, setEScheduledDate] = useState<string>('');
+  const [eWhen, setEWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
+  const [ePickedDate, setEPickedDate] = useState<Date | undefined>(undefined);
+  const [eDatePopoverOpen, setEDatePopoverOpen] = useState(false);
+  const [eStartTime, setEStartTime] = useState<string>('');
+  const [eEndTime, setEEndTime] = useState<string>('');
+  const [eEstHours, setEEstHours] = useState<number | ''>('');
+  const [eEstMinutes, setEEstMinutes] = useState<number | ''>('');
+  const [eEstimate, setEEstimate] = useState<number | ''>('');
+  const [ePendingEstimate, setEPendingEstimate] = useState<{ h: number | ''; m: number | '' } | null>(null);
+  const [eNextAction, setENextAction] = useState('');
+  const [eNotes, setENotes] = useState('');
   const [eOthers, setEOthers] = useState(false);
+  const [eSubtasks, setESubtasks] = useState<Subtask[]>([]);
+  const [eSubInput, setESubInput] = useState('');
+  const [eShowAdvanced, setEShowAdvanced] = useState(true);
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+
+  // Derived scheduled ISO based on the picker.
+  const eScheduledISO = useMemo<string | null>(() => {
+    if (eWhen === 'today') return toISODate(new Date());
+    if (eWhen === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d); }
+    if (eWhen === 'pick' && ePickedDate) return toISODate(ePickedDate);
+    return null;
+  }, [eWhen, ePickedDate]);
+
+  const eHasTimeRange = !!eStartTime && !!eEndTime
+    && (timeStringToMin(eEndTime)! > timeStringToMin(eStartTime)!);
+
+  // When the user picks a start/end range in edit, derive the estimate from it.
+  useEffect(() => {
+    if (!eHasTimeRange) return;
+    const dur = durationMinutesFromRange(eStartTime, eEndTime);
+    if (dur == null) return;
+    setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+    setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+  }, [eStartTime, eEndTime, eHasTimeRange]);
+
+  // Sync hours/minutes -> total estimate
+  useEffect(() => {
+    const h = typeof eEstHours === 'number' ? eEstHours : 0;
+    const m = typeof eEstMinutes === 'number' ? eEstMinutes : 0;
+    const total = h * 60 + m;
+    setEEstimate(total > 0 ? total : '');
+  }, [eEstHours, eEstMinutes]);
+
+  function checkEditEstimateOnBlur() {
+    if (!eHasTimeRange) return;
+    const rangeDur = durationMinutesFromRange(eStartTime, eEndTime);
+    const h = typeof eEstHours === 'number' ? eEstHours : 0;
+    const m = typeof eEstMinutes === 'number' ? eEstMinutes : 0;
+    const typed = h * 60 + m;
+    if (rangeDur == null || typed === rangeDur || typed <= 0) return;
+    setEPendingEstimate({ h: eEstHours, m: eEstMinutes });
+  }
+
+  const ePendingNewEnd = useMemo(() => {
+    if (!ePendingEstimate || !eHasTimeRange) return null;
+    const h = typeof ePendingEstimate.h === 'number' ? ePendingEstimate.h : 0;
+    const m = typeof ePendingEstimate.m === 'number' ? ePendingEstimate.m : 0;
+    const total = h * 60 + m;
+    if (total <= 0) return null;
+    const startMin = timeStringToMin(eStartTime)!;
+    return minToTimeString(startMin + total);
+  }, [ePendingEstimate, eHasTimeRange, eStartTime]);
+
+  function confirmEditEstimateChange() {
+    if (!ePendingEstimate) return;
+    if (ePendingNewEnd) setEEndTime(ePendingNewEnd);
+    setEPendingEstimate(null);
+  }
+  function cancelEditEstimateChange() {
+    const dur = durationMinutesFromRange(eStartTime, eEndTime);
+    if (dur != null) {
+      setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+      setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+    }
+    setEPendingEstimate(null);
+  }
+
+  function addEditSub() {
+    const t = eSubInput.trim(); if (!t) return;
+    setESubtasks(s => [...s, { id: crypto.randomUUID(), title: t, done: false }]);
+    setESubInput('');
+  }
 
   function openEdit() {
     if (!task) return;
@@ -60,18 +152,59 @@ export default function TaskDetail() {
     setEDomain(task.domain);
     setEPriority(task.priority);
     setEDeadline(toDatetimeLocal(task.deadline));
-    setEDuration(task.duration_minutes ?? '');
     setEEffort(task.effort_level);
-    setEScheduledDate(task.scheduled_date ?? '');
     setEOthers(!!(task.involves_others || task.others_rely));
+    setENextAction(task.next_action ?? '');
+    setENotes(task.notes ?? '');
+    setESubtasks(Array.isArray(task.subtasks) ? task.subtasks : []);
+
+    // When picker
+    if (task.scheduled_date) {
+      const todayISO = toISODate(new Date());
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowISO = toISODate(tomorrow);
+      if (task.scheduled_date === todayISO) { setEWhen('today'); setEPickedDate(undefined); }
+      else if (task.scheduled_date === tomorrowISO) { setEWhen('tomorrow'); setEPickedDate(undefined); }
+      else {
+        setEWhen('pick');
+        // Parse YYYY-MM-DD as local date.
+        const [y, m, d] = task.scheduled_date.split('-').map(Number);
+        setEPickedDate(new Date(y, m - 1, d));
+      }
+    } else {
+      setEWhen('backlog');
+      setEPickedDate(undefined);
+    }
+
+    // Time range — strip seconds if present
+    const trim = (t: string | null) => (t ? t.slice(0, 5) : '');
+    setEStartTime(trim(task.start_time));
+    setEEndTime(trim(task.end_time));
+
+    // Estimate
+    const dur = task.duration_minutes ?? 0;
+    if (dur > 0) {
+      setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+      setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+    } else {
+      setEEstHours(''); setEEstMinutes('');
+    }
+
     setEditMode(true);
   }
 
   async function saveEdit() {
     if (!task) return;
     if (!eTitle.trim()) { toast.error('Add a title to save.'); return; }
+    if (!eEstimate || Number(eEstimate) <= 0) { toast.error('Add a time estimate.'); return; }
+    if (eScheduledISO && !eHasTimeRange) {
+      toast.error('Pick a start and end time for this day.');
+      return;
+    }
     setSavingEdit(true);
     try {
+      const start_time = eHasTimeRange && eScheduledISO ? `${eStartTime}:00` : null;
+      const end_time = eHasTimeRange && eScheduledISO ? `${eEndTime}:00` : null;
       await updateMut.mutateAsync({
         id: task.id,
         patch: {
@@ -79,9 +212,14 @@ export default function TaskDetail() {
           domain: eDomain,
           priority: ePriority,
           deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
-          duration_minutes: eDuration === '' ? null : Number(eDuration),
+          duration_minutes: eEstimate ? Number(eEstimate) : null,
           effort_level: eEffort,
-          scheduled_date: eScheduledDate || null,
+          scheduled_date: eScheduledISO,
+          start_time,
+          end_time,
+          next_action: eNextAction.trim() || null,
+          notes: eNotes.trim() || null,
+          subtasks: eSubtasks,
           involves_others: eOthers,
           others_rely: eOthers,
         } as any,
@@ -173,8 +311,112 @@ export default function TaskDetail() {
 
         <div className="mt-5 space-y-4">
           <div>
-            <label className="pace-field-label">Title</label>
-            <input className="pace-field" value={eTitle} onChange={e => setETitle(e.target.value)} />
+            <label className="pace-field-label">What needs doing?</label>
+            <input className="pace-field" value={eTitle} onChange={e => setETitle(e.target.value)} placeholder="e.g. Stats problem set 4" />
+          </div>
+
+          <div>
+            <label className="pace-field-label">When would you like to work on this?</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {([
+                { k: 'today', label: 'Today' },
+                { k: 'tomorrow', label: 'Tomorrow' },
+                { k: 'backlog', label: 'Backlog' },
+              ] as const).map(opt => (
+                <button key={opt.k} type="button" onClick={() => setEWhen(opt.k)}
+                  className={eWhen === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
+                  {opt.label}
+                </button>
+              ))}
+              <Popover open={eDatePopoverOpen} onOpenChange={setEDatePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      eWhen === 'pick' && ePickedDate ? 'pace-chip-filled' : 'pace-chip',
+                      'inline-flex items-center gap-1.5'
+                    )}
+                  >
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    {eWhen === 'pick' && ePickedDate ? format(ePickedDate, 'MMM d') : 'Pick a date'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={ePickedDate}
+                    onSelect={(d) => {
+                      if (d) {
+                        setEPickedDate(d);
+                        setEWhen('pick');
+                        setEDatePopoverOpen(false);
+                      }
+                    }}
+                    initialFocus
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {eScheduledISO && (
+              <div className="mt-3">
+                <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
+                  <Clock className="w-3 h-3" /> Pick a start and end time
+                </div>
+                <TimeRangePicker
+                  startTime={eStartTime}
+                  endTime={eEndTime}
+                  onChange={(s, e) => { setEStartTime(s); setEEndTime(e); }}
+                  date={eScheduledISO}
+                  tasks={allTasks}
+                  blocks={userProfile?.default_time_blocks ?? []}
+                  excludeTaskId={task.id}
+                  required
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="pace-field-label">Time estimate</label>
+            {eHasTimeRange && (
+              <p className="pace-meta mt-0.5 mb-1.5">From your selected start and end time. Edit to ask to move the end time.</p>
+            )}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="number" min={0} step={1}
+                  className="pace-field"
+                  placeholder="Hours"
+                  value={eEstHours}
+                  onBlur={checkEditEstimateOnBlur}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '') return setEEstHours('');
+                    const n = Math.max(0, Math.floor(Number(v)));
+                    setEEstHours(Number.isNaN(n) ? '' : n);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <input
+                  type="number" min={0} max={59} step={1}
+                  className="pace-field"
+                  placeholder="Minutes"
+                  value={eEstMinutes}
+                  onBlur={checkEditEstimateOnBlur}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '') return setEEstMinutes('');
+                    let n = Math.max(0, Math.floor(Number(v)));
+                    if (Number.isNaN(n)) return setEEstMinutes('');
+                    if (n > 59) n = 59;
+                    setEEstMinutes(n);
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           <div>
@@ -201,58 +443,70 @@ export default function TaskDetail() {
             </div>
           </div>
 
-          <div>
-            <label className="pace-field-label">Scheduled date</label>
-            <input
-              type="date"
-              className="pace-field"
-              value={eScheduledDate}
-              onChange={e => setEScheduledDate(e.target.value)}
-            />
-            {eScheduledDate && (
-              <button onClick={() => setEScheduledDate('')} className="pace-btn-ghost pace-btn-sm mt-1">
-                Move to backlog
+          <button type="button" onClick={() => setEShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
+            {eShowAdvanced ? 'Hide other details' : 'View other details'}
+          </button>
+
+          {eShowAdvanced && (
+            <div className="space-y-4 animate-fade-in">
+              <div>
+                <label className="pace-field-label">Deadline (optional)</label>
+                <input type="datetime-local" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
+              </div>
+
+              <div>
+                <div className="pace-field-label">Effort level (optional)</div>
+                <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+                <div className="flex gap-1.5 mt-1.5">
+                  {EFFORTS.map(e => (
+                    <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
+                      className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="pace-field-label">Smallest next action (optional)</label>
+                <input className="pace-field" value={eNextAction} onChange={e => setENextAction(e.target.value)} placeholder="e.g. open the assignment page" />
+              </div>
+
+              <div>
+                <label className="pace-field-label">Next steps (optional)</label>
+                <div className="flex gap-2">
+                  <input className="pace-field" value={eSubInput}
+                    onChange={e => setESubInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSub(); } }}
+                    placeholder="Break it into small pieces" />
+                  <button type="button" onClick={addEditSub} className="pace-btn px-4"><Plus className="w-4 h-4" /></button>
+                </div>
+                {eSubtasks.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {eSubtasks.map(s => (
+                      <li key={s.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-[14px]">
+                        <span>· {s.title}</span>
+                        <button onClick={() => setESubtasks(x => x.filter(y => y.id !== s.id))} aria-label="Remove">
+                          <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEOthers(v => !v)}
+                className={`${eOthers ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
+              >
+                <Users className="w-3.5 h-3.5" /> Involves or relies on others (optional)
               </button>
-            )}
-          </div>
 
-          <div>
-            <label className="pace-field-label">Deadline (optional)</label>
-            <input
-              type="datetime-local"
-              className="pace-field"
-              value={eDeadline}
-              onChange={e => setEDeadline(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="pace-field-label">Time estimate</label>
-            <input
-              type="number" min={5} step={5}
-              className="pace-field"
-              placeholder="Minutes"
-              value={eDuration}
-              onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
-            />
-            <div className="mt-3">
-              <div className="pace-field-label">Effort level</div>
-              <div className="flex gap-1.5">
-                {EFFORTS.map(e => (
-                  <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
-                    className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                ))}
+              <div>
+                <label className="pace-field-label">Notes (optional)</label>
+                <textarea className="pace-field min-h-[88px] py-3" value={eNotes} onChange={e => setENotes(e.target.value)} placeholder="Anything that helps future-you" />
               </div>
             </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setEOthers(v => !v)}
-            className={`${eOthers ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
-          >
-            <Users className="w-3.5 h-3.5" /> Involves or relies on others
-          </button>
+          )}
 
           <div className="flex gap-2 pt-2">
             <button onClick={() => setEditMode(false)} className="pace-btn flex-1">Cancel</button>
@@ -261,6 +515,21 @@ export default function TaskDetail() {
             </button>
           </div>
         </div>
+
+        <AlertDialog open={!!ePendingEstimate} onOpenChange={(o) => { if (!o) cancelEditEstimateChange(); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will also move the end time to <span className="font-medium text-foreground">{ePendingNewEnd ?? '—'}</span>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelEditEstimateChange}>No</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmEditEstimateChange}>Yes, move end time</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </AppShell>
     );
   }
