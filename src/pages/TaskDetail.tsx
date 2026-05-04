@@ -42,6 +42,8 @@ export default function TaskDetail() {
   const nav = useNavigate();
   const { user, loading } = useAuth();
   const { data: task } = useTask(id);
+  const { data: allTasks = [] } = useTasks();
+  const { profile: userProfile } = useUserProfile();
   const { update: updateMut, remove: removeMut } = useTaskMutations();
   const [subInput, setSubInput] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
@@ -56,13 +58,93 @@ export default function TaskDetail() {
   const [eDomain, setEDomain] = useState<Domain | null>(null);
   const [ePriority, setEPriority] = useState<Priority>('should');
   const [eDeadline, setEDeadline] = useState('');
-  const [eDuration, setEDuration] = useState<number | ''>('');
   const [eEffort, setEEffort] = useState<string | null>(null);
-  const [eScheduledDate, setEScheduledDate] = useState<string>('');
+  const [eWhen, setEWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
+  const [ePickedDate, setEPickedDate] = useState<Date | undefined>(undefined);
+  const [eDatePopoverOpen, setEDatePopoverOpen] = useState(false);
+  const [eStartTime, setEStartTime] = useState<string>('');
+  const [eEndTime, setEEndTime] = useState<string>('');
+  const [eEstHours, setEEstHours] = useState<number | ''>('');
+  const [eEstMinutes, setEEstMinutes] = useState<number | ''>('');
+  const [eEstimate, setEEstimate] = useState<number | ''>('');
+  const [ePendingEstimate, setEPendingEstimate] = useState<{ h: number | ''; m: number | '' } | null>(null);
+  const [eNextAction, setENextAction] = useState('');
+  const [eNotes, setENotes] = useState('');
   const [eOthers, setEOthers] = useState(false);
+  const [eSubtasks, setESubtasks] = useState<Subtask[]>([]);
+  const [eSubInput, setESubInput] = useState('');
+  const [eShowAdvanced, setEShowAdvanced] = useState(true);
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
+
+  // Derived scheduled ISO based on the picker.
+  const eScheduledISO = useMemo<string | null>(() => {
+    if (eWhen === 'today') return toISODate(new Date());
+    if (eWhen === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d); }
+    if (eWhen === 'pick' && ePickedDate) return toISODate(ePickedDate);
+    return null;
+  }, [eWhen, ePickedDate]);
+
+  const eHasTimeRange = !!eStartTime && !!eEndTime
+    && (timeStringToMin(eEndTime)! > timeStringToMin(eStartTime)!);
+
+  // When the user picks a start/end range in edit, derive the estimate from it.
+  useEffect(() => {
+    if (!eHasTimeRange) return;
+    const dur = durationMinutesFromRange(eStartTime, eEndTime);
+    if (dur == null) return;
+    setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+    setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+  }, [eStartTime, eEndTime, eHasTimeRange]);
+
+  // Sync hours/minutes -> total estimate
+  useEffect(() => {
+    const h = typeof eEstHours === 'number' ? eEstHours : 0;
+    const m = typeof eEstMinutes === 'number' ? eEstMinutes : 0;
+    const total = h * 60 + m;
+    setEEstimate(total > 0 ? total : '');
+  }, [eEstHours, eEstMinutes]);
+
+  function checkEditEstimateOnBlur() {
+    if (!eHasTimeRange) return;
+    const rangeDur = durationMinutesFromRange(eStartTime, eEndTime);
+    const h = typeof eEstHours === 'number' ? eEstHours : 0;
+    const m = typeof eEstMinutes === 'number' ? eEstMinutes : 0;
+    const typed = h * 60 + m;
+    if (rangeDur == null || typed === rangeDur || typed <= 0) return;
+    setEPendingEstimate({ h: eEstHours, m: eEstMinutes });
+  }
+
+  const ePendingNewEnd = useMemo(() => {
+    if (!ePendingEstimate || !eHasTimeRange) return null;
+    const h = typeof ePendingEstimate.h === 'number' ? ePendingEstimate.h : 0;
+    const m = typeof ePendingEstimate.m === 'number' ? ePendingEstimate.m : 0;
+    const total = h * 60 + m;
+    if (total <= 0) return null;
+    const startMin = timeStringToMin(eStartTime)!;
+    return minToTimeString(startMin + total);
+  }, [ePendingEstimate, eHasTimeRange, eStartTime]);
+
+  function confirmEditEstimateChange() {
+    if (!ePendingEstimate) return;
+    if (ePendingNewEnd) setEEndTime(ePendingNewEnd);
+    setEPendingEstimate(null);
+  }
+  function cancelEditEstimateChange() {
+    const dur = durationMinutesFromRange(eStartTime, eEndTime);
+    if (dur != null) {
+      setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+      setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+    }
+    setEPendingEstimate(null);
+  }
+
+  function addEditSub() {
+    const t = eSubInput.trim(); if (!t) return;
+    setESubtasks(s => [...s, { id: crypto.randomUUID(), title: t, done: false }]);
+    setESubInput('');
+  }
 
   function openEdit() {
     if (!task) return;
@@ -70,18 +152,59 @@ export default function TaskDetail() {
     setEDomain(task.domain);
     setEPriority(task.priority);
     setEDeadline(toDatetimeLocal(task.deadline));
-    setEDuration(task.duration_minutes ?? '');
     setEEffort(task.effort_level);
-    setEScheduledDate(task.scheduled_date ?? '');
     setEOthers(!!(task.involves_others || task.others_rely));
+    setENextAction(task.next_action ?? '');
+    setENotes(task.notes ?? '');
+    setESubtasks(Array.isArray(task.subtasks) ? task.subtasks : []);
+
+    // When picker
+    if (task.scheduled_date) {
+      const todayISO = toISODate(new Date());
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowISO = toISODate(tomorrow);
+      if (task.scheduled_date === todayISO) { setEWhen('today'); setEPickedDate(undefined); }
+      else if (task.scheduled_date === tomorrowISO) { setEWhen('tomorrow'); setEPickedDate(undefined); }
+      else {
+        setEWhen('pick');
+        // Parse YYYY-MM-DD as local date.
+        const [y, m, d] = task.scheduled_date.split('-').map(Number);
+        setEPickedDate(new Date(y, m - 1, d));
+      }
+    } else {
+      setEWhen('backlog');
+      setEPickedDate(undefined);
+    }
+
+    // Time range — strip seconds if present
+    const trim = (t: string | null) => (t ? t.slice(0, 5) : '');
+    setEStartTime(trim(task.start_time));
+    setEEndTime(trim(task.end_time));
+
+    // Estimate
+    const dur = task.duration_minutes ?? 0;
+    if (dur > 0) {
+      setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
+      setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
+    } else {
+      setEEstHours(''); setEEstMinutes('');
+    }
+
     setEditMode(true);
   }
 
   async function saveEdit() {
     if (!task) return;
     if (!eTitle.trim()) { toast.error('Add a title to save.'); return; }
+    if (!eEstimate || Number(eEstimate) <= 0) { toast.error('Add a time estimate.'); return; }
+    if (eScheduledISO && !eHasTimeRange) {
+      toast.error('Pick a start and end time for this day.');
+      return;
+    }
     setSavingEdit(true);
     try {
+      const start_time = eHasTimeRange && eScheduledISO ? `${eStartTime}:00` : null;
+      const end_time = eHasTimeRange && eScheduledISO ? `${eEndTime}:00` : null;
       await updateMut.mutateAsync({
         id: task.id,
         patch: {
@@ -89,9 +212,14 @@ export default function TaskDetail() {
           domain: eDomain,
           priority: ePriority,
           deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
-          duration_minutes: eDuration === '' ? null : Number(eDuration),
+          duration_minutes: eEstimate ? Number(eEstimate) : null,
           effort_level: eEffort,
-          scheduled_date: eScheduledDate || null,
+          scheduled_date: eScheduledISO,
+          start_time,
+          end_time,
+          next_action: eNextAction.trim() || null,
+          notes: eNotes.trim() || null,
+          subtasks: eSubtasks,
           involves_others: eOthers,
           others_rely: eOthers,
         } as any,
