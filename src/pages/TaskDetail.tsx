@@ -530,7 +530,6 @@ export default function TaskDetail() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        </div>
       </AppShell>
     );
   }
