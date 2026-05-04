@@ -157,6 +157,16 @@ export function getDoneOnDate(tasks: Task[], date: string): Task[] {
 // (e.g. 10 → ±10%). High adds, Low subtracts, Med = 1.0.
 export type EnergyLevel = 'Low' | 'Med' | 'High';
 
+// Resolve the user's typical daily energy from their profile pattern.
+// Used as the fallback when no daily_capacity row exists for a given date,
+// so changes saved in Settings/Onboarding flow into capacity math + display.
+export function resolveProfileEnergy(
+  pattern: { mode?: 'whole' | 'period'; whole?: string | null } | null | undefined,
+): string {
+  if (!pattern) return 'Med';
+  return (pattern.whole as string) ?? 'Med';
+}
+
 export function energyMultiplier(level: string | null | undefined, pct = 10): number {
   if (level === 'High') return 1 + pct / 100;
   if (level === 'Low') return 1 - pct / 100;
