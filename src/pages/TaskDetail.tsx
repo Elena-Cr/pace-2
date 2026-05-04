@@ -1,17 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useTask, useTaskMutations } from '@/hooks/useTasks';
+import { useTask, useTaskMutations, useTasks } from '@/hooks/useTasks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import RescheduleDialog from '@/components/RescheduleDialog';
 import TaskMeta from '@/components/TaskMeta';
+import TimeRangePicker, { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DOMAIN_LABEL, STATUS_LABEL, PRIORITY_LABEL, Status, Priority, Domain, Subtask,
   formatDeadline, fmtMin, toISODate,
 } from '@/lib/pace';
 import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users } from 'lucide-react';
+import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users, CalendarIcon, Clock } from 'lucide-react';
 
 const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
