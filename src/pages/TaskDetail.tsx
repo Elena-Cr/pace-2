@@ -311,8 +311,112 @@ export default function TaskDetail() {
 
         <div className="mt-5 space-y-4">
           <div>
-            <label className="pace-field-label">Title</label>
-            <input className="pace-field" value={eTitle} onChange={e => setETitle(e.target.value)} />
+            <label className="pace-field-label">What needs doing?</label>
+            <input className="pace-field" value={eTitle} onChange={e => setETitle(e.target.value)} placeholder="e.g. Stats problem set 4" />
+          </div>
+
+          <div>
+            <label className="pace-field-label">When would you like to work on this?</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {([
+                { k: 'today', label: 'Today' },
+                { k: 'tomorrow', label: 'Tomorrow' },
+                { k: 'backlog', label: 'Backlog' },
+              ] as const).map(opt => (
+                <button key={opt.k} type="button" onClick={() => setEWhen(opt.k)}
+                  className={eWhen === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
+                  {opt.label}
+                </button>
+              ))}
+              <Popover open={eDatePopoverOpen} onOpenChange={setEDatePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      eWhen === 'pick' && ePickedDate ? 'pace-chip-filled' : 'pace-chip',
+                      'inline-flex items-center gap-1.5'
+                    )}
+                  >
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    {eWhen === 'pick' && ePickedDate ? format(ePickedDate, 'MMM d') : 'Pick a date'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={ePickedDate}
+                    onSelect={(d) => {
+                      if (d) {
+                        setEPickedDate(d);
+                        setEWhen('pick');
+                        setEDatePopoverOpen(false);
+                      }
+                    }}
+                    initialFocus
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {eScheduledISO && (
+              <div className="mt-3">
+                <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
+                  <Clock className="w-3 h-3" /> Pick a start and end time
+                </div>
+                <TimeRangePicker
+                  startTime={eStartTime}
+                  endTime={eEndTime}
+                  onChange={(s, e) => { setEStartTime(s); setEEndTime(e); }}
+                  date={eScheduledISO}
+                  tasks={allTasks}
+                  blocks={userProfile?.default_time_blocks ?? []}
+                  excludeTaskId={task.id}
+                  required
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="pace-field-label">Time estimate</label>
+            {eHasTimeRange && (
+              <p className="pace-meta mt-0.5 mb-1.5">From your selected start and end time. Edit to ask to move the end time.</p>
+            )}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="number" min={0} step={1}
+                  className="pace-field"
+                  placeholder="Hours"
+                  value={eEstHours}
+                  onBlur={checkEditEstimateOnBlur}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '') return setEEstHours('');
+                    const n = Math.max(0, Math.floor(Number(v)));
+                    setEEstHours(Number.isNaN(n) ? '' : n);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <input
+                  type="number" min={0} max={59} step={1}
+                  className="pace-field"
+                  placeholder="Minutes"
+                  value={eEstMinutes}
+                  onBlur={checkEditEstimateOnBlur}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '') return setEEstMinutes('');
+                    let n = Math.max(0, Math.floor(Number(v)));
+                    if (Number.isNaN(n)) return setEEstMinutes('');
+                    if (n > 59) n = 59;
+                    setEEstMinutes(n);
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           <div>
@@ -339,58 +443,70 @@ export default function TaskDetail() {
             </div>
           </div>
 
-          <div>
-            <label className="pace-field-label">Scheduled date</label>
-            <input
-              type="date"
-              className="pace-field"
-              value={eScheduledDate}
-              onChange={e => setEScheduledDate(e.target.value)}
-            />
-            {eScheduledDate && (
-              <button onClick={() => setEScheduledDate('')} className="pace-btn-ghost pace-btn-sm mt-1">
-                Move to backlog
+          <button type="button" onClick={() => setEShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
+            {eShowAdvanced ? 'Hide other details' : 'View other details'}
+          </button>
+
+          {eShowAdvanced && (
+            <div className="space-y-4 animate-fade-in">
+              <div>
+                <label className="pace-field-label">Deadline (optional)</label>
+                <input type="datetime-local" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
+              </div>
+
+              <div>
+                <div className="pace-field-label">Effort level (optional)</div>
+                <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+                <div className="flex gap-1.5 mt-1.5">
+                  {EFFORTS.map(e => (
+                    <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
+                      className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="pace-field-label">Smallest next action (optional)</label>
+                <input className="pace-field" value={eNextAction} onChange={e => setENextAction(e.target.value)} placeholder="e.g. open the assignment page" />
+              </div>
+
+              <div>
+                <label className="pace-field-label">Next steps (optional)</label>
+                <div className="flex gap-2">
+                  <input className="pace-field" value={eSubInput}
+                    onChange={e => setESubInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSub(); } }}
+                    placeholder="Break it into small pieces" />
+                  <button type="button" onClick={addEditSub} className="pace-btn px-4"><Plus className="w-4 h-4" /></button>
+                </div>
+                {eSubtasks.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {eSubtasks.map(s => (
+                      <li key={s.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-[14px]">
+                        <span>· {s.title}</span>
+                        <button onClick={() => setESubtasks(x => x.filter(y => y.id !== s.id))} aria-label="Remove">
+                          <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEOthers(v => !v)}
+                className={`${eOthers ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
+              >
+                <Users className="w-3.5 h-3.5" /> Involves or relies on others (optional)
               </button>
-            )}
-          </div>
 
-          <div>
-            <label className="pace-field-label">Deadline (optional)</label>
-            <input
-              type="datetime-local"
-              className="pace-field"
-              value={eDeadline}
-              onChange={e => setEDeadline(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="pace-field-label">Time estimate</label>
-            <input
-              type="number" min={5} step={5}
-              className="pace-field"
-              placeholder="Minutes"
-              value={eDuration}
-              onChange={e => setEDuration(e.target.value ? Number(e.target.value) : '')}
-            />
-            <div className="mt-3">
-              <div className="pace-field-label">Effort level</div>
-              <div className="flex gap-1.5">
-                {EFFORTS.map(e => (
-                  <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
-                    className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                ))}
+              <div>
+                <label className="pace-field-label">Notes (optional)</label>
+                <textarea className="pace-field min-h-[88px] py-3" value={eNotes} onChange={e => setENotes(e.target.value)} placeholder="Anything that helps future-you" />
               </div>
             </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setEOthers(v => !v)}
-            className={`${eOthers ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
-          >
-            <Users className="w-3.5 h-3.5" /> Involves or relies on others
-          </button>
+          )}
 
           <div className="flex gap-2 pt-2">
             <button onClick={() => setEditMode(false)} className="pace-btn flex-1">Cancel</button>
@@ -398,6 +514,22 @@ export default function TaskDetail() {
               {savingEdit ? 'Saving…' : 'Save changes'}
             </button>
           </div>
+        </div>
+
+        <AlertDialog open={!!ePendingEstimate} onOpenChange={(o) => { if (!o) cancelEditEstimateChange(); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will also move the end time to <span className="font-medium text-foreground">{ePendingNewEnd ?? '—'}</span>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelEditEstimateChange}>No</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmEditEstimateChange}>Yes, move end time</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         </div>
       </AppShell>
     );
