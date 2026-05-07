@@ -99,8 +99,8 @@ export default function Onboarding() {
     },
     {
       eyebrow: '03 · Pace',
-      title: 'How many intentions feel right per day?',
-      sub: 'An intention is one meaningful task — something you can finish or meaningfully advance in a single day. Most students find 3–5 works well.',
+      title: 'How many actions feel right per day?',
+      sub: 'An action is one meaningful task — something you can finish or meaningfully advance in a single day. Most students find 3–5 works well.',
       body: (
         <div className="space-y-3">
           <div className="flex gap-2 justify-center">

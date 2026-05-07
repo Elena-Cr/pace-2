@@ -611,7 +611,7 @@ export default function CalendarView() {
               <div className="pace-eyebrow mb-2">Agenda</div>
               {restAgenda.length === 0 ? (
                 <div className="pace-card text-center text-[14px] text-muted-foreground">
-                  Nothing planned yet. Add an intention below to get started.
+                  Nothing planned yet. Add an action below to get started.
                 </div>
               ) : (
                 <ul className="space-y-2">
@@ -900,9 +900,9 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add intention */}
+      {/* Add action */}
       <button onClick={() => nav('/capture')} className="pace-btn-primary mt-4 w-full">
-        <Plus className="w-4 h-4" /> Add intention
+        <Plus className="w-4 h-4" /> Add action
       </button>
 
       {/* Detail dialog — shadcn Dialog gives us focus trap + Escape for free. */}
@@ -1004,7 +1004,7 @@ export default function CalendarView() {
 
   async function createAt(dayI: number, hour: number) {
     if (!user) return;
-    const title = window.prompt('New intention');
+    const title = window.prompt('New action');
     if (!title?.trim()) return;
     const date = toISODate(days[dayI]);
     const startTime = `${String(hour).padStart(2, '0')}:00:00`;

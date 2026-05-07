@@ -231,7 +231,7 @@ export default function Home() {
       </div>
       <p className="pace-meta mt-1">
         {real.length === 0
-          ? 'A clear day. Add an intention when you are ready.'
+          ? 'A clear day. Add an action when you are ready.'
           : `${real.length} ${real.length === 1 ? 'thing' : 'things'} planned · ${fmtMin(plannedMin) || '—'} of work`}
       </p>
 
@@ -406,7 +406,7 @@ export default function Home() {
         >
           <span className="text-[13px]">
             <span className="pace-eyebrow inline-flex items-center gap-1.5 mr-2"><span className="priority-dot must" />Important without a deadline</span>
-            {noDeadlineHighValue.length} {noDeadlineHighValue.length === 1 ? 'task' : 'tasks'} worth a slot this week.
+            {noDeadlineHighValue.length} {noDeadlineHighValue.length === 1 ? 'action' : 'actions'} worth a slot this week.
           </span>
           <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </button>
@@ -439,7 +439,7 @@ export default function Home() {
             <Plus className="w-4 h-4" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold leading-tight">New intention</span>
+            <span className="block text-[14px] font-semibold leading-tight">New action</span>
             <span className="block text-[11px] opacity-80 leading-tight mt-0.5">Quick capture</span>
           </span>
         </button>
@@ -482,7 +482,7 @@ export default function Home() {
                   </div>
                 )}
                 {!heavyMoved && (
-                  <div className="text-[13px] mt-1">This task needs attention. What would help now?</div>
+                  <div className="text-[13px] mt-1">This action needs attention. What would help now?</div>
                 )}
                 <div className="mt-2 flex gap-1.5 flex-wrap">
                   {heavyMoved ? (
@@ -535,7 +535,7 @@ export default function Home() {
       <div className="mt-3 space-y-2.5">
         {filtered.length === 0 && restBlocks.length === 0 && (
           <div className="pace-card-soft text-sm text-muted-foreground">
-            Nothing on today's list. Tap <span className="font-semibold text-foreground">New intention</span> above to add something — title is the only thing required.
+            Nothing on today's list. Tap <span className="font-semibold text-foreground">New action</span> above to add something — title is the only thing required.
           </div>
         )}
 

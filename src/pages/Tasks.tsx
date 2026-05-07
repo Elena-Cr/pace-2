@@ -31,7 +31,7 @@ const GROUPS: { k: GroupKey; label: string; icon: any }[] = [
 ];
 
 const DOMAIN_FILTERS: { k: DomainFilter; label: string }[] = [
-  { k: 'all', label: 'All types' },
+  { k: 'all', label: 'All categories' },
   { k: 'academic', label: DOMAIN_LABEL.academic },
   { k: 'work', label: DOMAIN_LABEL.work },
   { k: 'social', label: DOMAIN_LABEL.social },
@@ -121,7 +121,7 @@ export default function Tasks() {
     <AppShell>
       <header className="flex items-start justify-between gap-3 mb-5">
         <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight">Tasks</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Actions</h1>
           <p className="text-muted-foreground text-[15px]">
             Your full backlog — including unscheduled and missed work.
           </p>
@@ -156,7 +156,7 @@ export default function Tasks() {
         </div>
       </section>
 
-      <section aria-label="Type filter" className="mb-5">
+      <section aria-label="Category filter" className="mb-5">
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
           {DOMAIN_FILTERS.map(({ k, label }) => {
             const active = domain === k;
@@ -176,7 +176,7 @@ export default function Tasks() {
 
       {group === 'no_deadline' && (
         <p className="text-[13px] text-muted-foreground mb-3">
-          Important tasks (high priority or recurring) that don't have a deadline yet.
+          Important actions (high priority or recurring) that don't have a deadline yet.
         </p>
       )}
 
@@ -186,7 +186,7 @@ export default function Tasks() {
         <div className="pace-card text-center py-10 text-muted-foreground">
           {group === 'action'
             ? 'Nothing needs your attention. Nice work.'
-            : 'No tasks here yet.'}
+            : 'No actions here yet.'}
         </div>
       ) : (
         <ul className="space-y-3">

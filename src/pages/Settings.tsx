@@ -129,7 +129,7 @@ export default function Settings() {
         </section>
 
         <section className="pace-card">
-          <div className="pace-eyebrow">Preferred intentions per day</div>
+          <div className="pace-eyebrow">Preferred actions per day</div>
           <div className="mt-3 flex gap-2 flex-wrap">
             {[2, 3, 4, 5, 6, 8].map(n => (
               <button key={n} onClick={() => setTasksPerDay(n)}
