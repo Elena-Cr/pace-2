@@ -45,7 +45,7 @@ export default function TaskMeta({ task, compact = false }: { task: TaskMetaInfo
       {whenLabel && <Chip icon={CalendarDays} label="Scheduled" value={whenLabel} />}
       {!whenLabel && <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" />}
       {task.priority && <Chip icon={Flag} label="Priority" value={PRIORITY_LABEL[task.priority]} />}
-      {task.domain && <Chip icon={Activity} label="Area" value={DOMAIN_LABEL[task.domain]} />}
+      {task.domain && <Chip icon={Activity} label="Category" value={DOMAIN_LABEL[task.domain]} />}
       {task.duration_minutes != null && task.duration_minutes > 0 && (
         <Chip icon={Clock} label="Estimate" value={fmtMin(task.duration_minutes)} />
       )}
