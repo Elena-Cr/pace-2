@@ -155,7 +155,7 @@ export default function Capture() {
     if (!othersInvolved && (s.involves_others || s.others_rely)) setOthersInvolved(true);
     setShowAdvanced(true);
     setAppliedFor(stem(presetTitle ?? debouncedTitle));
-    toast.success('Pre-filled from your past intentions.');
+    toast.success('Pre-filled from your past actions.');
   }
 
   function dismissSuggestion() {
@@ -209,7 +209,7 @@ export default function Capture() {
 
   return (
     <AppShell>
-      <div className="pace-eyebrow">New intention</div>
+      <div className="pace-eyebrow">New action</div>
       <h1 className="pace-screen-title mt-1">Capture</h1>
 
       <div className="mt-6 space-y-4">
@@ -217,7 +217,7 @@ export default function Capture() {
         {templates.length > 0 && title.length === 0 && (
           <div>
             <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-2">
-              <Repeat className="w-3 h-3" /> Recurring intentions
+              <Repeat className="w-3 h-3" /> Recurring actions
             </div>
             <div className="flex gap-1.5 flex-wrap">
               {templates.map((t, i) => (
@@ -242,10 +242,10 @@ export default function Capture() {
               <div className="min-w-0">
                 <div className="pace-eyebrow inline-flex items-center gap-1.5 text-primary">
                   <Sparkles className="w-3 h-3" />
-                  {suggestion.source === 'repeating' ? 'Looks familiar' : 'Similar to past intentions'}
+                  {suggestion.source === 'repeating' ? 'Looks familiar' : 'Similar to past actions'}
                 </div>
                 <div className="text-[13px] text-muted-foreground mt-1">
-                  Based on {suggestion.matches} past {suggestion.matches === 1 ? 'intention' : 'intentions'} like
+                  Based on {suggestion.matches} past {suggestion.matches === 1 ? 'action' : 'actions'} like
                   {' '}<span className="text-foreground font-medium">"{suggestion.exampleTitle}"</span>
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function Capture() {
               </button>
             </div>
             <div className="mt-2 flex gap-1 flex-wrap text-[12px]">
-              {suggestion.domain && <span className="pace-chip">Domain · {DOMAIN_LABEL[suggestion.domain]}</span>}
+              {suggestion.domain && <span className="pace-chip">Category · {DOMAIN_LABEL[suggestion.domain]}</span>}
               {suggestion.priority && <span className="pace-chip">Priority · {PRIORITY_LABEL[suggestion.priority]}</span>}
               {suggestion.duration_minutes != null && <span className="pace-chip">~ {fmtMin(suggestion.duration_minutes)}</span>}
               {suggestion.effort_level && <span className="pace-chip">Effort · {suggestion.effort_level}</span>}
@@ -375,7 +375,7 @@ export default function Capture() {
         </div>
 
         <div>
-          <label className="pace-field-label">Domain</label>
+          <label className="pace-field-label">Category</label>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
               <button key={d.k} onClick={() => setDomain(d.k)}
@@ -469,7 +469,7 @@ export default function Capture() {
         )}
 
         <button onClick={save} disabled={busy} className="pace-btn-primary w-full">
-          {busy ? 'Saving…' : 'Save intention'}
+          {busy ? 'Saving…' : 'Save action'}
         </button>
         <button onClick={() => nav(-1)} className="pace-btn w-full">Cancel</button>
       </div>
