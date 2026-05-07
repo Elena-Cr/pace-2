@@ -287,7 +287,7 @@ export default function Plan() {
 
       {showPaceHint && (
         <div className="pace-card-soft mt-3 animate-fade-in text-[13px] text-muted-foreground">
-          Today has {tasks.length} intentions; your usual rhythm is {preferredCount}. Want to move some to backlog?
+          Today has {tasks.length} actions; your usual rhythm is {preferredCount}. Want to move some to backlog?
         </div>
       )}
 
@@ -318,7 +318,7 @@ export default function Plan() {
         ))}
       </div>
 
-      <div className="pace-eyebrow mt-6 mb-2">Tasks today</div>
+      <div className="pace-eyebrow mt-6 mb-2">Actions today</div>
       <div className="space-y-2">
         {tasks.length === 0 && <div className="text-sm text-muted-foreground">Nothing scheduled. Capture something or rest — both count.</div>}
         {tasks.map(t => {

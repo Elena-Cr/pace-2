@@ -272,7 +272,7 @@ export default function Focus() {
   return (
     <AppShell>
       <div className="pace-eyebrow">Focusing on</div>
-      <h1 className="pace-screen-title mt-1">{task?.title ?? 'Pick a task to focus on'}</h1>
+      <h1 className="pace-screen-title mt-1">{task?.title ?? 'Pick an action to focus on'}</h1>
       {activeSubtask && (
         <div className="mt-2 text-[14px] flex items-start gap-1.5">
           <ChevronRight className="w-3.5 h-3.5 mt-1 shrink-0 text-primary" />
@@ -316,12 +316,12 @@ export default function Focus() {
       {(isIdle || !task) && (
         <div className="pace-card mb-3">
           <div className="flex items-center justify-between">
-            <div className="pace-eyebrow">{task ? 'Switch task' : 'Pick a task'}</div>
+            <div className="pace-eyebrow">{task ? 'Switch action' : 'Pick an action'}</div>
             <span className="pace-meta">{todayOpen.length} today</span>
           </div>
           {todayOpen.length === 0 ? (
             <div className="mt-2 text-[13px] text-muted-foreground">
-              Nothing open on today's plan. Add an intention from Home.
+              Nothing open on today's plan. Add an action from Home.
             </div>
           ) : (
             <ul className="mt-2 max-h-64 overflow-y-auto space-y-1 -mx-1 px-1">
@@ -468,7 +468,7 @@ export default function Focus() {
           </div>
 
           <button onClick={start} disabled={!task} className="pace-btn-primary w-full">
-            {task ? 'Start focus' : 'Capture a task first'}
+            {task ? 'Start focus' : 'Add an action first'}
           </button>
         </div>
       )}
@@ -526,7 +526,7 @@ export default function Focus() {
       <Dialog open={!!pendingSwitchId} onOpenChange={(o) => { if (!o) setPendingSwitchId(null); }}>
         <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="pace-title text-left">Switch task?</DialogTitle>
+            <DialogTitle className="pace-title text-left">Switch action?</DialogTitle>
             <DialogDescription className="text-[13px] text-muted-foreground text-left">
               Your current session will end without being saved. The new task starts fresh.
             </DialogDescription>
