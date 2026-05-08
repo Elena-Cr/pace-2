@@ -1,3 +1,11 @@
+// @deprecated — The /plan screen has been retired. Its features were migrated:
+//   • Proactive overload prompt → Home.tsx and Calendar.tsx (day view)
+//   • Backlog-to-today scheduling shortcut → Home.tsx (Backlog section)
+//   • Energy-by-time-of-day editor → Settings.tsx (already present as
+//     energy_pattern.mode === 'period')
+//   • Per-day recovery_notes / capacity slider → DayEnergyPicker on Home/Calendar
+// The route has been removed from App.tsx. This file is retained for reference
+// and will be deleted in a follow-up cleanup once nothing else depends on it.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
