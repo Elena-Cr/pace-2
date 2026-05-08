@@ -325,7 +325,9 @@ export default function Home() {
             <div className="pace-title mt-0.5">{fmtMin(plannedMin) || '0m'} <span className="text-muted-foreground text-[14px] font-normal">of {fmtMin(capMin)}</span></div>
           </div>
           <div className="flex items-center gap-1">
-            <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${capChipClass}`}>{capLabel}</span>
+            {capState !== 'over' && (
+              <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${capChipClass}`}>{capLabel}</span>
+            )}
             <CapacityInfoButton />
           </div>
         </div>
