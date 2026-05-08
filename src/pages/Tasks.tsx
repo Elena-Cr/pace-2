@@ -162,10 +162,8 @@ export default function Tasks() {
         </div>
       </section>
 
-      {group === 'no_deadline' && (
-        <p className="text-[13px] text-muted-foreground mb-3">
-          Important actions (high priority or recurring) that don't have a deadline yet.
-        </p>
+      {false && (
+        <p className="text-[13px] text-muted-foreground mb-3" />
       )}
 
       {isLoading ? (
