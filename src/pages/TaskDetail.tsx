@@ -523,43 +523,31 @@ export default function TaskDetail() {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      <div className="mt-3 flex items-start justify-between gap-2">
-        <TaskMeta task={task} />
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
-          <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit action details">
-            <Pencil className="w-3.5 h-3.5" /> Edit
-          </button>
-        </div>
+      <div className="mt-2 flex items-start justify-between gap-3">
+        <h1 className="pace-screen-title flex-1 min-w-0">{task.title}</h1>
+        <button
+          onClick={openEdit}
+          className="shrink-0 inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-[13px] font-semibold shadow-[0_4px_14px_hsl(var(--primary)/0.3)] transition active:scale-95"
+          aria-label="Edit action details"
+        >
+          <Pencil className="w-3.5 h-3.5" /> Edit
+        </button>
       </div>
 
-      <h1 className="pace-screen-title mt-2">{task.title}</h1>
+      <div className="mt-2">
+        <TaskMeta task={task} compact />
+      </div>
 
       {/* Status flow */}
       <div className="mt-5 pace-card">
         <div className="pace-eyebrow mb-2">Progress</div>
         <div className="flex flex-wrap gap-1.5">
-          {STATUSES.map(s => {
-            // Helper text disambiguates the two "in motion" states that
-            // testers found hard to tell apart.
-            const hint =
-              s === 'started' ? 'I have begun but paused' :
-              s === 'in_progress' ? 'Actively working on this now' :
-              s === 'not_started' ? 'Not begun yet' :
-              s === 'blocked' ? 'Stuck — waiting on something' :
-              s === 'nearly_done' ? 'Almost finished' :
-              s === 'done' ? 'Completed' : '';
-            return (
-              <button key={s} onClick={() => setStatus(s)} title={hint} aria-label={`${STATUS_LABEL[s]} — ${hint}`}
-                className={task.status === s ? 'pace-chip-filled' : 'pace-chip'}>
-                {STATUS_LABEL[s]}
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-3">
-          <div className="pace-progress"><i style={{ width: `${computedProgress}%` }} /></div>
-          <div className="pace-meta mt-1">{computedProgress}%</div>
+          {STATUSES.map(s => (
+            <button key={s} onClick={() => setStatus(s)}
+              className={task.status === s ? 'pace-chip-filled' : 'pace-chip'}>
+              {STATUS_LABEL[s]}
+            </button>
+          ))}
         </div>
       </div>
 
