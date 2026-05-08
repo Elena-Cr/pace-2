@@ -607,6 +607,7 @@ export default function CalendarView() {
                     size="md"
                   />
                   <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                  <CapacityInfoButton />
                 </div>
               </div>
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
