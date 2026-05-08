@@ -98,7 +98,7 @@ export default function Workload() {
               className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="pace-eyebrow">{weekRangeLabel}</div>
+            <div className="pace-eyebrow w-20 text-center flex items-center justify-center whitespace-normal break-words leading-tight">{weekRangeLabel}</div>
             <button
               onClick={() => setWeekOffset(o => o + 1)}
               aria-label="Next week"
