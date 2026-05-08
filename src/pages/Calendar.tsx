@@ -480,7 +480,7 @@ export default function CalendarView() {
         <h1 className="pace-screen-title">Calendar</h1>
         <div className="flex items-center bg-muted rounded-full p-1 text-[12px] font-medium">
           <button onClick={() => setView('day')} className={`px-3 py-1 rounded-full ${view === 'day' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Day</button>
-          <button onClick={() => setView('week')} className={`px-3 py-1 rounded-full ${view === 'week' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Week</button>
+          <button onClick={() => setView('week')} aria-label="3-Day view" className={`px-3 py-1 rounded-full ${view === 'week' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>3-Day</button>
           <button onClick={() => setView('month')} className={`px-3 py-1 rounded-full ${view === 'month' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Month</button>
         </div>
       </div>
