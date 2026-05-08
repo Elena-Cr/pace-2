@@ -123,7 +123,7 @@ export default function Tasks() {
         <div className="space-y-1">
           <h1 className="text-3xl font-semibold tracking-tight">Actions</h1>
           <p className="text-muted-foreground text-[15px]">
-            Your full backlog — including unscheduled and missed work.
+            Your full list — including unscheduled and missed work.
           </p>
         </div>
         <button
