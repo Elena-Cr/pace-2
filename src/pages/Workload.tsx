@@ -82,17 +82,6 @@ export default function Workload() {
   }, {} as Record<Domain, number>);
   const grandTotal = Object.values(totalsByDomain).reduce((a, b) => a + b, 0);
 
-  // Non-deadline high-value: shared helper so Home, Workload, and Tasks
-  // all show the same count. Uses the full task list (not week-filtered)
-  // since these tasks are by definition not yet on the calendar.
-  const recurringStems = useMemo(
-    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
-    [templates],
-  );
-  const noDeadline = useMemo(
-    () => getNoDeadlineHighValue(allTasks, recurringStems, stem),
-    [allTasks, recurringStems],
-  );
 
   return (
     <AppShell>
