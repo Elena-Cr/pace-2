@@ -126,6 +126,19 @@ export default function Home() {
     return Math.max(0, diff);
   }
 
+  async function toggleComplete(t: { id: string; status: string }) {
+    const next = t.status === 'done' ? 'not_started' : 'done';
+    try {
+      await update.mutateAsync({ id: t.id, patch: {
+        status: next as any,
+        progress: next === 'done' ? 100 : 0,
+        completed_at: next === 'done' ? new Date().toISOString() : null,
+      } as any });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
+  }
+
   const today = new Date();
   const dateStr = today.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 
