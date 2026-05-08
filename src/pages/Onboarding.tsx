@@ -158,14 +158,28 @@ export default function Onboarding() {
       canNext: true,
     },
     {
-      eyebrow: '05 · Protected time',
+      eyebrow: '04 · Protected time',
       title: 'When do you sleep, eat, and recover?',
-      sub: 'These blocks stay protected on your calendar.',
+      sub: 'These blocks stay protected on your calendar. Add, edit, or remove anything that doesn\'t fit your routine.',
       body: (
         <div className="space-y-2">
           {blocks.map((b, i) => (
             <div key={i} className="pace-card !p-3">
-              <div className="pace-eyebrow">{b.label}</div>
+              <div className="flex items-center gap-2">
+                <input
+                  className="pace-field !py-1.5 text-[13px] font-medium flex-1"
+                  value={b.label}
+                  onChange={e => setBlock(i, { label: e.target.value })}
+                  placeholder="Block name"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBlocks(prev => prev.filter((_, idx) => idx !== i))}
+                  aria-label={`Remove ${b.label || 'block'}`}
+                  className="rounded-full p-1.5 text-muted-foreground hover:text-[hsl(var(--attention))] hover:bg-muted">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div>
                   <label className="pace-field-label">Start</label>
@@ -176,8 +190,28 @@ export default function Onboarding() {
                   <input type="time" className="pace-field" value={b.end} onChange={e => setBlock(i, { end: e.target.value })} />
                 </div>
               </div>
+              <div className="mt-2">
+                <label className="pace-field-label">Type</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {(['sleep', 'meal', 'recovery', 'custom'] as const).map(k => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setBlock(i, { kind: k })}
+                      className={b.kind === k ? 'pace-chip-filled' : 'pace-chip'}>
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ))}
+          <button
+            type="button"
+            onClick={() => setBlocks(prev => [...prev, { label: 'New block', start: '12:00', end: '12:30', kind: 'custom' }])}
+            className="pace-btn w-full justify-center">
+            <Plus className="w-4 h-4" /> Add a block
+          </button>
         </div>
       ),
       canNext: true,
