@@ -100,7 +100,10 @@ export default function TaskDetail() {
   const [eOthers, setEOthers] = useState(false);
   const [eSubtasks, setESubtasks] = useState<Subtask[]>([]);
   const [eSubInput, setESubInput] = useState('');
-  const [eShowAdvanced, setEShowAdvanced] = useState(true);
+  const [eLocation, setELocation] = useState('');
+  const [eOpenA, setEOpenA] = useState(false);
+  const [eOpenB, setEOpenB] = useState(false);
+  const [eOpenC, setEOpenC] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
