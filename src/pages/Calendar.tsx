@@ -207,6 +207,8 @@ export default function CalendarView() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [open, setOpen] = useState<CalEvent | null>(null);
   const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
+  const [replanCustomMode, setReplanCustomMode] = useState(false);
+  const [replanCustomText, setReplanCustomText] = useState('');
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   // Tracks the event id currently being dropped so we can hide it from the
