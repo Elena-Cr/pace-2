@@ -23,7 +23,7 @@ import {
   getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
-  getNoDeadlineHighValue,
+  // getNoDeadlineHighValue — removed per spec
   resolveProfileEnergy,
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
