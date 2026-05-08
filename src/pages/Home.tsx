@@ -580,7 +580,7 @@ export default function Home() {
                 <AlertTriangle className="w-3 h-3" /> overlaps rest
               </div>
             )}
-            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} onToggleComplete={toggleComplete} />
+            <TaskCard task={t} omitDate onOpen={(task) => nav(`/task/${task.id}`)} onToggleComplete={toggleComplete} />
           </div>
         ))}
 
