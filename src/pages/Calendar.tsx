@@ -596,7 +596,7 @@ export default function CalendarView() {
         return (
           <div className="mt-4 space-y-4">
             {/* Day summary card */}
-            <div className="pace-card">
+            <div className="pace-card !p-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <div className="pace-title">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
