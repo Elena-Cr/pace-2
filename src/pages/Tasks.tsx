@@ -54,6 +54,7 @@ export default function Tasks() {
   const nav = useNavigate();
   const { user } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
+  const { update } = useTaskMutations();
   const { templates } = useTaskSuggestions(user?.id);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialGroup: GroupKey = isGroupKey(searchParams.get('group')) ? (searchParams.get('group') as GroupKey) : 'action';
@@ -61,6 +62,19 @@ export default function Tasks() {
   const [domain, setDomain] = useState<DomainFilter>('all');
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const today = todayISO();
+
+  async function toggleComplete(t: { id: string; status: string }) {
+    const next = t.status === 'done' ? 'not_started' : 'done';
+    try {
+      await update.mutateAsync({ id: t.id, patch: {
+        status: next as any,
+        progress: next === 'done' ? 100 : 0,
+        completed_at: next === 'done' ? new Date().toISOString() : null,
+      } as any });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
+  }
 
   // Sync group ↔ URL so deep-links from Home (e.g. ?group=no_deadline) work.
   useEffect(() => {
