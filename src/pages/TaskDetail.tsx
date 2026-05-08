@@ -22,7 +22,7 @@ import {
 } from '@/lib/pace';
 import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users, CalendarIcon, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Pencil, Users, CalendarIcon, ChevronDown } from 'lucide-react';
 
 // Pre-generated 15-minute interval times (00:00 → 23:45)
 const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => {
