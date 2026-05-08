@@ -114,27 +114,27 @@
 }
 
 @layer components {
-  /* Typography scale (mobile-first) */
+  /* Typography scale (mobile-first, compact) */
   .pace-screen-title {
-    @apply text-[26px] font-semibold leading-tight tracking-tight;
+    @apply text-[22px] font-semibold leading-tight tracking-tight;
   }
   .pace-title {
-    @apply text-[19px] font-semibold leading-snug;
+    @apply text-[17px] font-semibold leading-snug;
   }
   .pace-section {
-    @apply text-[18px] font-semibold leading-snug;
-  }
-  .pace-task-title {
     @apply text-[16px] font-semibold leading-snug;
   }
+  .pace-task-title {
+    @apply text-[15px] font-semibold leading-snug;
+  }
   .pace-body {
-    @apply text-[15px] leading-relaxed;
+    @apply text-[14px] leading-relaxed;
   }
   .pace-meta {
-    @apply text-[13px] font-medium text-muted-foreground;
+    @apply text-[12px] font-medium text-muted-foreground;
   }
   .pace-eyebrow {
-    @apply text-[12px] font-medium text-muted-foreground tracking-wide;
+    @apply text-[11px] font-medium text-muted-foreground tracking-wide;
   }
   .pace-sub {
     @apply pace-meta;
