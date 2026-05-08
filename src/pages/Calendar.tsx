@@ -53,7 +53,7 @@ type CalEvent = {
 };
 
 const HOUR_PX = 56;
-const START_HOUR = 6;
+const START_HOUR = 0;
 const END_HOUR = 24; // exclusive
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
