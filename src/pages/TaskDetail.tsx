@@ -391,11 +391,11 @@ export default function TaskDetail() {
             </div>
           </SectionToggle>
 
-          {/* SECTION B: Deadline */}
+          {/* SECTION B: Estimate & Deadline */}
           <SectionToggle
             open={eOpenB} onToggle={() => setEOpenB(o => !o)}
-            title="Deadline"
-            hasValue={!!eDeadline}
+            title="Estimate & Deadline"
+            hasValue={!!eDeadline || !!eEstimate}
           >
             <div>
               <label className="pace-field-label">Time estimate</label>
