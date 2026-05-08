@@ -529,38 +529,6 @@ export default function CalendarView() {
         </button>
       </div>
 
-      {/* Category colour legend — only for day/week views, only categories
-          present in the currently visible events. Horizontally scrollable. */}
-      {(view === 'day' || view === 'week') && (() => {
-        const scope = view === 'day'
-          ? visibleEvents.filter(e => e.day === dayIdx)
-          : visibleEvents;
-        const present = new Set<Domain>();
-        scope.forEach(e => {
-          if (e.kind === 'task' && e.domain && e.domain !== 'rest') {
-            present.add(e.domain as Domain);
-          }
-        });
-        if (present.size === 0) return null;
-        const ordered: Domain[] = (['academic', 'work', 'social', 'personal'] as Domain[])
-          .filter(d => present.has(d));
-        return (
-          <div className="mt-2 -mx-1 px-1 overflow-x-auto">
-            <div className="flex gap-3 min-w-min text-[11px] text-muted-foreground">
-              {ordered.map(d => (
-                <span key={d} className="inline-flex items-center gap-1.5 shrink-0">
-                  <span
-                    aria-hidden="true"
-                    className="w-2.5 h-2.5 rounded-sm"
-                    style={{ background: DOMAIN_COLOR_VAR[d] }}
-                  />
-                  {DOMAIN_LABEL[d]}
-                </span>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Day picker for day view — fixed 7 across, no horizontal scroll.
           Each chip has a stable height: an always-present 6px indicator row
