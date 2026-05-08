@@ -543,33 +543,6 @@ export default function TaskDetail() {
       </div>
 
       <h1 className="pace-screen-title mt-2">{task.title}</h1>
-      {editingNext ? (
-        <div className="mt-2 flex gap-2">
-          <input
-            autoFocus
-            className="pace-field"
-            value={nextDraft}
-            onChange={e => setNextDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') { e.preventDefault(); update({ next_action: nextDraft.trim() || null }); setEditingNext(false); }
-              if (e.key === 'Escape') setEditingNext(false);
-            }}
-            placeholder="Smallest next action"
-          />
-          <button
-            onClick={() => { update({ next_action: nextDraft.trim() || null }); setEditingNext(false); }}
-            className="pace-btn pace-btn-sm"
-          >Save</button>
-        </div>
-      ) : (
-        <button
-          onClick={() => { setNextDraft(task.next_action ?? ''); setEditingNext(true); }}
-          className="pace-meta mt-1 text-left hover:text-foreground transition"
-        >
-          {task.next_action ? `→ ${task.next_action}` : '→ Add a smallest next action'}
-        </button>
-      )}
-
 
       {/* Status flow */}
       <div className="mt-5 pace-card">
