@@ -215,7 +215,6 @@ export default function Capture() {
         next_action: nextAction || null,
         notes: notes || null,
         involves_others: othersInvolved,
-        others_rely: othersInvolved,
         subtasks,
         scheduled_date: scheduledISO,
         start_time,
