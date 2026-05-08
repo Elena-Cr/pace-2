@@ -54,6 +54,14 @@ export default function Focus() {
   const [moreTimeReschedule, setMoreTimeReschedule] = useState(false);
   const [rescheduleRemainderOpen, setRescheduleRemainderOpen] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  // Count of completed focus_sessions for the current task — drives the
+  // "Session N for this action" header. Refreshed when task or sessionId
+  // changes (a new session insert means an outcome was just recorded).
+  const [completedSessionCount, setCompletedSessionCount] = useState(0);
+  // Mid-session break banner: tracks the highest 25-min interval already
+  // prompted, so we don't re-show the banner within the same interval.
+  const [breakPromptedInterval, setBreakPromptedInterval] = useState(0);
+  const [showBreakBanner, setShowBreakBanner] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
@@ -101,12 +109,18 @@ export default function Focus() {
     nav('/focus', { state: { taskId: id, subtaskId: subId ?? null }, replace: true });
   }
 
-  function confirmSwitch() {
+  async function confirmSwitch() {
     const id = pendingSwitchId;
     setPendingSwitchId(null);
     if (!id) return;
-    // Drop the running session locally — outcomes are only persisted on
-    // explicit complete; a quick switch is treated as a discard.
+    // Close out the in-flight session as 'switched' so we don't leave
+    // orphaned open rows in focus_sessions (Issue L).
+    if (sessionId) {
+      await supabase.from('focus_sessions').update({
+        ended_at: new Date().toISOString(),
+        outcome: 'abandoned',
+      }).eq('id', sessionId);
+    }
     setRunning(false);
     setSessionId(null);
     setSecondsLeft(planned * 60);
@@ -156,6 +170,42 @@ export default function Focus() {
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [running]);
+
+  // Count completed focus sessions for the currently focused task. Drives
+  // the "Session N for this action" header. Re-runs when the task changes
+  // or after a session row is recorded (sessionId transitions).
+  useEffect(() => {
+    let cancelled = false;
+    if (!user || !task?.id) { setCompletedSessionCount(0); return; }
+    supabase
+      .from('focus_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('task_id', task.id)
+      .not('ended_at', 'is', null)
+      .then(({ count }) => { if (!cancelled) setCompletedSessionCount(count ?? 0); });
+    return () => { cancelled = true; };
+  }, [user, task?.id, sessionId, completionCheck]);
+
+  // Reset break banner state whenever a new (non-break) session starts.
+  useEffect(() => {
+    if (!sessionId || breakMode) return;
+    setBreakPromptedInterval(0);
+    setShowBreakBanner(false);
+  }, [sessionId, breakMode]);
+
+  // Mid-session break prompt: if planned ≥ 45m, show a non-blocking banner
+  // every 25 minutes of elapsed focus time. We track the highest interval
+  // already prompted so dismissal sticks until the next interval crosses.
+  useEffect(() => {
+    if (!running || breakMode || planned < 45) return;
+    const elapsedMin = Math.floor((planned * 60 - secondsLeft) / 60);
+    const interval = Math.floor(elapsedMin / 25);
+    if (interval > breakPromptedInterval && elapsedMin > 0 && secondsLeft > 0) {
+      setBreakPromptedInterval(interval);
+      setShowBreakBanner(true);
+    }
+  }, [secondsLeft, running, breakMode, planned, breakPromptedInterval]);
 
   async function start() {
     if (!user) return;
@@ -211,6 +261,29 @@ export default function Focus() {
     setSessionId(data.id);
     setRunning(true);
     toast('+10 minutes. Same task, same next step.');
+  }
+
+  // Called from the completion dialog when the user wants 10 more minutes
+  // on the same task. Adds 10 minutes to the timer and resumes without
+  // closing the focus state. Reuses continueMore so a fresh row is logged.
+  async function extendTen() {
+    setCompletionCheck(false);
+    await continueMore();
+  }
+
+  // Called from the completion dialog "Schedule the rest for later"
+  // button. Closes the current session as 'replan' and opens the
+  // RescheduleDialog pre-filled with the current task.
+  async function scheduleRemainder() {
+    setCompletionCheck(false);
+    if (sessionId) {
+      await supabase.from('focus_sessions').update({
+        ended_at: new Date().toISOString(),
+        outcome: 'replan',
+      }).eq('id', sessionId);
+      setSessionId(null);
+    }
+    if (task) setRescheduleOpen(true);
   }
 
   async function takeBreak() {
@@ -285,6 +358,38 @@ export default function Focus() {
         <div className="mt-2 text-[14px] text-muted-foreground flex items-start gap-1.5">
           <ArrowRight className="w-3.5 h-3.5 mt-1 shrink-0" />
           <span>{task.next_action}</span>
+        </div>
+      )}
+
+      {/* Session counter — N is completed sessions for this action + 1 for
+          the in-progress one. If we know both estimate and session length,
+          show an approximate total to help the user pace themselves. */}
+      {task && (() => {
+        const sessionN = completedSessionCount + 1;
+        const estimate = task.duration_minutes ?? 0;
+        const approx = estimate > 0 && planned > 0 ? Math.ceil(estimate / planned) : null;
+        return (
+          <div className="mt-2 text-[12px] text-muted-foreground">
+            Session {sessionN} for this action
+            {approx != null && approx > 0 && (
+              <> — approx. {approx} {approx === 1 ? 'session' : 'sessions'} to complete</>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Mid-session break banner (planned ≥ 45m, every 25 minutes). */}
+      {showBreakBanner && running && !breakMode && (
+        <div className="mt-3 pace-card-soft animate-fade-in flex items-center gap-2">
+          <div className="flex-1 text-[13px]">
+            Time for a short break? Pause for 5 minutes.
+          </div>
+          <button
+            onClick={() => { setShowBreakBanner(false); takeBreak(); }}
+            className="pace-btn pace-btn-sm">Take break</button>
+          <button
+            onClick={() => setShowBreakBanner(false)}
+            className="pace-btn-ghost pace-btn-sm">Keep going</button>
         </div>
       )}
 
@@ -467,9 +572,11 @@ export default function Focus() {
             </div>
           </div>
 
-          <button onClick={start} disabled={!task} className="pace-btn-primary w-full">
-            {task ? 'Start focus' : 'Add an action first'}
-          </button>
+          {task ? (
+            <button onClick={start} className="pace-btn-primary w-full">Start focus</button>
+          ) : (
+            <button onClick={() => nav('/capture')} className="pace-btn-primary w-full">Add an action first</button>
+          )}
         </div>
       )}
 
@@ -514,8 +621,8 @@ export default function Focus() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => complete('completed')} className="pace-btn-primary">Task completed</button>
-              <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
-              <button onClick={() => complete('replan')} className="pace-btn">Reschedule</button>
+              <button onClick={extendTen} className="pace-btn">Extend by 10 minutes</button>
+              <button onClick={scheduleRemainder} className="pace-btn">Schedule the rest for later</button>
               <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
             </div>
           </div>
