@@ -373,50 +373,6 @@ export default function TaskDetail() {
             </div>
 
             <div>
-              <label className="pace-field-label">Time estimate</label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <input
-                    type="number" min={0} step={1}
-                    className="pace-field pr-8"
-                    placeholder="Hours"
-                    value={eEstHours}
-                    onBlur={checkEditEstimateOnBlur}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (v === '') return setEEstHours('');
-                      const n = Math.max(0, Math.floor(Number(v)));
-                      setEEstHours(Number.isNaN(n) ? '' : n);
-                    }}
-                  />
-                  {eEstHours !== '' && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">h</span>
-                  )}
-                </div>
-                <div className="flex-1 relative">
-                  <input
-                    type="number" min={0} max={59} step={1}
-                    className="pace-field pr-8"
-                    placeholder="Minutes"
-                    value={eEstMinutes}
-                    onBlur={checkEditEstimateOnBlur}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (v === '') return setEEstMinutes('');
-                      let n = Math.max(0, Math.floor(Number(v)));
-                      if (Number.isNaN(n)) return setEEstMinutes('');
-                      if (n > 59) n = 59;
-                      setEEstMinutes(n);
-                    }}
-                  />
-                  {eEstMinutes !== '' && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">m</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div>
               <div className="pace-field-label">Effort level (optional)</div>
               <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
               <div className="flex gap-1.5 mt-1.5">
@@ -427,20 +383,12 @@ export default function TaskDetail() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setEOthers(v => !v)}
-              className={cn(
-                'w-full justify-center inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium border',
-                eOthers
-                  ? 'bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.35)]'
-                  : 'bg-muted text-muted-foreground border-border'
-              )}
-              aria-pressed={eOthers}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Involves others? {eOthers ? 'Yes' : 'No'}
-            </button>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2">
+              <label htmlFor="edit-others" className="text-[13px] font-medium inline-flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Involves others
+              </label>
+              <Switch id="edit-others" checked={eOthers} onCheckedChange={setEOthers} />
+            </div>
           </SectionToggle>
 
           {/* SECTION B: Deadline */}
