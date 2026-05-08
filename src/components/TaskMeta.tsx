@@ -19,6 +19,7 @@ export type TaskMetaInfo = {
   involves_others?: boolean;
   others_rely?: boolean;
   reschedule_count?: number;
+  location?: string | null;
 };
 
 // Small chip used by TaskMeta. Kept inline so usage stays one import.
