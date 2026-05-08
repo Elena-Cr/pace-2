@@ -8,6 +8,7 @@ import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
@@ -55,6 +56,7 @@ export default function Home() {
   const { data: capacity = null } = useDailyCapacity(todayStr);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [restEdit, setRestEdit] = useState<RestBlockInitial | null>(null);
 
   // Sync filter ↔ URL.
   useEffect(() => {
