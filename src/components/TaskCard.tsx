@@ -47,7 +47,7 @@ export default function TaskCard({
   return (
     <button
       onClick={() => onOpen?.(task)}
-      className={`w-full text-left pace-card !p-3 flex items-start gap-3 hover:shadow-sm transition animate-fade-in ${done ? 'opacity-60' : ''}`}
+      className={`w-full text-left pace-card !p-3 flex items-start gap-1.5 hover:shadow-sm transition animate-fade-in ${done ? 'opacity-60' : ''}`}
     >
       <span
         aria-hidden="true"
