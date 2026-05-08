@@ -6,7 +6,9 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Capture from "./pages/Capture";
-import Plan from "./pages/Plan";
+// Plan screen is deprecated — its features have been migrated to Home,
+// Calendar, and Settings. Route removed; file kept temporarily for reference.
+// import Plan from "./pages/Plan";
 
 import Focus from "./pages/Focus";
 import Workload from "./pages/Workload";
