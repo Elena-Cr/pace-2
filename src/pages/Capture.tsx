@@ -239,7 +239,6 @@ export default function Capture() {
   return (
     <AppShell>
       <div className="pace-eyebrow">New action</div>
-      <h1 className="pace-screen-title mt-1">Capture</h1>
 
       <div className="mt-6 space-y-4">
         {/* Recurring templates from past tasks */}
