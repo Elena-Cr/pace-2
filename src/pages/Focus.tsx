@@ -540,9 +540,11 @@ export default function Focus() {
             </div>
           </div>
 
-          <button onClick={start} disabled={!task} className="pace-btn-primary w-full">
-            {task ? 'Start focus' : 'Add an action first'}
-          </button>
+          {task ? (
+            <button onClick={start} className="pace-btn-primary w-full">Start focus</button>
+          ) : (
+            <button onClick={() => nav('/capture')} className="pace-btn-primary w-full">Add an action first</button>
+          )}
         </div>
       )}
 
