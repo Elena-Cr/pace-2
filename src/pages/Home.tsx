@@ -511,8 +511,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick actions — taller tiles with subtitles so they read as
-          distinct primary actions rather than identical text buttons. */}
+      {/* Quick actions — primary capture, then dedicated rest block buttons. */}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => nav('/capture')}
@@ -526,25 +525,36 @@ export default function Home() {
           </span>
         </button>
         <button
-          onClick={() => setRestEdit({ date: todayStr, startTime: '12:00', endTime: '12:30', label: 'Rest' })}
+          onClick={() => setRestEdit({ date: todayStr, startTime: '22:30', endTime: '07:00', label: 'Sleep' })}
           className="rounded-2xl px-4 py-3.5 bg-secondary text-secondary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
           <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
             <Moon className="w-4 h-4" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold leading-tight">Add rest block</span>
-            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Just for today</span>
+            <span className="block text-[14px] font-semibold leading-tight">Sleep</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Add rest block</span>
           </span>
         </button>
         <button
-          onClick={() => nav('/calendar')}
-          className="col-span-2 rounded-2xl px-4 py-3 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          onClick={() => setRestEdit({ date: todayStr, startTime: '12:30', endTime: '13:00', label: 'Meal' })}
+          className="rounded-2xl px-4 py-3.5 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
           <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
-            <CalIcon className="w-4 h-4" />
+            <Utensils className="w-4 h-4" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold leading-tight">Calendar</span>
-            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Week & month</span>
+            <span className="block text-[14px] font-semibold leading-tight">Meal</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Add rest block</span>
+          </span>
+        </button>
+        <button
+          onClick={() => setRestEdit({ date: todayStr, startTime: '17:00', endTime: '17:30', label: 'Recovery walk' })}
+          className="rounded-2xl px-4 py-3.5 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
+            <Coffee className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">Recovery</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Add rest block</span>
           </span>
         </button>
       </div>
