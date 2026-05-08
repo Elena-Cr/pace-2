@@ -292,7 +292,10 @@ export default function Home() {
             <div className="pace-eyebrow">Today's capacity</div>
             <div className="pace-title mt-0.5">{fmtMin(plannedMin) || '0m'} <span className="text-muted-foreground text-[14px] font-normal">of {fmtMin(capMin)}</span></div>
           </div>
-          <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${capChipClass}`}>{capLabel}</span>
+          <div className="flex items-center gap-1">
+            <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${capChipClass}`}>{capLabel}</span>
+            <CapacityInfoButton />
+          </div>
         </div>
         <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
           <div
@@ -303,7 +306,12 @@ export default function Home() {
           />
         </div>
         <div className="mt-2 pace-meta flex items-center justify-between">
-          <span>Energy · {energy}</span>
+          <DayEnergyPicker
+            date={todayStr}
+            current={energy}
+            availableHours={capMin / 60}
+            size="sm"
+          />
           <button onClick={() => nav('/workload')} className="text-[12px] font-medium text-primary inline-flex items-center gap-1">
             Workload <ArrowRight className="w-3 h-3" />
           </button>
