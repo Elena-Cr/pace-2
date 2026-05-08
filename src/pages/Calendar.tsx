@@ -900,16 +900,16 @@ export default function CalendarView() {
       {view === 'month' && (() => {
         const monthIdx = monthAnchor.getMonth();
         const todayStr = new Date().toDateString();
-        // group monthTasks by date
+        // Group monthTasks by date — exclude rest blocks entirely.
         const byDate: Record<string, any[]> = {};
         monthTasks.forEach(t => {
           if (!t.scheduled_date) return;
+          if (t.is_rest) return;
           if (!showCompleted && t.status === 'done') return;
-          const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
+          const dom = (t.domain || 'personal') as Domain;
           if (!filter.has(dom)) return;
           (byDate[t.scheduled_date] ||= []).push(t);
         });
-        const DOMAIN_ORDER: Domain[] = ['academic', 'work', 'social', 'personal'];
         return (
           <div className="mt-4 pace-card !p-2">
             <div className="grid grid-cols-7 gap-1 mb-1">
@@ -921,33 +921,32 @@ export default function CalendarView() {
                 const isToday = d.toDateString() === todayStr;
                 const dateStr = toISODate(d);
                 const items = byDate[dateStr] || [];
-                // Per-domain presence: at most one dot per domain, fixed order.
-                const domainsPresent = new Set<Domain | 'rest'>();
-                items.forEach(t => {
-                  const dom = (t.is_rest ? 'rest' : (t.domain || 'personal')) as Domain | 'rest';
-                  domainsPresent.add(dom);
-                });
+                const visible = items.slice(0, 3);
+                const overflow = items.length > 3;
                 return (
                   <button key={i}
                     onClick={() => { setDayIdx((d.getDay() + 6) % 7); setWeekStart(startOfWeek(d)); setView('day'); }}
-                    className={`aspect-square min-h-[54px] rounded-xl border text-left p-1 flex flex-col gap-0.5 transition hover:bg-muted/40
+                    className={`min-h-[88px] rounded-xl border text-left p-1 flex flex-col gap-0.5 transition hover:bg-muted/40
                       ${inMonth ? 'bg-card border-border/50' : 'bg-muted/30 border-transparent text-muted-foreground'}
                       ${isToday ? '!bg-muted-foreground/15 !border-muted-foreground/50 border-2' : ''}`}>
-                    <div className={`text-[11px] ${isToday ? 'font-bold' : 'font-semibold'}`}>{d.getDate()}</div>
-                    {/* Fixed 4-slot domain dot row — Academic, Work, Social, Personal.
-                        Empty slots are rendered as transparent placeholders so the
-                        cell layout stays stable regardless of domain mix. */}
-                    <div className="flex gap-1 mt-auto" aria-hidden="true">
-                      {DOMAIN_ORDER.map(dom => {
-                        const present = domainsPresent.has(dom);
+                    <div className={`text-[11px] text-center ${isToday ? 'font-bold' : 'font-semibold'}`}>{d.getDate()}</div>
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                      {visible.map(t => {
+                        const dom = (t.domain || 'personal') as Domain;
                         const dc = domainClass(dom);
                         return (
                           <span
-                            key={dom}
-                            className={`w-1.5 h-1.5 rounded-full ${present ? dc.bar : 'bg-transparent'}`}
-                          />
+                            key={t.id}
+                            className={`block text-[8px] leading-tight truncate rounded px-1 py-0.5 ${dc.bg} ${dc.text}`}
+                            title={t.title}
+                          >
+                            {t.title}
+                          </span>
                         );
                       })}
+                      {overflow && (
+                        <span className="text-[10px] text-muted-foreground leading-none text-center" aria-label={`${items.length - 3} more`}>···</span>
+                      )}
                     </div>
                   </button>
                 );
@@ -956,8 +955,8 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add action / Add rest block — hidden in 3-day (week) view */}
-      {view !== 'week' && (
+      {/* Add action / Add rest block — only on day view */}
+      {view === 'day' && (
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button onClick={() => nav('/capture')} className="pace-btn-primary">
             <Plus className="w-4 h-4" /> Add action
