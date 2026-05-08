@@ -316,10 +316,6 @@ export default function TaskDetail() {
     await update({ subtasks: next });
   }
 
-  async function pauseTask() {
-    await update({ status: 'blocked' });
-  }
-
   async function remove() {
     await removeMut.mutateAsync(task!.id);
     toast.success('Removed.');
