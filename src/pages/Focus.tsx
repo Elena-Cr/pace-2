@@ -361,6 +361,38 @@ export default function Focus() {
         </div>
       )}
 
+      {/* Session counter — N is completed sessions for this action + 1 for
+          the in-progress one. If we know both estimate and session length,
+          show an approximate total to help the user pace themselves. */}
+      {task && (() => {
+        const sessionN = completedSessionCount + 1;
+        const estimate = task.duration_minutes ?? 0;
+        const approx = estimate > 0 && planned > 0 ? Math.ceil(estimate / planned) : null;
+        return (
+          <div className="mt-2 text-[12px] text-muted-foreground">
+            Session {sessionN} for this action
+            {approx != null && approx > 0 && (
+              <> — approx. {approx} {approx === 1 ? 'session' : 'sessions'} to complete</>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Mid-session break banner (planned ≥ 45m, every 25 minutes). */}
+      {showBreakBanner && running && !breakMode && (
+        <div className="mt-3 pace-card-soft animate-fade-in flex items-center gap-2">
+          <div className="flex-1 text-[13px]">
+            Time for a short break? Pause for 5 minutes.
+          </div>
+          <button
+            onClick={() => { setShowBreakBanner(false); takeBreak(); }}
+            className="pace-btn pace-btn-sm">Take break</button>
+          <button
+            onClick={() => setShowBreakBanner(false)}
+            className="pace-btn-ghost pace-btn-sm">Keep going</button>
+        </div>
+      )}
+
       <div className="my-8 flex justify-center">
         <div className="relative" style={ringStyle}
           role="timer"
