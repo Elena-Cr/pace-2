@@ -266,25 +266,6 @@ export default function Home() {
       ?? sorted[0];
   }, [real]);
 
-  // Backlog (unscheduled actions) for the inline "schedule from backlog" shortcut
-  // migrated from the deprecated /plan screen.
-  const backlog = useMemo(
-    () => tasks.filter(t => !t.scheduled_date && t.status !== 'done').slice(0, 5),
-    [tasks],
-  );
-
-  async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
-    const date = new Date();
-    if (when === 'tomorrow') date.setDate(date.getDate() + 1);
-    const iso = toISODate(date);
-    try {
-      await update.mutateAsync({ id: taskId, patch: { scheduled_date: iso } as any });
-      toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Could not schedule.');
-    }
-  }
-
   // Up next: surface the action whose scheduled start time is the next one
   // after the current local time in Europe/Copenhagen. Falls back to the
   // earliest-starting task still ahead today; if everything is in the past,
