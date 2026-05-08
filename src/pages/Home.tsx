@@ -420,7 +420,7 @@ export default function Home() {
               {doneToday.map(t => {
                 const dom = (t.domain || 'personal') as Domain;
                 const completedAt = t.completed_at
-                  ? new Date(t.completed_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                  ? new Date(t.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
                   : null;
                 return (
                   <li key={t.id}>

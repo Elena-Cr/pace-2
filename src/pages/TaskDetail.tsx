@@ -9,6 +9,7 @@ import TaskMeta from '@/components/TaskMeta';
 import { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -54,14 +55,14 @@ const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nea
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
-// Convert an ISO timestamp into the value format expected by datetime-local
-// (YYYY-MM-DDTHH:MM) in the user's local time.
-function toDatetimeLocal(iso: string | null): string {
+// Convert an ISO timestamp into a YYYY-MM-DD string in the user's local time
+// (used by date-only deadline inputs).
+function toDateOnly(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export default function TaskDetail() {
@@ -177,7 +178,7 @@ export default function TaskDetail() {
     setETitle(task.title);
     setEDomain(task.domain);
     setEPriority(task.priority);
-    setEDeadline(toDatetimeLocal(task.deadline));
+    setEDeadline(toDateOnly(task.deadline));
     setEEffort(task.effort_level);
     setEOthers(!!(task.involves_others || task.others_rely));
     setENextAction(task.next_action ?? '');
@@ -238,7 +239,7 @@ export default function TaskDetail() {
           title: eTitle.trim(),
           domain: eDomain,
           priority: ePriority,
-          deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
+          deadline: eDeadline ? new Date(eDeadline + 'T23:59:59').toISOString() : null,
           duration_minutes: eEstimate ? Number(eEstimate) : null,
           effort_level: eEffort,
           next_action: eNextAction.trim() || null,
@@ -372,6 +373,31 @@ export default function TaskDetail() {
             </div>
 
             <div>
+              <div className="pace-field-label">Effort level (optional)</div>
+              <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+              <div className="flex gap-1.5 mt-1.5">
+                {EFFORTS.map(e => (
+                  <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
+                    className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2">
+              <label htmlFor="edit-others" className="text-[13px] font-medium inline-flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Involves others
+              </label>
+              <Switch id="edit-others" checked={eOthers} onCheckedChange={setEOthers} />
+            </div>
+          </SectionToggle>
+
+          {/* SECTION B: Estimate & Deadline */}
+          <SectionToggle
+            open={eOpenB} onToggle={() => setEOpenB(o => !o)}
+            title="Estimate & Deadline"
+            hasValue={!!eDeadline || !!eEstimate}
+          >
+            <div>
               <label className="pace-field-label">Time estimate</label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
@@ -414,44 +440,10 @@ export default function TaskDetail() {
                 </div>
               </div>
             </div>
-
-            <div>
-              <div className="pace-field-label">Effort level (optional)</div>
-              <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
-              <div className="flex gap-1.5 mt-1.5">
-                {EFFORTS.map(e => (
-                  <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
-                    className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setEOthers(v => !v)}
-              className={cn(
-                'w-full justify-center inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium border',
-                eOthers
-                  ? 'bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.35)]'
-                  : 'bg-muted text-muted-foreground border-border'
-              )}
-              aria-pressed={eOthers}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Involves others? {eOthers ? 'Yes' : 'No'}
-            </button>
-          </SectionToggle>
-
-          {/* SECTION B: Deadline */}
-          <SectionToggle
-            open={eOpenB} onToggle={() => setEOpenB(o => !o)}
-            title="Deadline"
-            hasValue={!!eDeadline}
-          >
             <div>
               <label className="pace-field-label">Does this have a deadline? (optional)</label>
               <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
-              <input type="datetime-local" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
+              <input type="date" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
             </div>
           </SectionToggle>
 
