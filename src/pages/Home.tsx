@@ -53,12 +53,10 @@ export default function Home() {
     return 'all';
   })();
   const [filter, setFilter] = useState<'all' | Domain>(initialFilter);
-  // Inline-expand state for stat cards (D.2 / D.3).
+  // Inline-expand state for the Done summary card.
   const [showDone, setShowDone] = useState(false);
-  const [showTomorrow, setShowTomorrow] = useState(false);
   const todayStr = todayISO();
   const { data: capacity = null } = useDailyCapacity(todayStr);
-  const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [restEdit, setRestEdit] = useState<RestBlockInitial | null>(null);
 
