@@ -260,6 +260,17 @@ export default function Onboarding() {
             </button>
           )}
         </div>
+        {step > 0 && (
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={() => (isLast ? finish() : setStep(s => s + 1))}
+              disabled={busy}
+              className="text-[13px] font-medium text-muted-foreground hover:text-foreground underline underline-offset-2">
+              Skip this step
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );
