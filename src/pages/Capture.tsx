@@ -10,6 +10,7 @@ import { X, Plus, Sparkles, Repeat, Users, CalendarIcon, ChevronDown } from 'luc
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
