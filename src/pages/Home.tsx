@@ -78,26 +78,8 @@ export default function Home() {
     }
   }, [upLoading, user, userProfile, nav]);
 
-  // Focus session aggregates stay direct: focus_sessions hook is out of scope for this phase.
-  useEffect(() => {
-    if (!user) return;
-    const since = new Date(); since.setHours(0, 0, 0, 0);
-    supabase.from('focus_sessions').select('planned_minutes, ended_at')
-      .gte('started_at', since.toISOString())
-      .then(({ data }) => {
-        const list = data ?? [];
-        setFocusToday({ count: list.length, minutes: list.reduce((s, x: any) => s + (x.planned_minutes || 0), 0) });
-      });
-  }, [user, tasks]);
-
-  const tomorrowStr = useMemo(() => {
-    const d = new Date(); d.setDate(d.getDate() + 1);
-    return toISODate(d);
-  }, []);
   const missed = useMemo(() => getMissed(tasks, todayStr), [tasks, todayStr]);
   const doneToday = useMemo(() => getDoneOnDate(tasks, todayStr), [tasks, todayStr]);
-  const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
-  const tomorrowCount = tomorrowTasks.length;
 
   async function nudge(id: string, kind: 'reschedule' | 'block' | 'later') {
     if (kind === 'reschedule') { setRescheduleId(id); return; }
