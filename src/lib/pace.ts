@@ -85,11 +85,13 @@ export function formatDeadline(iso: string | null): string {
   if (!iso) return 'No deadline';
   const d = new Date(iso);
   const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-  if (sameDay) return `Today ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-  if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-  if (d < now) return 'Needs attention';
+  const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+  const startOfDeadline = new Date(d); startOfDeadline.setHours(0, 0, 0, 0);
+  const dayDiff = Math.round((startOfDeadline.getTime() - startOfToday.getTime()) / 86400000);
+  if (dayDiff < 0) return 'Deadline passed';
+  if (dayDiff === 0) return 'Due today';
+  if (dayDiff === 1) return 'Due tomorrow';
+  if (dayDiff <= 7) return `Due in ${dayDiff} days`;
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 }
 

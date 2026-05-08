@@ -395,7 +395,7 @@ export default function Capture() {
               {([
                 { k: 'today', label: 'Today' },
                 { k: 'tomorrow', label: 'Tomorrow' },
-                { k: 'backlog', label: 'Backlog' },
+                { k: 'backlog', label: 'Later' },
               ] as const).map(opt => (
                 <button key={opt.k} type="button" onClick={() => setWhen(opt.k)}
                   className={when === opt.k ? 'pace-chip-filled' : 'pace-chip'}>

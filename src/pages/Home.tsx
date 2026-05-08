@@ -99,17 +99,17 @@ export default function Home() {
   const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
   const tomorrowCount = tomorrowTasks.length;
 
-  async function nudge(id: string, kind: 'start' | 'reschedule' | 'block' | 'tiny') {
-    if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
+  async function nudge(id: string, kind: 'reschedule' | 'block' | 'later') {
     if (kind === 'reschedule') { setRescheduleId(id); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
-    if (kind === 'tiny') {
+    if (kind === 'later') {
       await update.mutateAsync({ id, patch: {
-        duration_minutes: 10,
-        scheduled_date: todayISO(),
-        next_action: t.next_action || 'Just open it for 10 minutes',
+        scheduled_date: null,
+        start_time: null,
+        end_time: null,
+        status: 'not_started',
       } as any });
-      toast.success('Made it tiny. Ten minutes is a real start.');
+      toast.success('Moved to Later.');
     } else {
       await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
       toast.success('Marked as blocked. Not your fault.');
@@ -614,30 +614,9 @@ export default function Home() {
                   <div className="text-[13px] mt-1">Pick what feels right for now.</div>
                 )}
                 <div className="mt-2 flex gap-1.5 flex-wrap">
-                  {heavyMoved ? (
-                    <>
-                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Reduce to 10 min</button>
-                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Remove</button>
-                    </>
-                  ) : moved === 0 ? (
-                    <>
-                      <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
-                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10 min</button>
-                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
-                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10 min</button>
-                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
-                    </>
-                  )}
+                  <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn-primary pace-btn-sm">Reschedule</button>
+                  <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark as blocked</button>
+                  <button onClick={() => nudge(t.id, 'later')} className="pace-btn pace-btn-sm">Move to Later</button>
                 </div>
               </div>
             );
@@ -705,7 +684,7 @@ export default function Home() {
       {backlog.length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-semibold">Backlog</h2>
+            <h2 className="text-[18px] font-semibold">Later</h2>
             <span className="pace-meta">{backlog.length} unscheduled</span>
           </div>
           <div className="mt-2 space-y-2">
