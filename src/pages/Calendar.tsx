@@ -786,7 +786,7 @@ export default function CalendarView() {
                   {stateLabel}
                 </button>
                 <div className="text-[10px] text-muted-foreground text-center mt-0.5">
-                  {fmtMin(s.planned)} / {fmtMin(s.capMin)}
+                  {scheduledLabel(s.planned)} scheduled
                 </div>
                 <div className="mt-1 flex justify-center">
                   <DayEnergyPicker
