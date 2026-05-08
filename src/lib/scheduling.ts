@@ -491,6 +491,42 @@ export function buildReschedulePatch(
   return patch;
 }
 
+// Clear a task's schedule (date + start/end time) while preserving its time
+// estimate. If the task was previously scheduled, treat this as a reschedule:
+// bump the count so we still track that it slipped. The count is never reset.
+export function buildMoveToLaterPatch(task: Task): Partial<Task> {
+  const wasScheduled = !!task.scheduled_date;
+  const patch: Partial<Task> = {
+    scheduled_date: null,
+    start_time: null,
+    end_time: null,
+  };
+  if (wasScheduled && task.status !== 'done') {
+    patch.reschedule_count = (task.reschedule_count || 0) + 1;
+  }
+  if (task.status === 'rescheduled' || task.status === 'blocked') {
+    patch.status = 'not_started';
+  }
+  return patch;
+}
+
+// Mark a task as blocked. Clears the scheduled date/time so it leaves the
+// day's plan, but bumps reschedule_count if the task had been scheduled —
+// we still want to track that it slipped without being completed.
+export function buildBlockedPatch(task: Task): Partial<Task> {
+  const wasScheduled = !!task.scheduled_date;
+  const patch: Partial<Task> = {
+    status: 'blocked',
+    scheduled_date: null,
+    start_time: null,
+    end_time: null,
+  };
+  if (wasScheduled && task.status !== 'done') {
+    patch.reschedule_count = (task.reschedule_count || 0) + 1;
+  }
+  return patch;
+}
+
 // ---------- Calendar event layout (sweep-line column allocation) ----------
 // Given a day's events, assigns each event a `column` index and `columnCount`
 // (the number of columns in its overlap cluster) so overlapping events render
