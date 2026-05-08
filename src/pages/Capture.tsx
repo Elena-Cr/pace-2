@@ -63,6 +63,7 @@ export default function Capture() {
   const { profile: userProfile } = useUserProfile();
   const [title, setTitle] = useState('');
   const [domain, setDomain] = useState<Domain | null>(null);
+  const [categoryChosen, setCategoryChosen] = useState(false);
   const [priority, setPriority] = useState<Priority>('should');
   const [deadline, setDeadline] = useState('');
   const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
