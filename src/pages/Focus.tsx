@@ -263,7 +263,28 @@ export default function Focus() {
     toast('+10 minutes. Same task, same next step.');
   }
 
-  async function takeBreak() {
+  // Called from the completion dialog when the user wants 10 more minutes
+  // on the same task. Adds 10 minutes to the timer and resumes without
+  // closing the focus state. Reuses continueMore so a fresh row is logged.
+  async function extendTen() {
+    setCompletionCheck(false);
+    await continueMore();
+  }
+
+  // Called from the completion dialog "Schedule the rest for later"
+  // button. Closes the current session as 'replan' and opens the
+  // RescheduleDialog pre-filled with the current task.
+  async function scheduleRemainder() {
+    setCompletionCheck(false);
+    if (sessionId) {
+      await supabase.from('focus_sessions').update({
+        ended_at: new Date().toISOString(),
+        outcome: 'replan',
+      }).eq('id', sessionId);
+      setSessionId(null);
+    }
+    if (task) setRescheduleOpen(true);
+  }
     setOverrunPrompt(false);
     // Close out the focus session as a "more_time" outcome since the user
     // chose to step away rather than finish.
