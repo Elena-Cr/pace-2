@@ -597,7 +597,7 @@ export default function Home() {
       </div>
 
       <div className="mt-3 space-y-2.5">
-        {filtered.length === 0 && restBlocks.length === 0 && (
+        {filtered.length === 0 && todayRestItems.length === 0 && (
           <div className="pace-card-soft text-sm text-muted-foreground">
             Nothing on today's list. Tap <span className="font-semibold text-foreground">New action</span> above to add something — title is the only thing required.
           </div>
