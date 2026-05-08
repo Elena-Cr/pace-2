@@ -119,14 +119,12 @@ export default function TaskDetail() {
   const eHasTimeRange = !!eStartTime && !!eEndTime
     && (timeStringToMin(eEndTime)! > timeStringToMin(eStartTime)!);
 
-  // When the user picks a start/end range in edit, derive the estimate from it.
+  // When start time + estimate are known, derive end time automatically.
   useEffect(() => {
-    if (!eHasTimeRange) return;
-    const dur = durationMinutesFromRange(eStartTime, eEndTime);
-    if (dur == null) return;
-    setEEstHours(Math.floor(dur / 60) || (dur < 60 ? 0 : ''));
-    setEEstMinutes(dur % 60 || (dur >= 60 && dur % 60 === 0 ? 0 : (dur < 60 ? dur : '')));
-  }, [eStartTime, eEndTime, eHasTimeRange]);
+    if (!eStartTime || !eEstimate || Number(eEstimate) <= 0) return;
+    const startMin = timeStringToMin(eStartTime)!;
+    setEEndTime(minToTimeString(startMin + Number(eEstimate)));
+  }, [eStartTime, eEstimate]);
 
   // Sync hours/minutes -> total estimate
   useEffect(() => {
