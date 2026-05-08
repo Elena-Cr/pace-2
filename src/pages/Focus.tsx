@@ -54,6 +54,14 @@ export default function Focus() {
   const [moreTimeReschedule, setMoreTimeReschedule] = useState(false);
   const [rescheduleRemainderOpen, setRescheduleRemainderOpen] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  // Count of completed focus_sessions for the current task — drives the
+  // "Session N for this action" header. Refreshed when task or sessionId
+  // changes (a new session insert means an outcome was just recorded).
+  const [completedSessionCount, setCompletedSessionCount] = useState(0);
+  // Mid-session break banner: tracks the highest 25-min interval already
+  // prompted, so we don't re-show the banner within the same interval.
+  const [breakPromptedInterval, setBreakPromptedInterval] = useState(0);
+  const [showBreakBanner, setShowBreakBanner] = useState(false);
   const tick = useRef<number | null>(null);
   const wasRunning = useRef(false);
 
