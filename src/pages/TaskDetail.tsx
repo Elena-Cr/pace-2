@@ -178,7 +178,7 @@ export default function TaskDetail() {
     setETitle(task.title);
     setEDomain(task.domain);
     setEPriority(task.priority);
-    setEDeadline(toDatetimeLocal(task.deadline));
+    setEDeadline(toDateOnly(task.deadline));
     setEEffort(task.effort_level);
     setEOthers(!!(task.involves_others || task.others_rely));
     setENextAction(task.next_action ?? '');
@@ -239,7 +239,7 @@ export default function TaskDetail() {
           title: eTitle.trim(),
           domain: eDomain,
           priority: ePriority,
-          deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
+          deadline: eDeadline ? new Date(eDeadline + 'T23:59:59').toISOString() : null,
           duration_minutes: eEstimate ? Number(eEstimate) : null,
           effort_level: eEffort,
           next_action: eNextAction.trim() || null,
@@ -452,7 +452,7 @@ export default function TaskDetail() {
             <div>
               <label className="pace-field-label">Does this have a deadline? (optional)</label>
               <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
-              <input type="datetime-local" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
+              <input type="date" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
             </div>
           </SectionToggle>
 
