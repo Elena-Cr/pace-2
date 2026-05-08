@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
@@ -11,10 +11,9 @@ import RescheduleDialog from '@/components/RescheduleDialog';
 import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
 import CapacityInfoButton from '@/components/CapacityInfoButton';
-import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
+import { greeting, todayISO, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
-  getTomorrowTasks,
   getMissed,
   getDoneOnDate,
   getRestBlocksForDate,
@@ -28,13 +27,14 @@ import {
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
+import { Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Check, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
 
-const FILTERS: { k: 'all' | Status; label: string }[] = [
+const DOMAIN_FILTERS: { k: 'all' | Domain; label: string }[] = [
   { k: 'all', label: 'All' },
-  { k: 'in_progress', label: STATUS_LABEL.in_progress },
-  { k: 'blocked', label: STATUS_LABEL.blocked },
-  { k: 'nearly_done', label: STATUS_LABEL.nearly_done },
+  { k: 'academic', label: DOMAIN_LABEL.academic },
+  { k: 'work', label: DOMAIN_LABEL.work },
+  { k: 'social', label: DOMAIN_LABEL.social },
+  { k: 'personal', label: DOMAIN_LABEL.personal },
 ];
 
 export default function Home() {
@@ -48,15 +48,14 @@ export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialFilter = (() => {
     const f = searchParams.get('filter');
-    return (f === 'in_progress' || f === 'blocked' || f === 'nearly_done') ? (f as Status) : 'all';
+    if (f === 'academic' || f === 'work' || f === 'social' || f === 'personal') return f as Domain;
+    return 'all';
   })();
-  const [filter, setFilter] = useState<'all' | Status>(initialFilter);
-  // Inline-expand state for stat cards (D.2 / D.3).
+  const [filter, setFilter] = useState<'all' | Domain>(initialFilter);
+  // Inline-expand state for the Done summary card.
   const [showDone, setShowDone] = useState(false);
-  const [showTomorrow, setShowTomorrow] = useState(false);
   const todayStr = todayISO();
   const { data: capacity = null } = useDailyCapacity(todayStr);
-  const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [restEdit, setRestEdit] = useState<RestBlockInitial | null>(null);
 
@@ -78,26 +77,8 @@ export default function Home() {
     }
   }, [upLoading, user, userProfile, nav]);
 
-  // Focus session aggregates stay direct: focus_sessions hook is out of scope for this phase.
-  useEffect(() => {
-    if (!user) return;
-    const since = new Date(); since.setHours(0, 0, 0, 0);
-    supabase.from('focus_sessions').select('planned_minutes, ended_at')
-      .gte('started_at', since.toISOString())
-      .then(({ data }) => {
-        const list = data ?? [];
-        setFocusToday({ count: list.length, minutes: list.reduce((s, x: any) => s + (x.planned_minutes || 0), 0) });
-      });
-  }, [user, tasks]);
-
-  const tomorrowStr = useMemo(() => {
-    const d = new Date(); d.setDate(d.getDate() + 1);
-    return toISODate(d);
-  }, []);
   const missed = useMemo(() => getMissed(tasks, todayStr), [tasks, todayStr]);
   const doneToday = useMemo(() => getDoneOnDate(tasks, todayStr), [tasks, todayStr]);
-  const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
-  const tomorrowCount = tomorrowTasks.length;
 
   async function nudge(id: string, kind: 'reschedule' | 'block' | 'later') {
     if (kind === 'reschedule') { setRescheduleId(id); return; }
@@ -124,6 +105,19 @@ export default function Home() {
     return Math.max(0, diff);
   }
 
+  async function toggleComplete(t: { id: string; status: string }) {
+    const next = t.status === 'done' ? 'not_started' : 'done';
+    try {
+      await update.mutateAsync({ id: t.id, patch: {
+        status: next as any,
+        progress: next === 'done' ? 100 : 0,
+        completed_at: next === 'done' ? new Date().toISOString() : null,
+      } as any });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
+  }
+
   const today = new Date();
   const dateStr = today.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -146,7 +140,15 @@ export default function Home() {
     const fmtRange = (s: number | null, e: number | null) =>
       s == null || e == null ? '' : `${fmtT(s)} – ${fmtT(e)}`;
 
-    const items: Array<{ key: string; title: string; range: string; startMin: number; note?: string | null }> = [];
+    type RestKind = 'sleep' | 'meal' | 'recovery' | 'custom';
+    const inferKind = (title: string): RestKind => {
+      const t = title.toLowerCase();
+      if (t.includes('sleep') || t.includes('nap') || t.includes('bed')) return 'sleep';
+      if (t.includes('lunch') || t.includes('meal') || t.includes('breakfast') || t.includes('dinner') || t.includes('food') || t.includes('snack')) return 'meal';
+      if (t.includes('walk') || t.includes('recovery') || t.includes('stretch') || t.includes('yoga')) return 'recovery';
+      return 'custom';
+    };
+    const items: Array<{ key: string; title: string; range: string; startMin: number; note?: string | null; kind: RestKind }> = [];
 
     // One-time rest tasks
     restBlocks.forEach((t: any) => {
@@ -158,6 +160,7 @@ export default function Home() {
         range: fmtRange(s, e),
         startMin: s ?? Number.POSITIVE_INFINITY,
         note: t.next_action,
+        kind: inferKind(t.title || ''),
       });
     });
 
@@ -171,6 +174,7 @@ export default function Home() {
         title: ev.title,
         range: fmtRange(ev.startMin, ev.endMin),
         startMin: ev.startMin,
+        kind: (blocks[i]?.kind as RestKind) ?? 'custom',
       });
     });
 
@@ -178,7 +182,7 @@ export default function Home() {
   }, [restBlocks, userProfile, todayStr]);
 
   const real = todayTasks;
-  const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
+  const filtered = filter === 'all' ? real : real.filter(t => (t.domain ?? 'personal') === filter);
 
   // Conflict detection: build today's full event picture (tasks + protected
   // time blocks from the user profile) and ask the shared helper which task
@@ -219,9 +223,13 @@ export default function Home() {
   // precedence over the daily energy_level for the current period.
   const periodKey = nowHour < 12 ? 'morning_energy' : nowHour < 17 ? 'afternoon_energy' : 'evening_energy';
   const periodOverride = (capacity as any)?.[periodKey] as string | null | undefined;
-  const effectiveOverride = capacity
-    ? { available_hours: Number(capacity.available_hours), energy_level: periodOverride ?? capacity.energy_level ?? profileEnergy }
-    : { available_hours: profileCapMin / 60, energy_level: profileEnergy };
+  // Always use the profile capacity as the Med baseline so the displayed
+  // value matches what the user set during onboarding / Settings. Only the
+  // energy level (with optional per-period override) flexes capacity ±pct.
+  const effectiveOverride = {
+    available_hours: profileCapMin / 60,
+    energy_level: capacity ? (periodOverride ?? capacity.energy_level ?? profileEnergy) : profileEnergy,
+  };
   const capMin = effectiveCapacityMinutes(
     effectiveOverride,
     profileCapMin,
@@ -257,39 +265,27 @@ export default function Home() {
       ?? sorted[0];
   }, [real]);
 
-  // Backlog (unscheduled actions) for the inline "schedule from backlog" shortcut
-  // migrated from the deprecated /plan screen.
-  const backlog = useMemo(
-    () => tasks.filter(t => !t.scheduled_date && t.status !== 'done').slice(0, 5),
-    [tasks],
-  );
-
-  async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
-    const date = new Date();
-    if (when === 'tomorrow') date.setDate(date.getDate() + 1);
-    const iso = toISODate(date);
-    try {
-      await update.mutateAsync({ id: taskId, patch: { scheduled_date: iso } as any });
-      toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Could not schedule.');
-    }
-  }
-
-  // Next up: prefer in_progress, else nearest
+  // Up next: surface the action whose scheduled start time is the next one
+  // after the current local time in Europe/Copenhagen. Falls back to the
+  // earliest-starting task still ahead today; if everything is in the past,
+  // fall back to the earliest unfinished task today.
   const nextUp = useMemo(() => {
-    const inProg = real.find(t => t.status === 'in_progress');
-    if (inProg) return inProg;
-    return [...real].sort((a, b) => {
-      const ap = a.priority === 'must' ? 0 : a.priority === 'should' ? 1 : 2;
-      const bp = b.priority === 'must' ? 0 : b.priority === 'should' ? 1 : 2;
-      if (ap !== bp) return ap - bp;
-      // Within a priority, prefer the soonest deadline. Tasks without a
-      // deadline sort after tasks that have one.
-      const ad = a.deadline ? Date.parse(a.deadline) : Number.POSITIVE_INFINITY;
-      const bd = b.deadline ? Date.parse(b.deadline) : Number.POSITIVE_INFINITY;
-      return ad - bd;
-    })[0];
+    const scheduled = real.filter(t => t.status !== 'done' && t.start_time);
+    if (scheduled.length === 0) return real.find(t => t.status !== 'done') ?? null;
+    const toMin = (s: string) => {
+      const [h, m] = s.split(':').map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+    // Current minute-of-day in Europe/Copenhagen (independent of the device tz).
+    const cphParts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Copenhagen',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const cphHour = Number(cphParts.find(p => p.type === 'hour')?.value ?? 0);
+    const cphMin = Number(cphParts.find(p => p.type === 'minute')?.value ?? 0);
+    const nowMin = cphHour * 60 + cphMin;
+    const sorted = [...scheduled].sort((a, b) => toMin(a.start_time!) - toMin(b.start_time!));
+    return sorted.find(t => toMin(t.start_time!) >= nowMin) ?? sorted[0];
   }, [real]);
 
   const totalToday = real.length + doneToday.length;
@@ -381,30 +377,23 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick stats — Done & Tomorrow expand inline; Focus jumps to /focus. */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <button
-          onClick={() => { setShowDone(s => !s); if (!showDone) setShowTomorrow(false); }}
-          aria-expanded={showDone}
-          className={`pace-card !p-3 text-left transition ${showDone ? 'ring-1 ring-primary/40' : ''}`}>
+      {/* Done — wide compact card. Click to expand today's completed tasks. */}
+      <button
+        onClick={() => setShowDone(s => !s)}
+        aria-expanded={showDone}
+        className={`pace-card mt-3 !p-3 w-full text-left flex items-center gap-3 transition ${showDone ? 'ring-1 ring-primary/40' : ''}`}>
+        <div className="w-9 h-9 rounded-xl bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] flex items-center justify-center shrink-0">
+          <Check className="w-4 h-4" strokeWidth={3} />
+        </div>
+        <div className="min-w-0 flex-1">
           <div className="pace-eyebrow">Done</div>
-          <div className="text-[20px] font-semibold mt-0.5">{doneToday.length}</div>
-          <div className="pace-meta">{completionPct}% of today</div>
-        </button>
-        <button onClick={() => nav('/focus')} className="pace-card !p-3 text-left">
-          <div className="pace-eyebrow">Focus</div>
-          <div className="text-[20px] font-semibold mt-0.5">{focusToday.count}</div>
-          <div className="pace-meta">{fmtMin(focusToday.minutes) || '0m'}</div>
-        </button>
-        <button
-          onClick={() => { setShowTomorrow(s => !s); if (!showTomorrow) setShowDone(false); }}
-          aria-expanded={showTomorrow}
-          className={`pace-card !p-3 text-left transition ${showTomorrow ? 'ring-1 ring-primary/40' : ''}`}>
-          <div className="pace-eyebrow">Tomorrow</div>
-          <div className="text-[20px] font-semibold mt-0.5">{tomorrowCount}</div>
-          <div className="pace-meta">{tomorrowCount === 1 ? 'item' : 'items'}</div>
-        </button>
-      </div>
+          <div className="text-[15px] font-semibold leading-tight">
+            {doneToday.length}
+            <span className="text-muted-foreground text-[13px] font-normal"> · {completionPct}% of today</span>
+          </div>
+        </div>
+        <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${showDone ? 'rotate-90' : ''}`} />
+      </button>
 
       {/* Inline expansion: today's completed tasks. */}
       {showDone && (
@@ -436,49 +425,6 @@ export default function Home() {
               })}
             </ul>
           )}
-        </div>
-      )}
-
-      {/* Inline expansion: tomorrow's planned tasks, sorted by priority. */}
-      {showTomorrow && (
-        <div className="mt-3 pace-card animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="pace-eyebrow">Tomorrow</div>
-            <button onClick={() => setShowTomorrow(false)} className="text-[12px] text-muted-foreground">Hide</button>
-          </div>
-          {tomorrowTasks.length === 0 ? (
-            <div className="mt-2 text-[13px] text-muted-foreground">Nothing planned for tomorrow yet.</div>
-          ) : (
-            <ul className="mt-2 space-y-1.5">
-              {[...tomorrowTasks]
-                .sort((a, b) => {
-                  const ap = a.priority === 'must' ? 0 : a.priority === 'should' ? 1 : 2;
-                  const bp = b.priority === 'must' ? 0 : b.priority === 'should' ? 1 : 2;
-                  return ap - bp;
-                })
-                .map(t => {
-                  const dom = (t.domain || 'personal') as Domain;
-                  return (
-                    <li key={t.id}>
-                      <button
-                        onClick={() => nav(`/task/${t.id}`)}
-                        className="w-full text-left flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-muted/40">
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
-                        <span className="text-[14px] truncate">{t.title}</span>
-                        {t.duration_minutes != null && (
-                          <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-            </ul>
-          )}
-          <button
-            onClick={() => nav(`/calendar?view=day&date=${tomorrowStr}`)}
-            className="mt-3 text-[12px] font-medium text-primary inline-flex items-center gap-1">
-            View in calendar <ArrowRight className="w-3 h-3" />
-          </button>
         </div>
       )}
 
@@ -538,8 +484,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick actions — taller tiles with subtitles so they read as
-          distinct primary actions rather than identical text buttons. */}
+      {/* Quick actions — primary capture, then dedicated rest block buttons. */}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => nav('/capture')}
@@ -553,25 +498,36 @@ export default function Home() {
           </span>
         </button>
         <button
-          onClick={() => setRestEdit({ date: todayStr, startTime: '12:00', endTime: '12:30', label: 'Rest' })}
+          onClick={() => setRestEdit({ date: todayStr, startTime: '22:30', endTime: '07:00', label: 'Sleep' })}
           className="rounded-2xl px-4 py-3.5 bg-secondary text-secondary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
           <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
             <Moon className="w-4 h-4" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold leading-tight">Add rest block</span>
-            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Just for today</span>
+            <span className="block text-[14px] font-semibold leading-tight">Sleep</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Add rest block</span>
           </span>
         </button>
         <button
-          onClick={() => nav('/calendar')}
-          className="col-span-2 rounded-2xl px-4 py-3 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          onClick={() => setRestEdit({ date: todayStr, startTime: '12:30', endTime: '13:00', label: 'Meal' })}
+          className="rounded-2xl px-4 py-3.5 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
           <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
-            <CalIcon className="w-4 h-4" />
+            <Utensils className="w-4 h-4" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[14px] font-semibold leading-tight">Calendar</span>
-            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Week & month</span>
+            <span className="block text-[14px] font-semibold leading-tight">Meal</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Add rest block</span>
+          </span>
+        </button>
+        <button
+          onClick={() => setRestEdit({ date: todayStr, startTime: '17:00', endTime: '17:30', label: 'Recovery walk' })}
+          className="rounded-2xl px-4 py-3.5 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
+            <Coffee className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">Recovery</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Add rest block</span>
           </span>
         </button>
       </div>
@@ -628,7 +584,7 @@ export default function Home() {
       </div>
 
       <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-        {FILTERS.map(f => (
+        {DOMAIN_FILTERS.map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)}
             className={filter === f.k ? 'pace-chip-selected shrink-0' : 'pace-chip shrink-0'}>{f.label}</button>
         ))}
@@ -648,24 +604,30 @@ export default function Home() {
                 <AlertTriangle className="w-3 h-3" /> overlaps rest
               </div>
             )}
-            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} />
+            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} onToggleComplete={toggleComplete} />
           </div>
         ))}
 
         {/* Rest blocks stay visible no matter which status filter is active.
             Includes both one-time rest tasks and recurring protected time
             blocks from the user's profile, sorted by start time. */}
-        {todayRestItems.map(r => (
-          <div key={r.key} className="pace-rest">
-            <span className="inline-flex items-center gap-2 min-w-0">
-              <span className="shrink-0">◯</span>
-              <span className="truncate">{r.title}</span>
-            </span>
-            <span className="text-[12px] text-muted-foreground whitespace-nowrap">
-              {r.range || r.note || ''}
-            </span>
-          </div>
-        ))}
+        {todayRestItems.map(r => {
+          const Icon = r.kind === 'sleep' ? Moon
+            : r.kind === 'meal' ? Utensils
+            : r.kind === 'recovery' ? Coffee
+            : Sun;
+          return (
+            <div key={r.key} className="pace-rest">
+              <span className="inline-flex items-center gap-2 min-w-0">
+                <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="truncate">{r.title}</span>
+              </span>
+              <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+                {r.range || r.note || ''}
+              </span>
+            </div>
+          );
+        })}
 
         {doneToday.length > 0 && (
           <div className="pace-card-soft mt-4 text-[12px] text-muted-foreground">
@@ -674,37 +636,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Backlog — schedule-from-backlog shortcut migrated from /plan. */}
-      {backlog.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-semibold">Later</h2>
-            <span className="pace-meta">{backlog.length} unscheduled</span>
-          </div>
-          <div className="mt-2 space-y-2">
-            {backlog.map(t => (
-              <div key={t.id} className="pace-card">
-                <button onClick={() => nav(`/task/${t.id}`)} className="w-full text-left">
-                  <div className="text-[14px] font-medium leading-snug truncate">{t.title}</div>
-                  <div className="text-[12px] mt-0.5 text-muted-foreground">
-                    {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
-                    {t.effort_level ? ` · ${t.effort_level}` : ''}
-                    {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
-                  </div>
-                </button>
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">
-                    <CalIcon className="w-3.5 h-3.5" /> Today
-                  </button>
-                  <button onClick={() => scheduleFromBacklog(t.id, 'tomorrow')} className="pace-btn pace-btn-sm">
-                    Tomorrow
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <RescheduleDialog
         taskId={rescheduleId}
