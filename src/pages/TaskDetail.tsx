@@ -218,11 +218,11 @@ export default function TaskDetail() {
       setEEstHours(''); setEEstMinutes('');
     }
 
-    setELocation('');
+    setELocation((task as any).location ?? '');
     // Open sections that already contain user data so the editor reflects state.
     const hasA = !!task.effort_level || (task.duration_minutes ?? 0) > 0 || !!(task.involves_others || task.others_rely) || task.priority !== 'should';
     const hasB = !!task.scheduled_date || !!task.deadline;
-    const hasC = (Array.isArray(task.subtasks) && task.subtasks.length > 0) || !!task.notes;
+    const hasC = (Array.isArray(task.subtasks) && task.subtasks.length > 0) || !!task.notes || !!(task as any).location;
     setEOpenA(hasA); setEOpenB(hasB); setEOpenC(hasC);
 
     setEditMode(true);
@@ -257,6 +257,7 @@ export default function TaskDetail() {
           subtasks: eSubtasks,
           involves_others: eOthers,
           others_rely: eOthers,
+          location: eLocation.trim() || null,
         } as any,
       });
       toast.success('Saved.');
