@@ -66,8 +66,7 @@ function startOfWeek(d: Date) {
 }
 function fmtTime(min: number) {
   const h = Math.floor(min / 60); const m = min % 60;
-  const am = h < 12; const hh = ((h + 11) % 12) + 1;
-  return `${hh}${m ? ':' + String(m).padStart(2, '0') : ''}${am ? 'a' : 'p'}`;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 function fmtRange(s: number, e: number) { return `${fmtTime(s)} – ${fmtTime(e)}`; }
 
