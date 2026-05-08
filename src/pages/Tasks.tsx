@@ -71,6 +71,7 @@ export default function Tasks() {
         progress: next === 'done' ? 100 : 0,
         completed_at: next === 'done' ? new Date().toISOString() : null,
       } as any });
+      if (next === 'done') toast.success(pickCompletionMessage());
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not update.');
     }
