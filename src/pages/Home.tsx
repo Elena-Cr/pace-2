@@ -245,6 +245,36 @@ export default function Home() {
     return m;
   }, [real]);
 
+  // Heaviest action today (by duration, falling back to Heavy effort or first).
+  // Used by the proactive overload prompt to suggest something to move.
+  const heaviestToday = useMemo(() => {
+    if (!real.length) return null;
+    const sorted = [...real].sort((a, b) =>
+      (b.duration_minutes ?? 0) - (a.duration_minutes ?? 0));
+    return sorted.find(t => (t.duration_minutes ?? 0) > 0)
+      ?? sorted.find(t => t.effort_level === 'Heavy')
+      ?? sorted[0];
+  }, [real]);
+
+  // Backlog (unscheduled actions) for the inline "schedule from backlog" shortcut
+  // migrated from the deprecated /plan screen.
+  const backlog = useMemo(
+    () => tasks.filter(t => !t.scheduled_date && t.status !== 'done').slice(0, 5),
+    [tasks],
+  );
+
+  async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
+    const date = new Date();
+    if (when === 'tomorrow') date.setDate(date.getDate() + 1);
+    const iso = toISODate(date);
+    try {
+      await update.mutateAsync({ id: taskId, patch: { scheduled_date: iso } as any });
+      toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not schedule.');
+    }
+  }
+
   // Next up: prefer in_progress, else nearest
   const nextUp = useMemo(() => {
     const inProg = real.find(t => t.status === 'in_progress');
@@ -295,7 +325,9 @@ export default function Home() {
             <div className="pace-title mt-0.5">{fmtMin(plannedMin) || '0m'} <span className="text-muted-foreground text-[14px] font-normal">of {fmtMin(capMin)}</span></div>
           </div>
           <div className="flex items-center gap-1">
-            <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${capChipClass}`}>{capLabel}</span>
+            {capState !== 'over' && (
+              <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${capChipClass}`}>{capLabel}</span>
+            )}
             <CapacityInfoButton />
           </div>
         </div>
@@ -319,6 +351,29 @@ export default function Home() {
           </button>
         </div>
       </div>
+
+      {/* Proactive overload prompt — replaces the passive "Over capacity" chip
+          when today is over. Migrated from the deprecated /plan screen. */}
+      {capState === 'over' && (
+        <div className="pace-alert mt-3 animate-fade-in">
+          <div className="pace-eyebrow mb-1">
+            <span className="priority-dot should" />Your plan may need adjustment
+          </div>
+          <div className="text-[13px]">
+            You are {fmtMin(plannedMin - capMin)} over capacity. Want to move an
+            action, shorten one, or split it across two days?
+          </div>
+          {heaviestToday && (
+            <div className="mt-2 flex gap-1.5 flex-wrap">
+              <button
+                onClick={() => setRescheduleId(heaviestToday.id)}
+                className="pace-btn-primary pace-btn-sm">
+                Move "{heaviestToday.title.slice(0, 28)}"
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Quick stats — Done & Tomorrow expand inline; Focus jumps to /focus. */}
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -645,6 +700,39 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Backlog — schedule-from-backlog shortcut migrated from /plan. */}
+      {backlog.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[18px] font-semibold">Backlog</h2>
+            <span className="pace-meta">{backlog.length} unscheduled</span>
+          </div>
+          <div className="mt-2 space-y-2">
+            {backlog.map(t => (
+              <div key={t.id} className="pace-card">
+                <button onClick={() => nav(`/task/${t.id}`)} className="w-full text-left">
+                  <div className="text-[14px] font-medium leading-snug truncate">{t.title}</div>
+                  <div className="text-[12px] mt-0.5 text-muted-foreground">
+                    {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
+                    {t.effort_level ? ` · ${t.effort_level}` : ''}
+                    {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
+                  </div>
+                </button>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">
+                    <CalIcon className="w-3.5 h-3.5" /> Today
+                  </button>
+                  <button onClick={() => scheduleFromBacklog(t.id, 'tomorrow')} className="pace-btn pace-btn-sm">
+                    Tomorrow
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <RescheduleDialog
         taskId={rescheduleId}
         open={!!rescheduleId}

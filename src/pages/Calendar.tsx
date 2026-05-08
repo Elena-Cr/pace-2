@@ -647,6 +647,36 @@ export default function CalendarView() {
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
             </div>
 
+            {/* Proactive overload prompt — actionable replacement for the
+                passive "Needs adjustment" ribbon. Shown when the day is over
+                capacity. Migrated from the deprecated /plan screen. */}
+            {summary.state === 'over' && (() => {
+              const heaviest = [...taskItems]
+                .filter(e => e.taskId)
+                .sort((a, b) => (b.duration_minutes ?? 0) - (a.duration_minutes ?? 0))[0];
+              const overBy = Math.max(0, summary.planned - summary.capMin);
+              return (
+                <div className="pace-alert animate-fade-in">
+                  <div className="pace-eyebrow mb-1">
+                    <span className="priority-dot should" />Your plan may need adjustment
+                  </div>
+                  <div className="text-[13px]">
+                    You are {fmtMin(overBy)} over capacity. Want to move an
+                    action, shorten one, or split it across two days?
+                  </div>
+                  {heaviest?.taskId && (
+                    <div className="mt-2 flex gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => setRescheduleId(heaviest.taskId!)}
+                        className="pace-btn-primary pace-btn-sm">
+                        Move "{heaviest.title.slice(0, 28)}"
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Needs attention — collapsible, compact, action-led. */}
             {attentionItems.length > 0 && (
               <NeedsAttention
@@ -845,11 +875,21 @@ export default function CalendarView() {
                       style={{ top: i * HOUR_PX, height: HOUR_PX }} />
                   ))}
 
-                  {/* Overbooking ribbon */}
+                  {/* Overbooking ribbon — actionable: tapping the day jumps
+                      to day view where the full overload prompt lives. */}
                   {summary.state === 'over' && (
-                    <div className="absolute top-0 left-1 right-1 z-20 rounded-md bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))] text-[10px] px-1.5 py-0.5 flex items-center gap-1">
-                      <AlertTriangle className="w-2.5 h-2.5" /> Plan may need adjustment
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setWeekStart(startOfWeek(days[di]));
+                        setDayIdx((days[di].getDay() + 6) % 7);
+                        setView('day');
+                      }}
+                      className="absolute top-0 left-1 right-1 z-20 rounded-md bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))] text-[10px] px-1.5 py-0.5 flex items-center gap-1 hover:bg-[hsl(var(--attention)/0.28)]"
+                      aria-label="Plan may need adjustment — open day view to move an action">
+                      <AlertTriangle className="w-2.5 h-2.5" /> Move an action?
+                    </button>
                   )}
 
                   {/* Events */}
