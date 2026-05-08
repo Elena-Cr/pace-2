@@ -187,8 +187,16 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
 
         {!isSchedule && (
           <div className="mt-3">
-            <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
-            <ReplanReasonChips selected={reason} onSelect={setReason} />
+            <div className="pace-title text-left text-[15px]">Rescheduled. What got in the way?</div>
+            <div className="text-[12px] text-muted-foreground mb-2">Rescheduling is part of good planning.</div>
+            <ReplanReasonChips
+              selected={reason}
+              onSelect={(r) => { setCustomMode(false); setReason(r); }}
+              customSelected={customMode}
+              customText={customText}
+              onSelectCustom={() => { setCustomMode(true); setReason(undefined); }}
+              onCustomTextChange={setCustomText}
+            />
           </div>
         )}
 
