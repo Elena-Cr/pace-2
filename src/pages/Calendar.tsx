@@ -441,6 +441,28 @@ export default function CalendarView() {
     if (reason) await update.mutateAsync({ id: replanFor.taskId, patch: { replanning_reason: reason } as any });
     toast.success('Task moved. Progress preserved.');
     setReplanFor(null);
+    setReplanCustomMode(false);
+    setReplanCustomText('');
+  }
+
+  async function saveCustomReplanReason() {
+    if (!replanFor) return;
+    const text = replanCustomText.trim();
+    if (text) {
+      // No `replanning_reason_text` column exists; append the custom reason
+      // to the task's notes as a dated entry.
+      const t = allTasks.find(x => x.id === replanFor.taskId);
+      const existing = (t as any)?.notes ?? '';
+      const stamp = new Date().toLocaleDateString();
+      const appended = existing
+        ? `${existing}\n\n[${stamp}] Reschedule reason: ${text}`
+        : `[${stamp}] Reschedule reason: ${text}`;
+      await update.mutateAsync({ id: replanFor.taskId, patch: { notes: appended } as any });
+    }
+    toast.success('Task moved. Progress preserved.');
+    setReplanFor(null);
+    setReplanCustomMode(false);
+    setReplanCustomText('');
   }
 
   const now = new Date();
