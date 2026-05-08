@@ -99,17 +99,17 @@ export default function Home() {
   const tomorrowTasks = useMemo(() => getTomorrowTasks(tasks, tomorrowStr), [tasks, tomorrowStr]);
   const tomorrowCount = tomorrowTasks.length;
 
-  async function nudge(id: string, kind: 'start' | 'reschedule' | 'block' | 'tiny') {
-    if (kind === 'start') { nav('/focus', { state: { taskId: id, minutes: 15 } }); return; }
+  async function nudge(id: string, kind: 'reschedule' | 'block' | 'later') {
     if (kind === 'reschedule') { setRescheduleId(id); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
-    if (kind === 'tiny') {
+    if (kind === 'later') {
       await update.mutateAsync({ id, patch: {
-        duration_minutes: 10,
-        scheduled_date: todayISO(),
-        next_action: t.next_action || 'Just open it for 10 minutes',
+        scheduled_date: null,
+        start_time: null,
+        end_time: null,
+        status: 'not_started',
       } as any });
-      toast.success('Made it tiny. Ten minutes is a real start.');
+      toast.success('Moved to Later.');
     } else {
       await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
       toast.success('Marked as blocked. Not your fault.');
