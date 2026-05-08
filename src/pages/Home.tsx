@@ -127,6 +127,54 @@ export default function Home() {
 
   const todayTasks = useMemo(() => getTodayTasks(tasks, todayStr), [tasks, todayStr]);
   const restBlocks = useMemo(() => getRestBlocksForDate(tasks, todayStr), [tasks, todayStr]);
+
+  // Unified rest agenda for today: one-time rest tasks + recurring fixed
+  // blocks from the user's profile (sleep/meal/recovery/custom). Sorted by
+  // start time so the user sees when each protected block falls.
+  const todayRestItems = useMemo(() => {
+    const toMin = (s?: string | null) => {
+      if (!s) return null;
+      const [h, m] = s.split(':').map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+    const fmtT = (min: number) => {
+      const h = Math.floor(min / 60), m = min % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    const fmtRange = (s: number | null, e: number | null) =>
+      s == null || e == null ? '' : `${fmtT(s)} – ${fmtT(e)}`;
+
+    const items: Array<{ key: string; title: string; range: string; startMin: number; note?: string | null }> = [];
+
+    // One-time rest tasks
+    restBlocks.forEach((t: any) => {
+      const s = toMin(t.start_time);
+      const e = toMin(t.end_time);
+      items.push({
+        key: `rest-${t.id}`,
+        title: t.title,
+        range: fmtRange(s, e),
+        startMin: s ?? Number.POSITIVE_INFINITY,
+        note: t.next_action,
+      });
+    });
+
+    // Recurring fixed blocks from profile
+    const blocks = (userProfile?.default_time_blocks ?? []).map((b: any) => ({
+      label: b.label, start: b.start, end: b.end, kind: b.kind, days: b.days,
+    }));
+    expandTimeBlocks(blocks, todayStr).forEach((ev, i) => {
+      items.push({
+        key: `fix-${i}-${ev.startMin}`,
+        title: ev.title,
+        range: fmtRange(ev.startMin, ev.endMin),
+        startMin: ev.startMin,
+      });
+    });
+
+    return items.sort((a, b) => a.startMin - b.startMin);
+  }, [restBlocks, userProfile, todayStr]);
+
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
 
