@@ -79,6 +79,7 @@ export default function Capture() {
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
   const [othersInvolved, setOthersInvolved] = useState(false);
+  const [countsTowardCapacity, setCountsTowardCapacity] = useState(true);
   const [subtasks, setSubtasks] = useState<{ id: string; title: string; done: boolean }[]>([]);
   const [subInput, setSubInput] = useState('');
   const [busy, setBusy] = useState(false);
