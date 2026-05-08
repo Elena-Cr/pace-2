@@ -44,28 +44,26 @@ export default function TaskMeta({ task, compact = false, omitDate = false }: { 
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${compact ? 'text-[11px]' : ''}`}>
-      {whenLabel && <Chip icon={CalendarDays} label="Scheduled" value={whenLabel} />}
-      {/* When a deadline already exists, the "not scheduled" state is just
-          a planning gap — render it neutrally so the chips don't read as
-          contradicting each other. Without a deadline we still flag it. */}
+      {whenLabel && <Chip icon={CalendarDays} label="Scheduled" value={whenLabel} compact={compact} />}
       {!whenLabel && showDeadline && (
-        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled yet" />
+        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled yet" compact={compact} />
       )}
       {!whenLabel && !showDeadline && (
-        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" />
+        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" compact={compact} />
       )}
-      {task.priority && <Chip icon={Flag} label="Priority" value={PRIORITY_LABEL[task.priority]} />}
-      {task.domain && <Chip icon={Activity} label="Category" value={DOMAIN_LABEL[task.domain]} />}
+      {task.priority && <Chip icon={Flag} label="Priority" value={PRIORITY_LABEL[task.priority]} compact={compact} />}
+      {task.domain && <Chip icon={Activity} label="Category" value={DOMAIN_LABEL[task.domain]} compact={compact} />}
       {task.duration_minutes != null && task.duration_minutes > 0 && (
-        <Chip icon={Clock} label="Estimate" value={fmtMin(task.duration_minutes)} />
+        <Chip icon={Clock} label="Estimate" value={fmtMin(task.duration_minutes)} compact={compact} />
       )}
-      {task.effort_level && <Chip icon={Activity} label="Effort" value={task.effort_level} />}
-      {showDeadline && <Chip icon={AlertTriangle} label="Deadline" value={formatDeadline(task.deadline ?? null)} />}
+      {task.effort_level && <Chip icon={Activity} label="Effort" value={task.effort_level} compact={compact} />}
+      {showDeadline && <Chip icon={AlertTriangle} label="Deadline" value={formatDeadline(task.deadline ?? null)} compact={compact} />}
       {showOthers && (
-        <Chip icon={Users} label="People" value="Involves others" />
+        <Chip icon={Users} label="People" value="Involves others" compact={compact} />
       )}
+      {task.location && <Chip icon={MapPin} label="Location" value={task.location} compact={compact} />}
       {(task.reschedule_count ?? 0) > 0 && (
-        <Chip icon={Repeat} label="Rescheduled" value={`${task.reschedule_count}×`} />
+        <Chip icon={Repeat} label="Rescheduled" value={`${task.reschedule_count}×`} compact={compact} />
       )}
     </div>
   );
