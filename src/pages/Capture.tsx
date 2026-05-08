@@ -198,7 +198,9 @@ export default function Capture() {
   async function save() {
     if (!user) return;
     if (!title.trim()) { toast.error('Add a title to start.'); return; }
-    if (!estimate || Number(estimate) <= 0) { toast.error('Add a time estimate.'); return; }
+    if (!domain) { toast.error('Pick a category.'); return; }
+    const isLater = when === 'backlog' && !scheduledISO;
+    if (!isLater && (!estimate || Number(estimate) <= 0)) { toast.error('Add a time estimate.'); return; }
     if (scheduledISO && !hasTimeRange) {
       toast.error('Pick a start time for this day.');
       return;
@@ -222,6 +224,7 @@ export default function Capture() {
         start_time,
         end_time,
         location: location.trim() || null,
+        counts_toward_capacity: countsTowardCapacity,
       } as any);
       toast.success('Captured.');
       nav('/');
