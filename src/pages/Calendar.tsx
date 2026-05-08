@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
+import CapacityInfoButton from '@/components/CapacityInfoButton';
 import RescheduleDialog from '@/components/RescheduleDialog';
 import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import TaskMeta from '@/components/TaskMeta';
