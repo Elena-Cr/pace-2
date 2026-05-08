@@ -232,14 +232,8 @@ export default function TaskDetail() {
     if (!task) return;
     if (!eTitle.trim()) { toast.error('Add a title to save.'); return; }
     if (!eEstimate || Number(eEstimate) <= 0) { toast.error('Add a time estimate.'); return; }
-    if (eScheduledISO && !eHasTimeRange) {
-      toast.error('Pick a start and end time for this day.');
-      return;
-    }
     setSavingEdit(true);
     try {
-      const start_time = eHasTimeRange && eScheduledISO ? `${eStartTime}:00` : null;
-      const end_time = eHasTimeRange && eScheduledISO ? `${eEndTime}:00` : null;
       await updateMut.mutateAsync({
         id: task.id,
         patch: {
@@ -249,9 +243,6 @@ export default function TaskDetail() {
           deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
           duration_minutes: eEstimate ? Number(eEstimate) : null,
           effort_level: eEffort,
-          scheduled_date: eScheduledISO,
-          start_time,
-          end_time,
           next_action: eNextAction.trim() || null,
           notes: eNotes.trim() || null,
           subtasks: eSubtasks,
