@@ -676,37 +676,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Backlog — schedule-from-backlog shortcut migrated from /plan. */}
-      {backlog.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-semibold">Later</h2>
-            <span className="pace-meta">{backlog.length} unscheduled</span>
-          </div>
-          <div className="mt-2 space-y-2">
-            {backlog.map(t => (
-              <div key={t.id} className="pace-card">
-                <button onClick={() => nav(`/task/${t.id}`)} className="w-full text-left">
-                  <div className="text-[14px] font-medium leading-snug truncate">{t.title}</div>
-                  <div className="text-[12px] mt-0.5 text-muted-foreground">
-                    {t.duration_minutes ? fmtMin(t.duration_minutes) : 'No estimate'}
-                    {t.effort_level ? ` · ${t.effort_level}` : ''}
-                    {t.deadline ? ` · ${formatDeadline(t.deadline)}` : ''}
-                  </div>
-                </button>
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => scheduleFromBacklog(t.id, 'today')} className="pace-btn-primary pace-btn-sm">
-                    <CalIcon className="w-3.5 h-3.5" /> Today
-                  </button>
-                  <button onClick={() => scheduleFromBacklog(t.id, 'tomorrow')} className="pace-btn pace-btn-sm">
-                    Tomorrow
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <RescheduleDialog
         taskId={rescheduleId}
