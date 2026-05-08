@@ -614,30 +614,9 @@ export default function Home() {
                   <div className="text-[13px] mt-1">Pick what feels right for now.</div>
                 )}
                 <div className="mt-2 flex gap-1.5 flex-wrap">
-                  {heavyMoved ? (
-                    <>
-                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn-primary pace-btn-sm">Reduce to 10 min</button>
-                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Remove</button>
-                    </>
-                  ) : moved === 0 ? (
-                    <>
-                      <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
-                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10 min</button>
-                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => nudge(t.id, 'start')} className="pace-btn-primary pace-btn-sm">Start now</button>
-                      <button onClick={() => nudge(t.id, 'tiny')} className="pace-btn pace-btn-sm">Reduce to 10 min</button>
-                      <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn pace-btn-sm">Reschedule</button>
-                      <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark blocked</button>
-                      <button onClick={() => nav(`/task/${t.id}`)} className="pace-btn-ghost pace-btn-sm">Open</button>
-                    </>
-                  )}
+                  <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn-primary pace-btn-sm">Reschedule</button>
+                  <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark as blocked</button>
+                  <button onClick={() => nudge(t.id, 'later')} className="pace-btn pace-btn-sm">Move to Later</button>
                 </div>
               </div>
             );
