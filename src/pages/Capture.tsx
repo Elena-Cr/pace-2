@@ -323,6 +323,7 @@ export default function Capture() {
           <Switch id="capture-capacity" checked={countsTowardCapacity} onCheckedChange={setCountsTowardCapacity} />
         </div>
 
+        <p className="text-[13px] text-muted-foreground">
           Optional fields — fill these in now, or whenever it feels right.
         </p>
 
