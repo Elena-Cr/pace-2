@@ -445,77 +445,12 @@ export default function TaskDetail() {
             </button>
           </SectionToggle>
 
-          {/* SECTION B: Scheduling & Deadline */}
+          {/* SECTION B: Deadline */}
           <SectionToggle
             open={eOpenB} onToggle={() => setEOpenB(o => !o)}
-            title="Scheduling & Deadline"
-            hasValue={!!eScheduledISO || !!eDeadline}
+            title="Deadline"
+            hasValue={!!eDeadline}
           >
-            <div>
-              <label className="pace-field-label">What date would you like to schedule this for?</label>
-              <p className="pace-meta mt-0.5 mb-1.5">This is when you plan to work on it.</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {([
-                  { k: 'today', label: 'Today' },
-                  { k: 'tomorrow', label: 'Tomorrow' },
-                  { k: 'backlog', label: 'Backlog' },
-                ] as const).map(opt => (
-                  <button key={opt.k} type="button" onClick={() => setEWhen(opt.k)}
-                    className={eWhen === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
-                    {opt.label}
-                  </button>
-                ))}
-                <Popover open={eDatePopoverOpen} onOpenChange={setEDatePopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        eWhen === 'pick' && ePickedDate ? 'pace-chip-filled' : 'pace-chip',
-                        'inline-flex items-center gap-1.5'
-                      )}
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5" />
-                      {eWhen === 'pick' && ePickedDate ? format(ePickedDate, 'MMM d') : 'Pick a date'}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={ePickedDate}
-                      onSelect={(d) => {
-                        if (d) {
-                          setEPickedDate(d);
-                          setEWhen('pick');
-                          setEDatePopoverOpen(false);
-                        }
-                      }}
-                      initialFocus
-                      className={cn('p-3 pointer-events-auto')}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {eScheduledISO && (
-                <div className="mt-3">
-                  <label className="pace-field-label">Start time</label>
-                  <select
-                    className="pace-field"
-                    value={eStartTime}
-                    onChange={e => setEStartTime(e.target.value)}
-                  >
-                    <option value="">Select a time…</option>
-                    {TIME_OPTIONS.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  {eHasTimeRange && (
-                    <p className="pace-meta mt-1">Ends at {eEndTime}.</p>
-                  )}
-                </div>
-              )}
-            </div>
-
             <div>
               <label className="pace-field-label">Does this have a deadline? (optional)</label>
               <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
