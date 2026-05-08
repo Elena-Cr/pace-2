@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, MoveRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, MoveRight, Moon, Pencil, Trash2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
@@ -14,6 +14,7 @@ import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import TaskMeta from '@/components/TaskMeta';
 
 function timeStrToMin(t: string): number {
@@ -210,6 +211,10 @@ export default function CalendarView() {
   const [replanCustomMode, setReplanCustomMode] = useState(false);
   const [replanCustomText, setReplanCustomText] = useState('');
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  // Empty-slot tap surfaces a tiny choice between "New action" and "Add rest block".
+  const [slotChoice, setSlotChoice] = useState<{ dayIdx: number; hour: number } | null>(null);
+  // Mount state for the one-time rest block create/edit dialog.
+  const [restEdit, setRestEdit] = useState<RestBlockInitial | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   // Tracks the event id currently being dropped so we can hide it from the
   // source slot immediately, before the mutation round-trip completes.
