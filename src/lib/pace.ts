@@ -116,14 +116,14 @@ function fmtClock(t: string | null): string {
   const [h, m] = t.split(':');
   const hh = Number(h), mm = Number(m || 0);
   if (Number.isNaN(hh)) return '';
-  const am = hh < 12; const h12 = ((hh + 11) % 12) + 1;
-  return `${h12}${mm ? ':' + String(mm).padStart(2, '0') : ''}${am ? 'a' : 'p'}`;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
 export function formatScheduledWhen(
   scheduledDate: string | null,
   startTime: string | null,
   endTime: string | null,
+  opts: { omitDate?: boolean } = {},
 ): string {
   if (!scheduledDate) return '';
   const [y, m, d] = scheduledDate.split('-').map(Number);
@@ -137,6 +137,11 @@ export function formatScheduledWhen(
   else label = dt.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   const s = fmtClock(startTime);
   const e = fmtClock(endTime);
+  if (opts.omitDate) {
+    if (s && e) return `${s} – ${e}`;
+    if (s) return s;
+    return '';
+  }
   if (s && e) return `${label}, ${s} – ${e}`;
   if (s) return `${label}, ${s}`;
   return label;
