@@ -530,6 +530,39 @@ export default function CalendarView() {
         </button>
       </div>
 
+      {/* Category colour legend — only for day/week views, only categories
+          present in the currently visible events. Horizontally scrollable. */}
+      {(view === 'day' || view === 'week') && (() => {
+        const scope = view === 'day'
+          ? visibleEvents.filter(e => e.day === dayIdx)
+          : visibleEvents;
+        const present = new Set<Domain>();
+        scope.forEach(e => {
+          if (e.kind === 'task' && e.domain && e.domain !== 'rest') {
+            present.add(e.domain as Domain);
+          }
+        });
+        if (present.size === 0) return null;
+        const ordered: Domain[] = (['academic', 'work', 'social', 'personal'] as Domain[])
+          .filter(d => present.has(d));
+        return (
+          <div className="mt-2 -mx-1 px-1 overflow-x-auto">
+            <div className="flex gap-3 min-w-min text-[11px] text-muted-foreground">
+              {ordered.map(d => (
+                <span key={d} className="inline-flex items-center gap-1.5 shrink-0">
+                  <span
+                    aria-hidden="true"
+                    className="w-2.5 h-2.5 rounded-sm"
+                    style={{ background: DOMAIN_COLOR_VAR[d] }}
+                  />
+                  {DOMAIN_LABEL[d]}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Day picker for day view — fixed 7 across, no horizontal scroll.
           Each chip has a stable height: an always-present 6px indicator row
           below the date number, so adding/removing a status dot never
@@ -837,7 +870,7 @@ export default function CalendarView() {
                         className={`absolute rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
                         style={{ top, height, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`, zIndex: 5 }}>
                         <div className="flex gap-1 items-start">
-                          <span className={`w-0.5 self-stretch rounded-full ${dc.bar} shrink-0`} />
+                          <span className={`w-1 self-stretch rounded-full ${dc.bar} shrink-0`} />
                           <div className="min-w-0 flex-1">
                             <div className="text-[10px] font-semibold leading-tight truncate">{ev.title}</div>
                             <div className="text-[9px] text-muted-foreground truncate">{fmtRange(ev.startMin, ev.endMin)}</div>
