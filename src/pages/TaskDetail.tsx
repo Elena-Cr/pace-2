@@ -247,7 +247,6 @@ export default function TaskDetail() {
           notes: eNotes.trim() || null,
           subtasks: eSubtasks,
           involves_others: eOthers,
-          others_rely: eOthers,
           location: eLocation.trim() || null,
         } as any,
       });
