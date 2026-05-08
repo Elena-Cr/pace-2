@@ -644,24 +644,30 @@ export default function Home() {
                 <AlertTriangle className="w-3 h-3" /> overlaps rest
               </div>
             )}
-            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} />
+            <TaskCard task={t} onOpen={(task) => nav(`/task/${task.id}`)} onToggleComplete={toggleComplete} />
           </div>
         ))}
 
         {/* Rest blocks stay visible no matter which status filter is active.
             Includes both one-time rest tasks and recurring protected time
             blocks from the user's profile, sorted by start time. */}
-        {todayRestItems.map(r => (
-          <div key={r.key} className="pace-rest">
-            <span className="inline-flex items-center gap-2 min-w-0">
-              <span className="shrink-0">◯</span>
-              <span className="truncate">{r.title}</span>
-            </span>
-            <span className="text-[12px] text-muted-foreground whitespace-nowrap">
-              {r.range || r.note || ''}
-            </span>
-          </div>
-        ))}
+        {todayRestItems.map(r => {
+          const Icon = r.kind === 'sleep' ? Moon
+            : r.kind === 'meal' ? Utensils
+            : r.kind === 'recovery' ? Coffee
+            : Sun;
+          return (
+            <div key={r.key} className="pace-rest">
+              <span className="inline-flex items-center gap-2 min-w-0">
+                <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="truncate">{r.title}</span>
+              </span>
+              <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+                {r.range || r.note || ''}
+              </span>
+            </div>
+          );
+        })}
 
         {doneToday.length > 0 && (
           <div className="pace-card-soft mt-4 text-[12px] text-muted-foreground">
