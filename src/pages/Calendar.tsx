@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
+import CapacityInfoButton from '@/components/CapacityInfoButton';
 import RescheduleDialog from '@/components/RescheduleDialog';
 import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import TaskMeta from '@/components/TaskMeta';
@@ -607,6 +608,7 @@ export default function CalendarView() {
                     size="md"
                   />
                   <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                  <CapacityInfoButton />
                 </div>
               </div>
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
