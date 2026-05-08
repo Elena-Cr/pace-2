@@ -546,19 +546,12 @@ export default function CalendarView() {
           {days.map((d, i) => {
             const active = i === dayIdx;
             const summary = daySummary[i];
-            const dotClass =
-              summary.state === 'over' ? 'bg-[hsl(var(--attention))]' :
-              summary.state === 'close' ? 'bg-[hsl(var(--warning))]' :
-              'bg-transparent';
             return (
               <button key={i} onClick={() => setDayIdx(i)}
-                className={`flex-1 min-w-0 px-1 py-2 rounded-2xl text-center ${active ? 'bg-muted-foreground/15 border border-muted-foreground/40' : 'bg-card border border-border/60'}`}>
+                className={`flex-1 min-w-0 px-1 py-1.5 rounded-2xl text-center ${active ? 'bg-muted-foreground/15 border border-muted-foreground/40' : 'bg-card border border-border/60'}`}>
                 <div className="text-[9px] font-semibold uppercase tracking-wider opacity-80 truncate">{DAYS[i]}</div>
                 <div className="text-[14px] font-semibold leading-tight">{d.getDate()}</div>
                 <div className="text-[9px] text-muted-foreground mt-0.5">{scheduledLabel(summary.planned)}</div>
-                <div className="h-1.5 mt-0.5 flex items-center justify-center" aria-hidden="true">
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
-                </div>
               </button>
             );
           })}
