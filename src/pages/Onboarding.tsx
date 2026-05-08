@@ -114,28 +114,7 @@ export default function Onboarding() {
       canNext: true,
     },
     {
-      eyebrow: '03 · Pace',
-      title: 'How many actions feel right per day?',
-      sub: 'An action is one meaningful task — something you can finish or meaningfully advance in a single day. Most students find 3–5 works well.',
-      body: (
-        <div className="space-y-3">
-          <div className="flex gap-2 justify-center">
-            {[2, 3, 4, 5, 6, 8].map(n => (
-              <button key={n} onClick={() => setTasksPerDay(n)}
-                className={tasksPerDay === n ? 'pace-chip-filled' : 'pace-chip'}>
-                {n}
-              </button>
-            ))}
-          </div>
-          <p className="pace-meta text-center">
-            e.g. draft the intro section, reply to all emails, prepare for tomorrow's lecture.
-          </p>
-        </div>
-      ),
-      canNext: true,
-    },
-    {
-      eyebrow: '04 · Energy (optional)',
+      eyebrow: '03 · Energy (optional)',
       title: 'When do you usually have the most energy?',
       sub: 'You can skip this and set it later in Settings.',
       body: (
