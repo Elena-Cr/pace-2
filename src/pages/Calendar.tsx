@@ -875,11 +875,21 @@ export default function CalendarView() {
                       style={{ top: i * HOUR_PX, height: HOUR_PX }} />
                   ))}
 
-                  {/* Overbooking ribbon */}
+                  {/* Overbooking ribbon — actionable: tapping the day jumps
+                      to day view where the full overload prompt lives. */}
                   {summary.state === 'over' && (
-                    <div className="absolute top-0 left-1 right-1 z-20 rounded-md bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))] text-[10px] px-1.5 py-0.5 flex items-center gap-1">
-                      <AlertTriangle className="w-2.5 h-2.5" /> Plan may need adjustment
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setWeekStart(startOfWeek(days[di]));
+                        setDayIdx((days[di].getDay() + 6) % 7);
+                        setView('day');
+                      }}
+                      className="absolute top-0 left-1 right-1 z-20 rounded-md bg-[hsl(var(--attention)/0.18)] text-[hsl(var(--attention))] text-[10px] px-1.5 py-0.5 flex items-center gap-1 hover:bg-[hsl(var(--attention)/0.28)]"
+                      aria-label="Plan may need adjustment — open day view to move an action">
+                      <AlertTriangle className="w-2.5 h-2.5" /> Move an action?
+                    </button>
                   )}
 
                   {/* Events */}
