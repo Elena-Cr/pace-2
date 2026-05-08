@@ -69,6 +69,13 @@ function fmtTime(min: number) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 function fmtRange(s: number, e: number) { return `${fmtTime(s)} – ${fmtTime(e)}`; }
+function scheduledLabel(min: number) {
+  if (!min) return 'free';
+  const h = Math.floor(min / 60); const m = min % 60;
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m} mins`;
+}
 
 // Sample non-task blocks repeated each weekday
 const FIXED_BLOCKS: Array<Omit<CalEvent, 'id' | 'day'>> = [
