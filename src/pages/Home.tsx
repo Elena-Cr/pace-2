@@ -614,11 +614,18 @@ export default function Home() {
           </div>
         ))}
 
-        {/* Rest blocks stay visible no matter which status filter is active. */}
-        {restBlocks.map(t => (
-          <div key={t.id} className="pace-rest">
-            <span>◯ {t.title}</span>
-            <span>{t.next_action ?? ''}</span>
+        {/* Rest blocks stay visible no matter which status filter is active.
+            Includes both one-time rest tasks and recurring protected time
+            blocks from the user's profile, sorted by start time. */}
+        {todayRestItems.map(r => (
+          <div key={r.key} className="pace-rest">
+            <span className="inline-flex items-center gap-2 min-w-0">
+              <span className="shrink-0">◯</span>
+              <span className="truncate">{r.title}</span>
+            </span>
+            <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+              {r.range || r.note || ''}
+            </span>
           </div>
         ))}
 
