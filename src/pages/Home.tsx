@@ -49,9 +49,10 @@ export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialFilter = (() => {
     const f = searchParams.get('filter');
-    return (f === 'in_progress' || f === 'blocked' || f === 'nearly_done') ? (f as Status) : 'all';
+    if (f === 'academic' || f === 'work' || f === 'social' || f === 'personal') return f as Domain;
+    return 'all';
   })();
-  const [filter, setFilter] = useState<'all' | Status>(initialFilter);
+  const [filter, setFilter] = useState<'all' | Domain>(initialFilter);
   // Inline-expand state for stat cards (D.2 / D.3).
   const [showDone, setShowDone] = useState(false);
   const [showTomorrow, setShowTomorrow] = useState(false);
