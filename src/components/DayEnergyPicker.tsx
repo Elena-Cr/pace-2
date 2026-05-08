@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, Pencil } from 'lucide-react';
 import { useUpsertCapacity } from '@/hooks/useDailyCapacity';
 import {
   DropdownMenu,
