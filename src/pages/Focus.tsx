@@ -308,8 +308,8 @@ export default function Focus() {
       }).eq('id', sessionId);
     }
     if (outcome === 'completed' && task) {
-      await update.mutateAsync({ id: task.id, patch: { status: 'done', progress: 100 } as any });
-      toast.success('Done. That was real work.');
+      await update.mutateAsync({ id: task.id, patch: { status: 'done', progress: 100, completed_at: new Date().toISOString() } as any });
+      toast.success(pickCompletionMessage());
       nav('/');
     } else if (outcome === 'more_time' && task) {
       // Use the canonical status→progress mapping so we agree with TaskDetail.
