@@ -677,11 +677,11 @@ export default function CalendarView() {
               <NeedsAttention
                 items={attentionItems}
                 onReschedule={(ev) => { setOpen(null); if (ev.taskId) setRescheduleId(ev.taskId); }}
-                onReduce={async (ev) => {
+                onLater={async (ev) => {
                   if (!ev.taskId) return;
                   try {
-                    await update.mutateAsync({ id: ev.taskId, patch: { duration_minutes: 10 } as any });
-                    toast.success('Reduced to 10 minutes.');
+                    await update.mutateAsync({ id: ev.taskId, patch: { scheduled_date: null, start_time: null, end_time: null, status: 'not_started' } as any });
+                    toast.success('Moved to Later.');
                   } catch (err: any) { toast.error(err?.message ?? 'Could not update.'); }
                 }}
                 onBlock={async (ev) => {
@@ -691,7 +691,6 @@ export default function CalendarView() {
                     toast.success('Marked as blocked.');
                   } catch (err: any) { toast.error(err?.message ?? 'Could not update.'); }
                 }}
-                onStart={(ev) => nav('/focus', { state: { taskId: ev.taskId } })}
               />
             )}
 
