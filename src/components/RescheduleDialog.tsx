@@ -75,13 +75,6 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   async function confirm() {
     if (!task) return;
     if (selected < todayISO()) { toast.error('Pick today or a later date.'); return; }
-    const hasRange = !!startTime && !!endTime
-      && timeStringToMin(endTime)! > timeStringToMin(startTime)!;
-    const hadRange = !!startTime || !!endTime;
-    if (hadRange && !hasRange) {
-      toast.error('End time must be after start time.');
-      return;
-    }
     try {
       // Only bump reschedule_count + flip status when the *date* actually
       // changes. Time-only or estimate-only edits within the same day are
@@ -96,14 +89,23 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
           mood: mood ?? undefined,
         });
       }
-      patch.start_time = hasRange ? `${startTime}:00` : null;
-      patch.end_time = hasRange ? `${endTime}:00` : null;
       const h = Math.max(0, Math.floor(Number(estHours) || 0));
       const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
       const totalMin = h * 60 + m;
+      patch.start_time = startTime ? `${startTime}:00` : null;
+      // End time is derived from start + estimate so the calendar can still
+      // place the action; users no longer pick it explicitly.
+      if (startTime && totalMin > 0) {
+        const [sh, sm] = startTime.split(':').map(Number);
+        const endMin = sh * 60 + sm + totalMin;
+        const eh = Math.floor(endMin / 60) % 24;
+        const em = endMin % 60;
+        patch.end_time = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`;
+      } else {
+        patch.end_time = null;
+      }
       if (totalMin > 0) patch.duration_minutes = totalMin;
       if (!isSchedule && dateChanged && customMode && customText.trim()) {
-        // No `replanning_reason_text` column; append to notes as a fallback.
         const stamp = new Date().toLocaleDateString();
         const existing = (task as any).notes ?? '';
         patch.notes = existing
@@ -116,6 +118,23 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
         dateChanged ? 'Task moved. Progress preserved.' :
         'Updated.'
       );
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not move.');
+    }
+  }
+
+  async function moveToLater() {
+    if (!task) return;
+    try {
+      const patch: any = buildMoveToLaterPatch(task);
+      // Preserve the (possibly edited) time estimate the user typed in the dialog.
+      const h = Math.max(0, Math.floor(Number(estHours) || 0));
+      const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
+      const totalMin = h * 60 + m;
+      if (totalMin > 0) patch.duration_minutes = totalMin;
+      await update.mutateAsync({ id: task.id, patch });
+      toast.success('Moved to Later. Time estimate kept.');
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
