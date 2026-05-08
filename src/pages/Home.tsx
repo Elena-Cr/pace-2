@@ -203,16 +203,9 @@ export default function Home() {
     return out;
   }, [tasks, userProfile, todayStr]);
 
-  // Important without a deadline (recurring or must-priority).
-  const { templates } = useTaskSuggestions(user?.id);
-  const recurringStems = useMemo(
-    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
-    [templates],
-  );
-  const noDeadlineHighValue = useMemo(
-    () => getNoDeadlineHighValue(tasks, recurringStems, stem),
-    [tasks, recurringStems],
-  );
+  // No-deadline tracking removed per spec.
+  const { templates: _templates } = useTaskSuggestions(user?.id);
+  void _templates; void stem;
 
   // Capacity math — daily override (daily_capacity row) takes precedence,
   // otherwise fall back to the user's profile default capacity + typical
