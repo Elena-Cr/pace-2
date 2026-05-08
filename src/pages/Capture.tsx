@@ -220,6 +220,7 @@ export default function Capture() {
         scheduled_date: scheduledISO,
         start_time,
         end_time,
+        location: location.trim() || null,
       } as any);
       toast.success('Captured.');
       nav('/');
