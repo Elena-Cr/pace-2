@@ -13,8 +13,11 @@ import {
   type Task,
   type TaskWarning,
 } from '@/lib/scheduling';
-import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, CalendarPlus } from 'lucide-react';
+import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, CalendarX, CalendarPlus, CalendarSync } from 'lucide-react';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTaskMutations } from '@/hooks/useTasks';
+import { toast } from 'sonner';
 
 type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'scheduled' | 'done';
 type DomainFilter = 'all' | Domain | 'none';
@@ -51,6 +54,7 @@ export default function Tasks() {
   const nav = useNavigate();
   const { user } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
+  const { update } = useTaskMutations();
   const { templates } = useTaskSuggestions(user?.id);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialGroup: GroupKey = isGroupKey(searchParams.get('group')) ? (searchParams.get('group') as GroupKey) : 'action';
@@ -58,6 +62,19 @@ export default function Tasks() {
   const [domain, setDomain] = useState<DomainFilter>('all');
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const today = todayISO();
+
+  async function toggleComplete(t: { id: string; status: string }) {
+    const next = t.status === 'done' ? 'not_started' : 'done';
+    try {
+      await update.mutateAsync({ id: t.id, patch: {
+        status: next as any,
+        progress: next === 'done' ? 100 : 0,
+        completed_at: next === 'done' ? new Date().toISOString() : null,
+      } as any });
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not update.');
+    }
+  }
 
   // Sync group ↔ URL so deep-links from Home (e.g. ?group=no_deadline) work.
   useEffect(() => {
@@ -107,64 +124,40 @@ export default function Tasks() {
 
   return (
     <AppShell>
-      <header className="flex items-start justify-between gap-3 mb-5">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight">Actions</h1>
-          <p className="text-muted-foreground text-[15px]">
-            Your full list — including unscheduled and missed work.
-          </p>
-        </div>
-        <button
-          onClick={() => nav('/focus')}
-          className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-[0_4px_14px_hsl(var(--primary)/0.3)] transition active:scale-95"
-        >
-          <Timer className="w-4 h-4" />
-          Start Focus
-        </button>
+      <header className="mb-5 space-y-1">
+        <h1 className="text-3xl font-semibold tracking-tight">Actions</h1>
+        <p className="text-muted-foreground text-[15px] w-full">
+          Your full list — including unscheduled and missed work.
+        </p>
       </header>
 
-      <section aria-label="Task group" className="mb-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {GROUPS.map(({ k, label, icon: Icon }) => {
-            const n = (counts as any)[k]?.length ?? 0;
-            const active = group === k;
-            return (
-              <button
-                key={k}
-                onClick={() => setGroup(k)}
-                className={active ? 'pace-chip-selected' : 'pace-chip'}
-                aria-pressed={active}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-                <span className="ml-1 opacity-70">{n}</span>
-              </button>
-            );
-          })}
-        </div>
+      <section aria-label="Filters" className="mb-5 flex items-center gap-2">
+        <Select value={group} onValueChange={(v) => setGroup(v as GroupKey)}>
+          <SelectTrigger className="flex-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {GROUPS.map(({ k, label }) => {
+              const n = (counts as any)[k]?.length ?? 0;
+              return (
+                <SelectItem key={k} value={k}>
+                  {label} ({n})
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+        <Select value={domain} onValueChange={(v) => setDomain(v as DomainFilter)}>
+          <SelectTrigger className="flex-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DOMAIN_FILTERS.map(({ k, label }) => (
+              <SelectItem key={k} value={k}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </section>
-
-      <section aria-label="Category filter" className="mb-5">
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {DOMAIN_FILTERS.map(({ k, label }) => {
-            const active = domain === k;
-            return (
-              <button
-                key={k}
-                onClick={() => setDomain(k)}
-                className={active ? 'pace-chip-selected' : 'pace-chip'}
-                aria-pressed={active}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {false && (
-        <p className="text-[13px] text-muted-foreground mb-3" />
-      )}
 
       {isLoading ? (
         <div className="text-muted-foreground text-sm">Loading…</div>
@@ -179,9 +172,10 @@ export default function Tasks() {
           {filtered.map(t => {
             const warnings = warningsFor(t);
             const canSchedule = !t.scheduled_date && t.status !== 'done' && !t.is_rest;
+            const canReschedule = !!t.scheduled_date && t.scheduled_date < today && t.status !== 'done' && !t.is_rest;
             return (
               <li key={t.id} className="space-y-1.5">
-                <TaskCard task={t} onOpen={() => nav(`/task/${t.id}`)} />
+                <TaskCard task={t} onOpen={() => nav(`/task/${t.id}`)} onToggleComplete={toggleComplete} />
                 <div className="flex flex-wrap items-center gap-1.5 px-1">
                   {warnings.map(w => (
                     <span
@@ -192,13 +186,13 @@ export default function Tasks() {
                       {WARNING_LABEL[w]}
                     </span>
                   ))}
-                  {canSchedule && (
+                  {(canSchedule || canReschedule) && (
                     <button
                       onClick={() => setScheduleId(t.id)}
                       className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 text-[11px] font-medium"
                     >
-                      <CalendarPlus className="w-3 h-3" />
-                      Schedule
+                      {canReschedule ? <CalendarSync className="w-3 h-3" /> : <CalendarPlus className="w-3 h-3" />}
+                      {canReschedule ? 'Reschedule' : 'Schedule'}
                     </button>
                   )}
                 </div>
