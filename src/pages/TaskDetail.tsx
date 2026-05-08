@@ -534,7 +534,7 @@ export default function TaskDetail() {
         <TaskMeta task={task} />
         <div className="flex items-center gap-1.5 shrink-0">
           <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
-          <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit action">
+          <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit action details">
             <Pencil className="w-3.5 h-3.5" /> Edit
           </button>
         </div>
