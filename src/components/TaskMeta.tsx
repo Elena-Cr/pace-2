@@ -23,12 +23,13 @@ export type TaskMetaInfo = {
 };
 
 // Small chip used by TaskMeta. Kept inline so usage stays one import.
-function Chip({ icon: Icon, label, value, tone }: { icon: any; label: string; value: string; tone?: 'attention' }) {
+function Chip({ icon: Icon, label, value, tone, compact }: { icon: any; label: string; value: string; tone?: 'attention'; compact?: boolean }) {
   const toneClass = tone === 'attention'
     ? 'bg-[hsl(var(--attention)/0.15)] text-[hsl(var(--attention))]'
     : 'bg-muted text-foreground';
+  const sizeClass = compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-[12px]';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] ${toneClass}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full ${sizeClass} ${toneClass}`}>
       <Icon className="w-3 h-3 shrink-0" />
       <span className="text-muted-foreground">{label}:</span>
       <span className="font-medium">{value}</span>
