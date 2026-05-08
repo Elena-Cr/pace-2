@@ -403,9 +403,53 @@ export default function Capture() {
           </div>
 
           <div>
+            <label className="pace-field-label">Time estimate</label>
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="number" min={0} step={1}
+                  className="pace-field pr-8"
+                  placeholder="Hours"
+                  value={estHours}
+                  onBlur={checkEstimateOnBlur}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '') return setEstHours('');
+                    const n = Math.max(0, Math.floor(Number(v)));
+                    setEstHours(Number.isNaN(n) ? '' : n);
+                  }}
+                />
+                {estHours !== '' && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">h</span>
+                )}
+              </div>
+              <div className="flex-1 relative">
+                <input
+                  type="number" min={0} max={59} step={1}
+                  className="pace-field pr-8"
+                  placeholder="Minutes"
+                  value={estMinutes}
+                  onBlur={checkEstimateOnBlur}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '') return setEstMinutes('');
+                    let n = Math.max(0, Math.floor(Number(v)));
+                    if (Number.isNaN(n)) return setEstMinutes('');
+                    if (n > 59) n = 59;
+                    setEstMinutes(n);
+                  }}
+                />
+                {estMinutes !== '' && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">m</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div>
             <label className="pace-field-label">Does this have a deadline? (optional)</label>
             <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
-            <input type="datetime-local" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
+            <input type="date" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
         </SectionToggle>
 
