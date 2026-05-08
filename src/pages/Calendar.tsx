@@ -798,8 +798,9 @@ export default function CalendarView() {
 
       <div className="mt-3 pace-card !p-3 overflow-hidden">
 
-        {/* Time grid */}
-        <div ref={gridRef} className="relative mt-2 flex" style={{ height: totalGridHeight }}>
+        {/* Time grid — scrollable to access full 00:00–24:00 range */}
+        <div className="relative mt-2 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+        <div ref={gridRef} className="relative flex" style={{ height: totalGridHeight }}>
           {/* Hour labels */}
           <div className="w-9 shrink-0 relative">
             {HOURS.map((h, i) => (
