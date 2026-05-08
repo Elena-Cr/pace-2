@@ -8,6 +8,7 @@ import { useDailyCapacity } from '@/hooks/useDailyCapacity';
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
@@ -55,6 +56,7 @@ export default function Home() {
   const { data: capacity = null } = useDailyCapacity(todayStr);
   const [focusToday, setFocusToday] = useState<{ count: number; minutes: number }>({ count: 0, minutes: 0 });
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [restEdit, setRestEdit] = useState<RestBlockInitial | null>(null);
 
   // Sync filter ↔ URL.
   useEffect(() => {
@@ -444,8 +446,19 @@ export default function Home() {
           </span>
         </button>
         <button
-          onClick={() => nav('/calendar')}
+          onClick={() => setRestEdit({ date: todayStr, startTime: '12:00', endTime: '12:30', label: 'Rest' })}
           className="rounded-2xl px-4 py-3.5 bg-secondary text-secondary-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
+          <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
+            <Moon className="w-4 h-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold leading-tight">Add rest block</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Just for today</span>
+          </span>
+        </button>
+        <button
+          onClick={() => nav('/calendar')}
+          className="col-span-2 rounded-2xl px-4 py-3 bg-muted text-foreground shadow-sm hover:shadow transition flex items-center gap-3 text-left">
           <span className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
             <CalIcon className="w-4 h-4" />
           </span>
@@ -571,6 +584,11 @@ export default function Home() {
         taskId={rescheduleId}
         open={!!rescheduleId}
         onClose={() => setRescheduleId(null)}
+      />
+      <RestBlockDialog
+        open={!!restEdit}
+        initial={restEdit}
+        onClose={() => setRestEdit(null)}
       />
     </AppShell>
   );

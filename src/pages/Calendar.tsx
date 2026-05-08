@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, MoveRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Users, AlertTriangle, Timer, MoveRight, Moon, Pencil, Trash2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
@@ -14,6 +14,7 @@ import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import TaskMeta from '@/components/TaskMeta';
 
 function timeStrToMin(t: string): number {
@@ -176,7 +177,7 @@ export default function CalendarView() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
   const { data: allTasks = [] } = useTasks();
-  const { update, insert } = useTaskMutations();
+  const { update, insert, remove } = useTaskMutations();
   const nav = useNavigate();
   // URL-backed view + date so back-navigation from TaskDetail restores the
   // exact calendar state the user left. `view` is one of day|week|month;
@@ -210,6 +211,10 @@ export default function CalendarView() {
   const [replanCustomMode, setReplanCustomMode] = useState(false);
   const [replanCustomText, setReplanCustomText] = useState('');
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  // Empty-slot tap surfaces a tiny choice between "New action" and "Add rest block".
+  const [slotChoice, setSlotChoice] = useState<{ dayIdx: number; hour: number } | null>(null);
+  // Mount state for the one-time rest block create/edit dialog.
+  const [restEdit, setRestEdit] = useState<RestBlockInitial | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   // Tracks the event id currently being dropped so we can hide it from the
   // source slot immediately, before the mutation round-trip completes.
@@ -794,7 +799,7 @@ export default function CalendarView() {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const y = e.clientY - rect.top;
                     const hour = START_HOUR + Math.floor(y / HOUR_PX);
-                    if (hour >= START_HOUR && hour < END_HOUR) createAt(di, hour);
+                    if (hour >= START_HOUR && hour < END_HOUR) setSlotChoice({ dayIdx: di, hour });
                   }}
                   className="flex-1 min-w-0 relative border-l border-border/40 cursor-pointer">
                   {/* Hour grid lines (visual only — not focusable). */}
@@ -924,10 +929,23 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add action */}
-      <button onClick={() => nav('/capture')} className="pace-btn-primary mt-4 w-full">
-        <Plus className="w-4 h-4" /> Add action
-      </button>
+      {/* Add action / Add rest block */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={() => nav('/capture')} className="pace-btn-primary">
+          <Plus className="w-4 h-4" /> Add action
+        </button>
+        <button
+          onClick={() => {
+            const focus =
+              view === 'day' ? days[dayIdx] :
+              view === 'week' ? centerDate :
+              new Date();
+            setRestEdit({ date: toISODate(focus), startTime: '12:00', endTime: '12:30', label: 'Rest' });
+          }}
+          className="pace-btn">
+          <Moon className="w-4 h-4" /> Add rest block
+        </button>
+      </div>
 
       {/* Detail dialog — shadcn Dialog gives us focus trap + Escape for free. */}
       <Dialog open={!!open} onOpenChange={(o) => { if (!o) setOpen(null); }}>
@@ -977,15 +995,77 @@ export default function CalendarView() {
               )}
               {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
 
-              {open.taskId && (
+              {/* One-time rest block: edit / remove. */}
+              {open.taskId && open.kind === 'rest' && !open.fixed && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      const init: RestBlockInitial = {
+                        id: open.taskId,
+                        date: open.scheduled_date ?? toISODate(days[open.day]),
+                        startTime: open.start_time ?? undefined,
+                        endTime: open.end_time ?? undefined,
+                        label: open.title,
+                      };
+                      setOpen(null);
+                      setRestEdit(init);
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const id = open.taskId;
+                      setOpen(null);
+                      if (!id) return;
+                      try {
+                        await remove.mutateAsync(id);
+                        toast.success('Rest block removed.');
+                      } catch (err: any) {
+                        toast.error(err?.message ?? 'Could not remove.');
+                      }
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                  </button>
+                </div>
+              )}
+
+              {/* Regular task actions. */}
+              {open.taskId && open.kind !== 'rest' && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm">Edit</button>
                   <button onClick={() => { const id = open.taskId; setOpen(null); if (id) setRescheduleId(id); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
                   <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
                 </div>
               )}
+
+              {/* Recurring rest block (from Settings): read-only + shortcut. */}
               {open.fixed && (
-                <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+                <div className="mt-4 space-y-2">
+                  <div className="text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+                  <button
+                    onClick={() => {
+                      const init: RestBlockInitial = {
+                        date: toISODate(new Date()),
+                        startTime: undefined,
+                        endTime: undefined,
+                        label: open.title,
+                      };
+                      // Pre-fill the start/end with the recurring block's times.
+                      const sH = Math.floor(open.startMin / 60);
+                      const sM = open.startMin % 60;
+                      const eH = Math.floor(open.endMin / 60);
+                      const eM = open.endMin % 60;
+                      init.startTime = `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`;
+                      init.endTime = `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+                      setOpen(null);
+                      setRestEdit(init);
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <Plus className="w-3.5 h-3.5" /> Add a similar block today
+                  </button>
+                </div>
               )}
             </>
           )}
@@ -1022,6 +1102,49 @@ export default function CalendarView() {
         taskId={rescheduleId}
         open={!!rescheduleId}
         onClose={() => setRescheduleId(null)}
+      />
+
+      {/* Slot-choice: tap an empty calendar cell → pick task or rest. */}
+      <Dialog open={!!slotChoice} onOpenChange={(o) => { if (!o) setSlotChoice(null); }}>
+        <DialogContent className="max-w-xs rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Add to this slot</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              {slotChoice && `${days[slotChoice.dayIdx].toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${fmtTime(slotChoice.hour * 60)}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 grid gap-2">
+            <button
+              onClick={() => {
+                if (!slotChoice) return;
+                const { dayIdx: di, hour } = slotChoice;
+                setSlotChoice(null);
+                createAt(di, hour);
+              }}
+              className="pace-btn-primary">
+              <Plus className="w-4 h-4" /> New action
+            </button>
+            <button
+              onClick={() => {
+                if (!slotChoice) return;
+                const { dayIdx: di, hour } = slotChoice;
+                const date = toISODate(days[di]);
+                const startTime = `${String(hour).padStart(2, '0')}:00`;
+                const endTime = `${String(Math.min(hour + 1, 23)).padStart(2, '0')}:00`;
+                setSlotChoice(null);
+                setRestEdit({ date, startTime, endTime, label: 'Rest' });
+              }}
+              className="pace-btn">
+              <Moon className="w-4 h-4" /> Add rest block
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <RestBlockDialog
+        open={!!restEdit}
+        initial={restEdit}
+        onClose={() => setRestEdit(null)}
       />
     </AppShell>
   );
