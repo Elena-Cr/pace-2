@@ -55,14 +55,14 @@ const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nea
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
-// Convert an ISO timestamp into the value format expected by datetime-local
-// (YYYY-MM-DDTHH:MM) in the user's local time.
-function toDatetimeLocal(iso: string | null): string {
+// Convert an ISO timestamp into a YYYY-MM-DD string in the user's local time
+// (used by date-only deadline inputs).
+function toDateOnly(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export default function TaskDetail() {
