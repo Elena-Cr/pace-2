@@ -799,7 +799,7 @@ export default function CalendarView() {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const y = e.clientY - rect.top;
                     const hour = START_HOUR + Math.floor(y / HOUR_PX);
-                    if (hour >= START_HOUR && hour < END_HOUR) createAt(di, hour);
+                    if (hour >= START_HOUR && hour < END_HOUR) setSlotChoice({ dayIdx: di, hour });
                   }}
                   className="flex-1 min-w-0 relative border-l border-border/40 cursor-pointer">
                   {/* Hour grid lines (visual only — not focusable). */}
