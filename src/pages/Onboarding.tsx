@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock, EnergyPattern, EnergyLevel, DEFAULT_ENERGY_PATTERN } from '@/hooks/useUserProfile';
 import { fmtMin } from '@/lib/pace';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 
 const ENERGY_LEVELS: EnergyLevel[] = ['Low', 'Med', 'High'];
 
