@@ -464,11 +464,6 @@ export default function TaskDetail() {
             hasValue={eSubtasks.length > 0 || !!eNotes.trim() || !!eLocation.trim()}
           >
             <div>
-              <label className="pace-field-label">Smallest next action (optional)</label>
-              <input className="pace-field" value={eNextAction} onChange={e => setENextAction(e.target.value)} placeholder="e.g. open the assignment page" />
-            </div>
-
-            <div>
               <label className="pace-field-label">Next steps (optional)</label>
               <div className="flex gap-2">
                 <input className="pace-field" value={eSubInput}
