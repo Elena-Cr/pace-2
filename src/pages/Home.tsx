@@ -526,19 +526,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Important without a deadline */}
-      {noDeadlineHighValue.length > 0 && (
-        <button
-          onClick={() => nav('/tasks?group=no_deadline')}
-          className="pace-card-soft mt-3 w-full text-left flex items-center justify-between gap-2"
-        >
-          <span className="text-[13px]">
-            <span className="pace-eyebrow inline-flex items-center gap-1.5 mr-2"><span className="priority-dot must" />Important without a deadline</span>
-            {noDeadlineHighValue.length} {noDeadlineHighValue.length === 1 ? 'action' : 'actions'} worth a slot this week.
-          </span>
-          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-        </button>
-      )}
+      {/* Important without a deadline — removed per spec */}
 
       {/* Domain breakdown */}
       {real.length > 0 && (
