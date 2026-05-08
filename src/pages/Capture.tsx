@@ -311,6 +311,13 @@ export default function Capture() {
           </div>
         </div>
 
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+          <label htmlFor="capture-capacity" className="text-[14px] font-medium">
+            Count toward daily capacity
+          </label>
+          <Switch id="capture-capacity" checked={countsTowardCapacity} onCheckedChange={setCountsTowardCapacity} />
+        </div>
+
         <p className="text-[13px] text-muted-foreground">
           Optional fields — fill these in now, or whenever it feels right.
         </p>
