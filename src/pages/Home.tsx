@@ -352,6 +352,29 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Proactive overload prompt — replaces the passive "Over capacity" chip
+          when today is over. Migrated from the deprecated /plan screen. */}
+      {capState === 'over' && (
+        <div className="pace-alert mt-3 animate-fade-in">
+          <div className="pace-eyebrow mb-1">
+            <span className="priority-dot should" />Your plan may need adjustment
+          </div>
+          <div className="text-[13px]">
+            You are {fmtMin(plannedMin - capMin)} over capacity. Want to move an
+            action, shorten one, or split it across two days?
+          </div>
+          {heaviestToday && (
+            <div className="mt-2 flex gap-1.5 flex-wrap">
+              <button
+                onClick={() => setRescheduleId(heaviestToday.id)}
+                className="pace-btn-primary pace-btn-sm">
+                Move "{heaviestToday.title.slice(0, 28)}"
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Quick stats — Done & Tomorrow expand inline; Focus jumps to /focus. */}
       <div className="mt-3 grid grid-cols-3 gap-2">
         <button
