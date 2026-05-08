@@ -69,6 +69,13 @@ function fmtTime(min: number) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 function fmtRange(s: number, e: number) { return `${fmtTime(s)} – ${fmtTime(e)}`; }
+function scheduledLabel(min: number) {
+  if (!min) return 'free';
+  const h = Math.floor(min / 60); const m = min % 60;
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m} mins`;
+}
 
 // Sample non-task blocks repeated each weekday
 const FIXED_BLOCKS: Array<Omit<CalEvent, 'id' | 'day'>> = [
@@ -529,38 +536,6 @@ export default function CalendarView() {
         </button>
       </div>
 
-      {/* Category colour legend — only for day/week views, only categories
-          present in the currently visible events. Horizontally scrollable. */}
-      {(view === 'day' || view === 'week') && (() => {
-        const scope = view === 'day'
-          ? visibleEvents.filter(e => e.day === dayIdx)
-          : visibleEvents;
-        const present = new Set<Domain>();
-        scope.forEach(e => {
-          if (e.kind === 'task' && e.domain && e.domain !== 'rest') {
-            present.add(e.domain as Domain);
-          }
-        });
-        if (present.size === 0) return null;
-        const ordered: Domain[] = (['academic', 'work', 'social', 'personal'] as Domain[])
-          .filter(d => present.has(d));
-        return (
-          <div className="mt-2 -mx-1 px-1 overflow-x-auto">
-            <div className="flex gap-3 min-w-min text-[11px] text-muted-foreground">
-              {ordered.map(d => (
-                <span key={d} className="inline-flex items-center gap-1.5 shrink-0">
-                  <span
-                    aria-hidden="true"
-                    className="w-2.5 h-2.5 rounded-sm"
-                    style={{ background: DOMAIN_COLOR_VAR[d] }}
-                  />
-                  {DOMAIN_LABEL[d]}
-                </span>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Day picker for day view — fixed 7 across, no horizontal scroll.
           Each chip has a stable height: an always-present 6px indicator row
@@ -629,8 +604,7 @@ export default function CalendarView() {
             <div className="pace-card">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="pace-eyebrow">{DAYS[dayIdx]}</div>
-                  <div className="pace-title mt-0.5">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                  <div className="pace-title">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <DayEnergyPicker
@@ -639,7 +613,7 @@ export default function CalendarView() {
                     availableHours={summary.availH}
                     size="md"
                   />
-                  <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                  <div className={`rounded-full px-3 py-1 text-[12px] font-medium ${stateClass}`}>{stateLabel}</div>
                   <CapacityInfoButton />
                 </div>
               </div>
@@ -812,7 +786,7 @@ export default function CalendarView() {
                   {stateLabel}
                 </button>
                 <div className="text-[10px] text-muted-foreground text-center mt-0.5">
-                  {fmtMin(s.planned)} / {fmtMin(s.capMin)}
+                  {scheduledLabel(s.planned)} scheduled
                 </div>
                 <div className="mt-1 flex justify-center">
                   <DayEnergyPicker
