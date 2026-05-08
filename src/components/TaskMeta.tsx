@@ -43,7 +43,15 @@ export default function TaskMeta({ task, compact = false }: { task: TaskMetaInfo
   return (
     <div className={`flex flex-wrap gap-1.5 ${compact ? 'text-[11px]' : ''}`}>
       {whenLabel && <Chip icon={CalendarDays} label="Scheduled" value={whenLabel} />}
-      {!whenLabel && <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" />}
+      {/* When a deadline already exists, the "not scheduled" state is just
+          a planning gap — render it neutrally so the chips don't read as
+          contradicting each other. Without a deadline we still flag it. */}
+      {!whenLabel && showDeadline && (
+        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled yet" />
+      )}
+      {!whenLabel && !showDeadline && (
+        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" />
+      )}
       {task.priority && <Chip icon={Flag} label="Priority" value={PRIORITY_LABEL[task.priority]} />}
       {task.domain && <Chip icon={Activity} label="Category" value={DOMAIN_LABEL[task.domain]} />}
       {task.duration_minutes != null && task.duration_minutes > 0 && (

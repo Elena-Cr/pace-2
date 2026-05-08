@@ -468,7 +468,7 @@ export function buildReschedulePatch(
   newDate: string,
   opts: { reason?: ReplanReason; mood?: Mood } = {},
 ): Partial<Task> {
-  return {
+  const patch: Partial<Task> = {
     scheduled_date: newDate,
     reschedule_count: (task.reschedule_count || 0) + 1,
     status: 'rescheduled',
@@ -476,6 +476,13 @@ export function buildReschedulePatch(
     replanning_reason: opts.reason ?? null,
     // progress, subtasks, next_action, notes intentionally untouched
   };
+  // Only overwrite status with 'rescheduled' when the task hadn't been
+  // started yet. If the user is already in_progress / started / nearly_done
+  // / blocked / done, preserve their real progress state.
+  if (task.status !== 'not_started') {
+    delete patch.status;
+  }
+  return patch;
 }
 
 // ---------- Calendar event layout (sweep-line column allocation) ----------

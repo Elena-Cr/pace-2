@@ -340,7 +340,8 @@ export default function Focus() {
   const c = 2 * Math.PI * r;
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
-  const ringColor = running ? 'hsl(var(--secondary))' : 'hsl(var(--primary))';
+  // Active = primary brand colour; paused = muted secondary.
+  const ringColor = running ? 'hsl(var(--primary))' : 'hsl(var(--secondary))';
 
   return (
     <AppShell>

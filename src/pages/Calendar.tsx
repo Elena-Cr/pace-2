@@ -381,10 +381,15 @@ export default function CalendarView() {
     const planned = taskEvents.reduce((s, e) => s + (e.endMin - e.startMin), 0);
     const restEvents = events.filter(e => e.day === di && e.kind !== 'task');
     // conflicts: any task overlapping a fixed (rest/meal/sleep) block
+    // Track conflicts via the typed taskId field on the event rather than
+    // string-stripping the event id, so this stays correct if the id format
+    // ever changes.
     const conflictIds = new Set<string>();
     taskEvents.forEach(t => {
       restEvents.forEach(r => {
-        if (t.startMin < r.endMin && t.endMin > r.startMin) conflictIds.add(t.id);
+        if (t.startMin < r.endMin && t.endMin > r.startMin) {
+          if (t.taskId) conflictIds.add(t.taskId);
+        }
       });
     });
     const state = capacityState(planned, capMin);
