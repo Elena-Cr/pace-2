@@ -110,13 +110,12 @@ export function getNoDeadlineHighValue(
 
 // What's "wrong" with a task in a backlog/needs-attention list. Used to
 // render explanatory chips so the user understands why each task surfaces.
-export type TaskWarning = 'missed' | 'blocked' | 'unscheduled' | 'no_deadline';
+export type TaskWarning = 'missed' | 'blocked' | 'unscheduled';
 export function getTaskWarnings(t: Task, today: string): TaskWarning[] {
   const out: TaskWarning[] = [];
   if (t.status === 'blocked') out.push('blocked');
   else if (t.scheduled_date && t.scheduled_date < today && t.status !== 'done' && !t.is_rest) out.push('missed');
   if (!t.scheduled_date && t.status !== 'done') out.push('unscheduled');
-  if (!t.deadline && t.status !== 'done') out.push('no_deadline');
   return out;
 }
 
