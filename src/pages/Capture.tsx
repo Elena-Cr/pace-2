@@ -210,7 +210,7 @@ export default function Capture() {
         title: title.trim(),
         domain,
         priority,
-        deadline: deadline ? new Date(deadline).toISOString() : null,
+        deadline: deadline ? new Date(deadline + 'T23:59:59').toISOString() : null,
         duration_minutes: estimate ? Number(estimate) : null,
         effort_level: effort,
         next_action: nextAction || null,
