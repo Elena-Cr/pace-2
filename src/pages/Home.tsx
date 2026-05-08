@@ -503,7 +503,7 @@ export default function Home() {
           </span>
           <span className="min-w-0">
             <span className="block text-[14px] font-semibold leading-tight">Rest block</span>
-            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">Choose type & time</span>
+            <span className="block text-[11px] opacity-70 leading-tight mt-0.5">A quiet moment</span>
           </span>
         </button>
       </div>
