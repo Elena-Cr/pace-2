@@ -153,30 +153,36 @@ export default function Workload() {
         </div>
       </div>
 
-      {/* Distribution */}
-      <div className="mt-4 pace-card">
-        <div className="pace-eyebrow mb-2">Distribution this week</div>
-        {grandTotal === 0 ? (
-          <div className="text-[14px] text-muted-foreground">Nothing scheduled yet. Capture a task or set a capacity in Plan.</div>
-        ) : (
-          <div className="space-y-2">
+      {/* Domain distribution — horizontal stacked bar with inline % */}
+      {grandTotal > 0 && (
+        <div className="mt-4">
+          <div className="flex h-10 w-full rounded-xl overflow-hidden border border-border/40">
             {DOMAINS.map(d => {
-              const pct = Math.round((totalsByDomain[d] / grandTotal) * 100);
+              const pct = (totalsByDomain[d] / grandTotal) * 100;
+              if (pct <= 0) return null;
+              const rounded = Math.round(pct);
               return (
-                <div key={d}>
-                  <div className="flex justify-between text-[13px]">
-                    <span>{DOMAIN_LABEL[d]}</span>
-                    <span className="text-muted-foreground">{pct}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden mt-1">
-                    <div style={{ width: `${pct}%`, background: DOMAIN_COLOR_VAR[d] }} className="h-full rounded-full" />
-                  </div>
+                <div
+                  key={d}
+                  className="flex items-center justify-center text-[12px] font-semibold text-white/95"
+                  style={{ width: `${pct}%`, background: DOMAIN_COLOR_VAR[d] }}
+                  title={`${DOMAIN_LABEL[d]} · ${rounded}%`}
+                >
+                  {pct >= 8 ? `${rounded}%` : ''}
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
+            {DOMAINS.map(d => (
+              <span key={d} className="inline-flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: DOMAIN_COLOR_VAR[d] }} />
+                {DOMAIN_LABEL[d]}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
 
       {/* Insights — collapsible */}
