@@ -317,50 +317,6 @@ export default function Capture() {
           </div>
 
           <div>
-            <label className="pace-field-label">Time estimate</label>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <input
-                  type="number" min={0} step={1}
-                  className="pace-field pr-8"
-                  placeholder="Hours"
-                  value={estHours}
-                  onBlur={checkEstimateOnBlur}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '') return setEstHours('');
-                    const n = Math.max(0, Math.floor(Number(v)));
-                    setEstHours(Number.isNaN(n) ? '' : n);
-                  }}
-                />
-                {estHours !== '' && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">h</span>
-                )}
-              </div>
-              <div className="flex-1 relative">
-                <input
-                  type="number" min={0} max={59} step={1}
-                  className="pace-field pr-8"
-                  placeholder="Minutes"
-                  value={estMinutes}
-                  onBlur={checkEstimateOnBlur}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '') return setEstMinutes('');
-                    let n = Math.max(0, Math.floor(Number(v)));
-                    if (Number.isNaN(n)) return setEstMinutes('');
-                    if (n > 59) n = 59;
-                    setEstMinutes(n);
-                  }}
-                />
-                {estMinutes !== '' && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">m</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div>
             <div className="pace-field-label">Effort level (optional)</div>
             <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
             <div className="flex gap-1.5 mt-1.5">
@@ -371,20 +327,12 @@ export default function Capture() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setOthersInvolved(v => !v)}
-            className={cn(
-              'w-full justify-center inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium border',
-              othersInvolved
-                ? 'bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.35)]'
-                : 'bg-muted text-muted-foreground border-border'
-            )}
-            aria-pressed={othersInvolved}
-          >
-            <Users className="w-3.5 h-3.5" />
-            Involves others? {othersInvolved ? 'Yes' : 'No'}
-          </button>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2">
+            <label htmlFor="capture-others" className="text-[13px] font-medium inline-flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" /> Involves others
+            </label>
+            <Switch id="capture-others" checked={othersInvolved} onCheckedChange={setOthersInvolved} />
+          </div>
         </SectionToggle>
 
         {/* SECTION B: Scheduling & Deadline */}
