@@ -585,6 +585,11 @@ export default function Home() {
         open={!!rescheduleId}
         onClose={() => setRescheduleId(null)}
       />
+      <RestBlockDialog
+        open={!!restEdit}
+        initial={restEdit}
+        onClose={() => setRestEdit(null)}
+      />
     </AppShell>
   );
 }
