@@ -80,7 +80,13 @@ export default function Onboarding() {
       title: 'What should we call you?',
       sub: 'You can change this later in Settings.',
       body: (
-        <input className="pace-field" autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+        <input
+          className="pace-field"
+          autoFocus
+          value={name}
+          onChange={e => { setNameTouched(true); setName(e.target.value); }}
+          placeholder="Your name"
+        />
       ),
       canNext: name.trim().length > 0,
     },
