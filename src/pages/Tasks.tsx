@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { todayISO, DOMAIN_LABEL, type Domain } from '@/lib/pace';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import {
   getBacklog,
   getMissed,
