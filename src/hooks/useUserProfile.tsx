@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -63,33 +64,57 @@ function coerceProfile(row: any): UserProfile | null {
 
 export function useUserProfile() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const userId = user?.id;
+  const queryClient = useQueryClient();
 
-  const reload = useCallback(async () => {
-    if (!user) { setProfile(null); setLoading(false); return; }
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    setProfile(coerceProfile(data));
-    setLoading(false);
-  }, [user]);
+  const query = useQuery({
+    queryKey: ['userProfile', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId!)
+        .maybeSingle();
+      if (error) throw error;
+      return coerceProfile(data);
+    },
+  });
 
-  useEffect(() => { reload(); }, [reload]);
+  const mutation = useMutation({
+    mutationFn: async (patch: Partial<UserProfile>) => {
+      if (!userId) throw new Error('Not authenticated');
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(patch as any)
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (error) throw error;
+      return { data: coerceProfile(data), error: null as any };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
+    },
+  });
 
   const update = useCallback(async (patch: Partial<UserProfile>) => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update(patch as any)
-      .eq('user_id', user.id)
-      .select()
-      .single();
-    if (!error && data) setProfile(coerceProfile(data));
-    return { data, error };
-  }, [user]);
+    try {
+      return await mutation.mutateAsync(patch);
+    } catch (error: any) {
+      return { data: null, error };
+    }
+  }, [mutation]);
 
-  return { profile, loading, reload, update };
+  const reload = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['userProfile', userId] });
+  }, [queryClient, userId]);
+
+  return {
+    profile: query.data ?? null,
+    loading: !!userId && query.isLoading,
+    error: query.error,
+    update,
+    reload,
+  };
 }
