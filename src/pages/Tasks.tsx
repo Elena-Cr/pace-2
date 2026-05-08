@@ -9,15 +9,14 @@ import { todayISO, DOMAIN_LABEL, type Domain } from '@/lib/pace';
 import {
   getBacklog,
   getMissed,
-  getNoDeadlineHighValue,
   getTaskWarnings,
   type Task,
   type TaskWarning,
 } from '@/lib/scheduling';
-import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, Flag, CalendarPlus } from 'lucide-react';
+import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, CalendarPlus } from 'lucide-react';
 import RescheduleDialog from '@/components/RescheduleDialog';
 
-type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'no_deadline' | 'scheduled' | 'done';
+type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'scheduled' | 'done';
 type DomainFilter = 'all' | Domain | 'none';
 
 const GROUPS: { k: GroupKey; label: string; icon: any }[] = [
@@ -25,7 +24,6 @@ const GROUPS: { k: GroupKey; label: string; icon: any }[] = [
   { k: 'all', label: 'All', icon: ListTodo },
   { k: 'backlog', label: 'Later', icon: Inbox },
   { k: 'missed', label: 'Missed', icon: AlertTriangle },
-  { k: 'no_deadline', label: 'No deadline', icon: Flag },
   { k: 'scheduled', label: 'Scheduled', icon: CalendarClock },
   { k: 'done', label: 'Completed', icon: CheckCircle2 },
 ];
@@ -43,11 +41,10 @@ const WARNING_LABEL: Record<TaskWarning, string> = {
   missed: 'Missed — past scheduled day',
   blocked: 'Blocked',
   unscheduled: 'Not scheduled yet',
-  no_deadline: 'No deadline set',
 };
 
 function isGroupKey(s: string | null): s is GroupKey {
-  return !!s && ['action','all','backlog','missed','no_deadline','scheduled','done'].includes(s);
+  return !!s && ['action','all','backlog','missed','scheduled','done'].includes(s);
 }
 
 export default function Tasks() {
