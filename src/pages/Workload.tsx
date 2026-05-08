@@ -173,14 +173,6 @@ export default function Workload() {
               );
             })}
           </div>
-          <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-            {DOMAINS.map(d => (
-              <span key={d} className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-sm" style={{ background: DOMAIN_COLOR_VAR[d] }} />
-                {DOMAIN_LABEL[d]}
-              </span>
-            ))}
-          </div>
         </div>
       )}
 
