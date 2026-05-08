@@ -776,7 +776,7 @@ export default function CalendarView() {
                 <button
                   type="button"
                   onClick={goToDay}
-                  className={`mt-1 w-full rounded-lg px-1.5 py-1 text-[10px] text-center ${stateClass} ${s.state !== 'balanced' ? 'hover:opacity-90 cursor-pointer' : 'cursor-default'}`}
+                  className={`mt-1 w-full rounded-lg px-1.5 py-1 text-[10px] text-center min-h-[40px] flex items-center justify-center ${stateClass} ${s.state !== 'balanced' ? 'hover:opacity-90 cursor-pointer' : 'cursor-default'}`}
                   aria-label={s.state !== 'balanced' ? `${stateLabel} — open day view to see details` : stateLabel}>
                   {stateLabel}
                 </button>
