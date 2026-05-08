@@ -587,8 +587,8 @@ export default function Focus() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => complete('completed')} className="pace-btn-primary">Task completed</button>
-              <button onClick={() => complete('more_time')} className="pace-btn">Needs more time</button>
-              <button onClick={() => complete('replan')} className="pace-btn">Reschedule</button>
+              <button onClick={extendTen} className="pace-btn">Extend by 10 minutes</button>
+              <button onClick={scheduleRemainder} className="pace-btn">Schedule the rest for later</button>
               <button onClick={() => complete('blocked')} className="pace-btn">Blocked</button>
             </div>
           </div>
