@@ -165,6 +165,42 @@ export default function Focus() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [running]);
 
+  // Count completed focus sessions for the currently focused task. Drives
+  // the "Session N for this action" header. Re-runs when the task changes
+  // or after a session row is recorded (sessionId transitions).
+  useEffect(() => {
+    let cancelled = false;
+    if (!user || !task?.id) { setCompletedSessionCount(0); return; }
+    supabase
+      .from('focus_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('task_id', task.id)
+      .not('ended_at', 'is', null)
+      .then(({ count }) => { if (!cancelled) setCompletedSessionCount(count ?? 0); });
+    return () => { cancelled = true; };
+  }, [user, task?.id, sessionId, completionCheck]);
+
+  // Reset break banner state whenever a new (non-break) session starts.
+  useEffect(() => {
+    if (!sessionId || breakMode) return;
+    setBreakPromptedInterval(0);
+    setShowBreakBanner(false);
+  }, [sessionId, breakMode]);
+
+  // Mid-session break prompt: if planned ≥ 45m, show a non-blocking banner
+  // every 25 minutes of elapsed focus time. We track the highest interval
+  // already prompted so dismissal sticks until the next interval crosses.
+  useEffect(() => {
+    if (!running || breakMode || planned < 45) return;
+    const elapsedMin = Math.floor((planned * 60 - secondsLeft) / 60);
+    const interval = Math.floor(elapsedMin / 25);
+    if (interval > breakPromptedInterval && elapsedMin > 0 && secondsLeft > 0) {
+      setBreakPromptedInterval(interval);
+      setShowBreakBanner(true);
+    }
+  }, [secondsLeft, running, breakMode, planned, breakPromptedInterval]);
+
   async function start() {
     if (!user) return;
     if (task && task.status === 'not_started') {
