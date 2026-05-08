@@ -257,6 +257,7 @@ export default function TaskDetail() {
           subtasks: eSubtasks,
           involves_others: eOthers,
           others_rely: eOthers,
+          location: eLocation.trim() || null,
         } as any,
       });
       toast.success('Saved.');
