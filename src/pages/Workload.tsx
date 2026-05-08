@@ -89,7 +89,7 @@ export default function Workload() {
       <div className="pace-eyebrow mt-1">Across academic, work, social, and personal</div>
 
       {/* Stacked bars */}
-      <div className="mt-5 pace-card">
+      <div className="mt-5 pace-card !py-3">
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-1">
             <button
