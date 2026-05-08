@@ -263,6 +263,15 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
             {ctaLabel}
           </button>
         </div>
+
+        {!isSchedule && (
+          <button
+            onClick={moveToLater}
+            className="mt-2 pace-btn pace-btn-sm w-full text-[13px]"
+          >
+            Move to Later
+          </button>
+        )}
       </DialogContent>
     </Dialog>
   );
