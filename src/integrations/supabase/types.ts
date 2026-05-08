@@ -137,6 +137,7 @@ export type Database = {
           involves_others: boolean
           is_rest: boolean
           last_mood: Database["public"]["Enums"]["mood"] | null
+          location: string | null
           next_action: string | null
           notes: string | null
           others_rely: boolean
@@ -164,6 +165,7 @@ export type Database = {
           involves_others?: boolean
           is_rest?: boolean
           last_mood?: Database["public"]["Enums"]["mood"] | null
+          location?: string | null
           next_action?: string | null
           notes?: string | null
           others_rely?: boolean
@@ -193,6 +195,7 @@ export type Database = {
           involves_others?: boolean
           is_rest?: boolean
           last_mood?: Database["public"]["Enums"]["mood"] | null
+          location?: string | null
           next_action?: string | null
           notes?: string | null
           others_rely?: boolean
