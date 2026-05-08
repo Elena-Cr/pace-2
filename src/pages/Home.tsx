@@ -245,6 +245,36 @@ export default function Home() {
     return m;
   }, [real]);
 
+  // Heaviest action today (by duration, falling back to Heavy effort or first).
+  // Used by the proactive overload prompt to suggest something to move.
+  const heaviestToday = useMemo(() => {
+    if (!real.length) return null;
+    const sorted = [...real].sort((a, b) =>
+      (b.duration_minutes ?? 0) - (a.duration_minutes ?? 0));
+    return sorted.find(t => (t.duration_minutes ?? 0) > 0)
+      ?? sorted.find(t => t.effort_level === 'Heavy')
+      ?? sorted[0];
+  }, [real]);
+
+  // Backlog (unscheduled actions) for the inline "schedule from backlog" shortcut
+  // migrated from the deprecated /plan screen.
+  const backlog = useMemo(
+    () => tasks.filter(t => !t.scheduled_date && t.status !== 'done').slice(0, 5),
+    [tasks],
+  );
+
+  async function scheduleFromBacklog(taskId: string, when: 'today' | 'tomorrow') {
+    const date = new Date();
+    if (when === 'tomorrow') date.setDate(date.getDate() + 1);
+    const iso = toISODate(date);
+    try {
+      await update.mutateAsync({ id: taskId, patch: { scheduled_date: iso } as any });
+      toast.success(when === 'today' ? 'Added to today.' : 'Scheduled for tomorrow.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not schedule.');
+    }
+  }
+
   // Next up: prefer in_progress, else nearest
   const nextUp = useMemo(() => {
     const inProg = real.find(t => t.status === 'in_progress');
