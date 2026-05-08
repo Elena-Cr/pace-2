@@ -597,8 +597,7 @@ export default function CalendarView() {
             <div className="pace-card">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="pace-eyebrow">{DAYS[dayIdx]}</div>
-                  <div className="pace-title mt-0.5">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                  <div className="pace-title">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <DayEnergyPicker
