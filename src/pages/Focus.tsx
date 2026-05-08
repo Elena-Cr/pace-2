@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
+import { type Task, progressForStatus, getTodayTasks, buildBlockedPatch } from '@/lib/scheduling';
 import { todayISO, DOMAIN_COLOR_VAR, type Domain, type Subtask, fmtMin } from '@/lib/pace';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import RescheduleDialog from '@/components/RescheduleDialog';
 
