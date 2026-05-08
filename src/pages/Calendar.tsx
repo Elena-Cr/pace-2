@@ -647,6 +647,36 @@ export default function CalendarView() {
               <div className="mt-2 pace-meta">{fmtMin(summary.planned)} planned of {fmtMin(summary.capMin)} capacity · {taskItems.length} {taskItems.length === 1 ? 'item' : 'items'}</div>
             </div>
 
+            {/* Proactive overload prompt — actionable replacement for the
+                passive "Needs adjustment" ribbon. Shown when the day is over
+                capacity. Migrated from the deprecated /plan screen. */}
+            {summary.state === 'over' && (() => {
+              const heaviest = [...taskItems]
+                .filter(e => e.taskId)
+                .sort((a, b) => (b.duration_minutes ?? 0) - (a.duration_minutes ?? 0))[0];
+              const overBy = Math.max(0, summary.planned - summary.capMin);
+              return (
+                <div className="pace-alert animate-fade-in">
+                  <div className="pace-eyebrow mb-1">
+                    <span className="priority-dot should" />Your plan may need adjustment
+                  </div>
+                  <div className="text-[13px]">
+                    You are {fmtMin(overBy)} over capacity. Want to move an
+                    action, shorten one, or split it across two days?
+                  </div>
+                  {heaviest?.taskId && (
+                    <div className="mt-2 flex gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => setRescheduleId(heaviest.taskId!)}
+                        className="pace-btn-primary pace-btn-sm">
+                        Move "{heaviest.title.slice(0, 28)}"
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Needs attention — collapsible, compact, action-led. */}
             {attentionItems.length > 0 && (
               <NeedsAttention
