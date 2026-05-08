@@ -88,10 +88,12 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       return;
     }
     try {
+      // Only bump reschedule_count + flip status when the *date* actually
+      // changes. Time-only or estimate-only edits within the same day are
+      // treated as a metadata update so the counter doesn't inflate.
+      const dateChanged = selected !== (task.scheduled_date ?? null);
       let patch: any;
-      if (isSchedule) {
-        // First-time scheduling: just set the date. Don't bump the
-        // reschedule counter or change status.
+      if (isSchedule || !dateChanged) {
         patch = { scheduled_date: selected };
       } else {
         patch = buildReschedulePatch(task, selected, {
@@ -101,7 +103,11 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       }
       patch.start_time = hasRange ? `${startTime}:00` : null;
       patch.end_time = hasRange ? `${endTime}:00` : null;
-      if (!isSchedule && customMode && customText.trim()) {
+      const h = Math.max(0, Math.floor(Number(estHours) || 0));
+      const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
+      const totalMin = h * 60 + m;
+      if (totalMin > 0) patch.duration_minutes = totalMin;
+      if (!isSchedule && dateChanged && customMode && customText.trim()) {
         // No `replanning_reason_text` column; append to notes as a fallback.
         const stamp = new Date().toLocaleDateString();
         const existing = (task as any).notes ?? '';
@@ -110,7 +116,11 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
           : `[${stamp}] Reschedule reason: ${customText.trim()}`;
       }
       await update.mutateAsync({ id: task.id, patch });
-      toast.success(isSchedule ? 'Task scheduled.' : 'Task moved. Progress preserved.');
+      toast.success(
+        isSchedule ? 'Task scheduled.' :
+        dateChanged ? 'Task moved. Progress preserved.' :
+        'Updated.'
+      );
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
