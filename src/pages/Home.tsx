@@ -11,10 +11,9 @@ import RescheduleDialog from '@/components/RescheduleDialog';
 import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
 import DayEnergyPicker from '@/components/DayEnergyPicker';
 import CapacityInfoButton from '@/components/CapacityInfoButton';
-import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
+import { greeting, todayISO, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
-  getTomorrowTasks,
   getMissed,
   getDoneOnDate,
   getRestBlocksForDate,
@@ -28,7 +27,7 @@ import {
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Check, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
+import { Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Check, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
 
 const DOMAIN_FILTERS: { k: 'all' | Domain; label: string }[] = [
   { k: 'all', label: 'All' },
