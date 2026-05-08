@@ -6,7 +6,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import AppShell from '@/components/AppShell';
 import { DOMAIN_LABEL, DOMAIN_COLOR_VAR, Domain, fmtMin, todayISO, toISODate } from '@/lib/pace';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { workloadByDate } from '@/lib/scheduling';
 
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
@@ -24,7 +24,7 @@ export default function Workload() {
   const nav = useNavigate();
   const { data: allTasks = [] } = useTasks();
   const { templates } = useTaskSuggestions(user?.id);
-  const [reflection, setReflection] = useState<number | null>(null);
+  
   const [weekOffset, setWeekOffset] = useState(0);
 
   const dailyCapMin = userProfile?.daily_capacity_minutes ?? 330;
@@ -179,28 +179,106 @@ export default function Workload() {
       </div>
 
 
-      {/* Recovery reflection */}
-      <div className="mt-4 pace-card">
-        <div className="pace-eyebrow mb-2">Recovery reflection</div>
-        <div className="text-[14px]">Did this plan leave enough time for rest and recovery?</div>
-        <div className="mt-2 flex gap-1.5">
-          {[1,2,3,4,5].map(n => (
-            <button key={n} onClick={() => setReflection(n)}
-              className={reflection === n ? 'pace-chip-filled' : 'pace-chip'}>
-              {n}
-            </button>
-          ))}
-        </div>
-        {reflection !== null && (
-          <div className="mt-2 text-[13px] text-muted-foreground">
-            {reflection <= 2
-              ? 'Noted. Try protecting one extra rest block next week.'
-              : reflection >= 4
-              ? 'Lovely. Worth keeping that pacing.'
-              : 'Noted. We can adjust the next plan together.'}
-          </div>
-        )}
-      </div>
+      {/* Insights — collapsible */}
+      <Insights
+        weekTotalMin={grandTotal}
+        weekCapMin={dailyCapMin * 7}
+        tasks={tasks}
+      />
+
     </AppShell>
+  );
+}
+
+function Insights({ weekTotalMin, weekCapMin, tasks }: { weekTotalMin: number; weekCapMin: number; tasks: any[] }) {
+  const [open, setOpen] = useState(false);
+  const pct = weekCapMin > 0 ? Math.min(999, Math.round((weekTotalMin / weekCapMin) * 100)) : 0;
+  const overBy = Math.max(0, weekTotalMin - weekCapMin);
+  const underBy = Math.max(0, weekCapMin - weekTotalMin);
+
+  const counts = useMemo(() => {
+    const c = { not_started: 0, in_progress: 0, done: 0 };
+    tasks.forEach(t => {
+      if (t.is_rest) return;
+      if (t.status === 'done') c.done += 1;
+      else if (t.status === 'in_progress' || t.status === 'started' || t.status === 'nearly_done') c.in_progress += 1;
+      else c.not_started += 1;
+    });
+    return c;
+  }, [tasks]);
+  const total = counts.not_started + counts.in_progress + counts.done;
+
+  const STATUS = [
+    { k: 'not_started' as const, label: 'Not started', color: 'hsl(var(--muted-foreground))' },
+    { k: 'in_progress' as const, label: 'In progress', color: 'hsl(var(--primary))' },
+    { k: 'done' as const,        label: 'Completed',   color: 'hsl(var(--success))' },
+  ];
+
+  return (
+    <div className="mt-4 pace-card">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between"
+        aria-expanded={open}
+      >
+        <div className="pace-eyebrow">Insights</div>
+        <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="mt-3 space-y-5 animate-fade-in">
+          {/* Workload vs capacity */}
+          <div>
+            <div className="text-[13px] font-semibold mb-1">Workload vs. capacity</div>
+            <div className="text-[12px] text-muted-foreground mb-2">
+              {fmtMin(weekTotalMin)} planned of {fmtMin(weekCapMin)} weekly capacity · {pct}%
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.min(100, pct)}%`,
+                  background: pct > 100 ? 'hsl(var(--attention))' : 'hsl(var(--primary))',
+                }}
+              />
+            </div>
+            <div className="mt-2 text-[12px] text-muted-foreground">
+              {overBy > 0
+                ? `Over capacity by ${fmtMin(overBy)} this week.`
+                : `Room for ${fmtMin(underBy)} more this week.`}
+            </div>
+          </div>
+
+          {/* Status distribution */}
+          <div>
+            <div className="text-[13px] font-semibold mb-2">Status distribution</div>
+            {total === 0 ? (
+              <div className="text-[13px] text-muted-foreground">No actions scheduled this week yet.</div>
+            ) : (
+              <>
+                <div className="flex h-2 rounded-full overflow-hidden bg-muted">
+                  {STATUS.map(s => {
+                    const w = (counts[s.k] / total) * 100;
+                    if (w === 0) return null;
+                    return <div key={s.k} style={{ width: `${w}%`, background: s.color }} />;
+                  })}
+                </div>
+                <div className="mt-2 space-y-1">
+                  {STATUS.map(s => (
+                    <div key={s.k} className="flex items-center justify-between text-[12px]">
+                      <span className="inline-flex items-center gap-1.5 text-foreground">
+                        <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                        {s.label}
+                      </span>
+                      <span className="text-muted-foreground">{counts[s.k]} · {Math.round((counts[s.k] / total) * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
