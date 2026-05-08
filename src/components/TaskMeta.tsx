@@ -1,4 +1,4 @@
-import { Users, Clock, CalendarDays, Flag, Activity, Repeat, AlertTriangle } from 'lucide-react';
+import { Users, Clock, CalendarDays, Flag, Activity, Repeat, AlertTriangle, MapPin } from 'lucide-react';
 import {
   DOMAIN_LABEL, PRIORITY_LABEL, fmtMin, formatDeadline, formatScheduledWhen,
   type Domain, type Priority,
