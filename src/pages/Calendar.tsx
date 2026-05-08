@@ -1103,6 +1103,49 @@ export default function CalendarView() {
         open={!!rescheduleId}
         onClose={() => setRescheduleId(null)}
       />
+
+      {/* Slot-choice: tap an empty calendar cell → pick task or rest. */}
+      <Dialog open={!!slotChoice} onOpenChange={(o) => { if (!o) setSlotChoice(null); }}>
+        <DialogContent className="max-w-xs rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="pace-title text-left">Add to this slot</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground text-left">
+              {slotChoice && `${days[slotChoice.dayIdx].toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${fmtTime(slotChoice.hour * 60)}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 grid gap-2">
+            <button
+              onClick={() => {
+                if (!slotChoice) return;
+                const { dayIdx: di, hour } = slotChoice;
+                setSlotChoice(null);
+                createAt(di, hour);
+              }}
+              className="pace-btn-primary">
+              <Plus className="w-4 h-4" /> New action
+            </button>
+            <button
+              onClick={() => {
+                if (!slotChoice) return;
+                const { dayIdx: di, hour } = slotChoice;
+                const date = toISODate(days[di]);
+                const startTime = `${String(hour).padStart(2, '0')}:00`;
+                const endTime = `${String(Math.min(hour + 1, 23)).padStart(2, '0')}:00`;
+                setSlotChoice(null);
+                setRestEdit({ date, startTime, endTime, label: 'Rest' });
+              }}
+              className="pace-btn">
+              <Moon className="w-4 h-4" /> Add rest block
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <RestBlockDialog
+        open={!!restEdit}
+        initial={restEdit}
+        onClose={() => setRestEdit(null)}
+      />
     </AppShell>
   );
 
