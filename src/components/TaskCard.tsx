@@ -40,6 +40,23 @@ export default function TaskCard({
       onClick={() => onOpen?.(task)}
       className={`w-full text-left pace-card !p-3 flex items-start gap-1 hover:shadow-sm transition animate-fade-in ${done ? "opacity-60" : ""}`}
     >
+      {onToggleComplete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleComplete(task);
+          }}
+          aria-label={done ? "Mark as not done" : "Mark complete"}
+          className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition ${
+            done
+              ? "bg-[hsl(var(--success))] border-[hsl(var(--success))] text-white"
+              : "border-border hover:border-primary"
+          }`}
+        >
+          {done && <Check className="w-3 h-3" strokeWidth={3} />}
+        </button>
+      )}
       <span aria-hidden="true" className="w-1 self-stretch rounded-full shrink-0" style={{ background: accent }} />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
@@ -78,23 +95,6 @@ export default function TaskCard({
           <span className={`status-chip status-${task.status} ml-auto`}>{STATUS_LABEL[task.status]}</span>
         </div>
       </div>
-      {onToggleComplete && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleComplete(task);
-          }}
-          aria-label={done ? "Mark as not done" : "Mark complete"}
-          className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition ${
-            done
-              ? "bg-[hsl(var(--success))] border-[hsl(var(--success))] text-white"
-              : "border-border hover:border-primary"
-          }`}
-        >
-          {done && <Check className="w-3 h-3" strokeWidth={3} />}
-        </button>
-      )}
     </button>
   );
 }
