@@ -44,18 +44,25 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   const [customText, setCustomText] = useState('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
+  // Editable time estimate (P20). Stored as separate H/M strings so the
+  // user can clear either without losing the other.
+  const [estHours, setEstHours] = useState<string>('');
+  const [estMinutes, setEstMinutes] = useState<string>('');
 
   // Reset selection whenever a new task opens.
   useEffect(() => {
     if (open) {
-      setSelected(tomorrowISO);
+      setSelected(task?.scheduled_date ?? tomorrowISO);
       setReason(undefined);
       setCustomMode(false);
       setCustomText('');
       setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
       setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
+      const dur = task?.duration_minutes ?? 0;
+      setEstHours(dur > 0 ? String(Math.floor(dur / 60)) : '');
+      setEstMinutes(dur > 0 ? String(dur % 60) : '');
     }
-  }, [open, tomorrowISO, task?.start_time, task?.end_time]);
+  }, [open, tomorrowISO, task?.start_time, task?.end_time, task?.scheduled_date, task?.duration_minutes]);
 
   // Next 14 days starting tomorrow, with planned workload per day.
   const loads = useMemo(() => workloadByDate(tasks.filter(t => !t.is_rest)), [tasks]);
