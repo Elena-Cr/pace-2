@@ -29,7 +29,6 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   // bumps for first-time scheduling. This keeps callers simple.
   const isSchedule = (mode === 'schedule');
   const { data: tasks = [] } = useTasks();
-  const { profile } = useUserProfile();
   const { update } = useTaskMutations();
   const task = useMemo(() => tasks.find(t => t.id === taskId) ?? null, [tasks, taskId]);
 
@@ -41,7 +40,6 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   const [customMode, setCustomMode] = useState(false);
   const [customText, setCustomText] = useState('');
   const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
   // Editable time estimate (P20). Stored as separate H/M strings so the
   // user can clear either without losing the other.
   const [estHours, setEstHours] = useState<string>('');
@@ -55,12 +53,11 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       setCustomMode(false);
       setCustomText('');
       setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
-      setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
       const dur = task?.duration_minutes ?? 0;
       setEstHours(dur > 0 ? String(Math.floor(dur / 60)) : '');
       setEstMinutes(dur > 0 ? String(dur % 60) : '');
     }
-  }, [open, tomorrowISO, task?.start_time, task?.end_time, task?.scheduled_date, task?.duration_minutes]);
+  }, [open, tomorrowISO, task?.start_time, task?.scheduled_date, task?.duration_minutes]);
 
   // Next 14 days starting tomorrow, with planned workload per day.
   const loads = useMemo(() => workloadByDate(tasks.filter(t => !t.is_rest)), [tasks]);
