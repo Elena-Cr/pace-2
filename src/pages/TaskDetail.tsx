@@ -75,8 +75,6 @@ export default function TaskDetail() {
   const [subInput, setSubInput] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
-  const [editingNext, setEditingNext] = useState(false);
-  const [nextDraft, setNextDraft] = useState('');
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
@@ -464,11 +462,6 @@ export default function TaskDetail() {
             hasValue={eSubtasks.length > 0 || !!eNotes.trim() || !!eLocation.trim()}
           >
             <div>
-              <label className="pace-field-label">Smallest next action (optional)</label>
-              <input className="pace-field" value={eNextAction} onChange={e => setENextAction(e.target.value)} placeholder="e.g. open the assignment page" />
-            </div>
-
-            <div>
               <label className="pace-field-label">Next steps (optional)</label>
               <div className="flex gap-2">
                 <input className="pace-field" value={eSubInput}
@@ -548,33 +541,6 @@ export default function TaskDetail() {
       </div>
 
       <h1 className="pace-screen-title mt-2">{task.title}</h1>
-      {editingNext ? (
-        <div className="mt-2 flex gap-2">
-          <input
-            autoFocus
-            className="pace-field"
-            value={nextDraft}
-            onChange={e => setNextDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') { e.preventDefault(); update({ next_action: nextDraft.trim() || null }); setEditingNext(false); }
-              if (e.key === 'Escape') setEditingNext(false);
-            }}
-            placeholder="Smallest next action"
-          />
-          <button
-            onClick={() => { update({ next_action: nextDraft.trim() || null }); setEditingNext(false); }}
-            className="pace-btn pace-btn-sm"
-          >Save</button>
-        </div>
-      ) : (
-        <button
-          onClick={() => { setNextDraft(task.next_action ?? ''); setEditingNext(true); }}
-          className="pace-meta mt-1 text-left hover:text-foreground transition"
-        >
-          {task.next_action ? `→ ${task.next_action}` : '→ Add a smallest next action'}
-        </button>
-      )}
-
 
       {/* Status flow */}
       <div className="mt-5 pace-card">
