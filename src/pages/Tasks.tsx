@@ -13,8 +13,11 @@ import {
   type Task,
   type TaskWarning,
 } from '@/lib/scheduling';
-import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, Timer, CalendarX, CalendarPlus } from 'lucide-react';
+import { ListTodo, AlertTriangle, Inbox, CheckCircle2, CalendarClock, CalendarX, CalendarPlus, CalendarSync } from 'lucide-react';
 import RescheduleDialog from '@/components/RescheduleDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTaskMutations } from '@/hooks/useTasks';
+import { toast } from 'sonner';
 
 type GroupKey = 'action' | 'all' | 'backlog' | 'missed' | 'scheduled' | 'done';
 type DomainFilter = 'all' | Domain | 'none';
