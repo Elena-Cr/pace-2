@@ -398,6 +398,49 @@ export default function TaskDetail() {
             hasValue={!!eDeadline}
           >
             <div>
+              <label className="pace-field-label">Time estimate</label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="number" min={0} step={1}
+                    className="pace-field pr-8"
+                    placeholder="Hours"
+                    value={eEstHours}
+                    onBlur={checkEditEstimateOnBlur}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '') return setEEstHours('');
+                      const n = Math.max(0, Math.floor(Number(v)));
+                      setEEstHours(Number.isNaN(n) ? '' : n);
+                    }}
+                  />
+                  {eEstHours !== '' && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">h</span>
+                  )}
+                </div>
+                <div className="flex-1 relative">
+                  <input
+                    type="number" min={0} max={59} step={1}
+                    className="pace-field pr-8"
+                    placeholder="Minutes"
+                    value={eEstMinutes}
+                    onBlur={checkEditEstimateOnBlur}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '') return setEEstMinutes('');
+                      let n = Math.max(0, Math.floor(Number(v)));
+                      if (Number.isNaN(n)) return setEEstMinutes('');
+                      if (n > 59) n = 59;
+                      setEEstMinutes(n);
+                    }}
+                  />
+                  {eEstMinutes !== '' && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">m</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div>
               <label className="pace-field-label">Does this have a deadline? (optional)</label>
               <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
               <input type="date" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
