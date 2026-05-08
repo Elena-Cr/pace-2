@@ -404,30 +404,23 @@ export default function Home() {
         </div>
       )}
 
-      {/* Quick stats — Done & Tomorrow expand inline; Focus jumps to /focus. */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <button
-          onClick={() => { setShowDone(s => !s); if (!showDone) setShowTomorrow(false); }}
-          aria-expanded={showDone}
-          className={`pace-card !p-3 text-left transition ${showDone ? 'ring-1 ring-primary/40' : ''}`}>
+      {/* Done — wide compact card. Click to expand today's completed tasks. */}
+      <button
+        onClick={() => setShowDone(s => !s)}
+        aria-expanded={showDone}
+        className={`pace-card mt-3 !p-3 w-full text-left flex items-center gap-3 transition ${showDone ? 'ring-1 ring-primary/40' : ''}`}>
+        <div className="w-9 h-9 rounded-xl bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] flex items-center justify-center shrink-0">
+          <Check className="w-4 h-4" strokeWidth={3} />
+        </div>
+        <div className="min-w-0 flex-1">
           <div className="pace-eyebrow">Done</div>
-          <div className="text-[20px] font-semibold mt-0.5">{doneToday.length}</div>
-          <div className="pace-meta">{completionPct}% of today</div>
-        </button>
-        <button onClick={() => nav('/focus')} className="pace-card !p-3 text-left">
-          <div className="pace-eyebrow">Focus</div>
-          <div className="text-[20px] font-semibold mt-0.5">{focusToday.count}</div>
-          <div className="pace-meta">{fmtMin(focusToday.minutes) || '0m'}</div>
-        </button>
-        <button
-          onClick={() => { setShowTomorrow(s => !s); if (!showTomorrow) setShowDone(false); }}
-          aria-expanded={showTomorrow}
-          className={`pace-card !p-3 text-left transition ${showTomorrow ? 'ring-1 ring-primary/40' : ''}`}>
-          <div className="pace-eyebrow">Tomorrow</div>
-          <div className="text-[20px] font-semibold mt-0.5">{tomorrowCount}</div>
-          <div className="pace-meta">{tomorrowCount === 1 ? 'item' : 'items'}</div>
-        </button>
-      </div>
+          <div className="text-[15px] font-semibold leading-tight">
+            {doneToday.length}
+            <span className="text-muted-foreground text-[13px] font-normal"> · {completionPct}% of today</span>
+          </div>
+        </div>
+        <ArrowRight className={`w-4 h-4 text-muted-foreground transition-transform ${showDone ? 'rotate-90' : ''}`} />
+      </button>
 
       {/* Inline expansion: today's completed tasks. */}
       {showDone && (
@@ -459,49 +452,6 @@ export default function Home() {
               })}
             </ul>
           )}
-        </div>
-      )}
-
-      {/* Inline expansion: tomorrow's planned tasks, sorted by priority. */}
-      {showTomorrow && (
-        <div className="mt-3 pace-card animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="pace-eyebrow">Tomorrow</div>
-            <button onClick={() => setShowTomorrow(false)} className="text-[12px] text-muted-foreground">Hide</button>
-          </div>
-          {tomorrowTasks.length === 0 ? (
-            <div className="mt-2 text-[13px] text-muted-foreground">Nothing planned for tomorrow yet.</div>
-          ) : (
-            <ul className="mt-2 space-y-1.5">
-              {[...tomorrowTasks]
-                .sort((a, b) => {
-                  const ap = a.priority === 'must' ? 0 : a.priority === 'should' ? 1 : 2;
-                  const bp = b.priority === 'must' ? 0 : b.priority === 'should' ? 1 : 2;
-                  return ap - bp;
-                })
-                .map(t => {
-                  const dom = (t.domain || 'personal') as Domain;
-                  return (
-                    <li key={t.id}>
-                      <button
-                        onClick={() => nav(`/task/${t.id}`)}
-                        className="w-full text-left flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-muted/40">
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: DOMAIN_COLOR_VAR[dom] }} />
-                        <span className="text-[14px] truncate">{t.title}</span>
-                        {t.duration_minutes != null && (
-                          <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{fmtMin(t.duration_minutes)}</span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-            </ul>
-          )}
-          <button
-            onClick={() => nav(`/calendar?view=day&date=${tomorrowStr}`)}
-            className="mt-3 text-[12px] font-medium text-primary inline-flex items-center gap-1">
-            View in calendar <ArrowRight className="w-3 h-3" />
-          </button>
         </div>
       )}
 
