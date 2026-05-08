@@ -566,15 +566,6 @@ export default function TaskDetail() {
                 <span className={`text-[14px] truncate ${s.done ? 'line-through text-muted-foreground' : ''}`}>{s.title}</span>
               </button>
               <div className="flex items-center gap-1 shrink-0">
-                {!s.done && (
-                  <button
-                    onClick={() => nav('/focus', { state: { taskId: task.id, subtaskId: s.id } })}
-                    className="pace-btn-ghost pace-btn-sm"
-                    aria-label={`Focus on ${s.title}`}
-                  >
-                    <Timer className="w-3.5 h-3.5" /> Focus
-                  </button>
-                )}
                 <button onClick={() => removeSub(s.id)} aria-label="Remove">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
