@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import RescheduleDialog from '@/components/RescheduleDialog';
 
 import { toast } from 'sonner';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronRight, BellOff } from 'lucide-react';
 
 export default function Focus() {
   const { user, loading } = useAuth();
