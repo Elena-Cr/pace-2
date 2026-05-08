@@ -86,15 +86,10 @@ export default function Home() {
     if (kind === 'reschedule') { setRescheduleId(id); return; }
     const t = missed.find(x => x.id === id); if (!t) return;
     if (kind === 'later') {
-      await update.mutateAsync({ id, patch: {
-        scheduled_date: null,
-        start_time: null,
-        end_time: null,
-        status: 'not_started',
-      } as any });
+      await update.mutateAsync({ id, patch: buildMoveToLaterPatch(t as any) as any });
       toast.success('Moved to Later.');
     } else {
-      await update.mutateAsync({ id, patch: { status: 'blocked' } as any });
+      await update.mutateAsync({ id, patch: buildBlockedPatch(t as any) as any });
       toast.success('Marked as blocked. Not your fault.');
     }
   }
@@ -115,6 +110,7 @@ export default function Home() {
         progress: next === 'done' ? 100 : 0,
         completed_at: next === 'done' ? new Date().toISOString() : null,
       } as any });
+      if (next === 'done') toast.success(pickCompletionMessage());
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not update.');
     }
