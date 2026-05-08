@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import RescheduleDialog from '@/components/RescheduleDialog';
 
 import { toast } from 'sonner';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronRight, BellOff } from 'lucide-react';
 
 export default function Focus() {
   const { user, loading } = useAuth();
@@ -448,8 +448,8 @@ export default function Focus() {
         <div className="space-y-3">
           <div className="pace-card flex items-center justify-between">
             <div>
-              <div className="pace-eyebrow"><span className="priority-dot should" />Remind me to enable DND</div>
-              <div className="text-[12px] text-muted-foreground mt-1">We'll remind you to enable DND when you start.</div>
+              <div className="pace-eyebrow inline-flex items-center gap-1.5"><BellOff className="w-3.5 h-3.5" />Remind me to enable Do Not Disturb</div>
+              <div className="text-[12px] text-muted-foreground mt-1 inline-flex items-center gap-1.5"><BellOff className="w-3 h-3" />We'll remind you to enable Do Not Disturb when you start.</div>
             </div>
             <button onClick={() => setDnd(d => !d)}
               className={`w-11 h-6 rounded-full relative transition ${dnd ? 'bg-primary' : 'bg-muted'}`}>

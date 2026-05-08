@@ -118,7 +118,7 @@ function NeedsAttention({
         className="w-full flex items-center gap-2 text-left">
         <AlertTriangle className="w-4 h-4 text-[hsl(var(--attention))]" />
         <span className="text-[13px] font-semibold text-[hsl(var(--attention))]">
-          Needs attention · {items.length}
+          That's OK -  let's figure out the next step. · {items.length}
         </span>
         <span className="ml-auto text-[11px] text-muted-foreground">
           {collapsed ? 'Show' : 'Hide'}
@@ -207,6 +207,8 @@ export default function CalendarView() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [open, setOpen] = useState<CalEvent | null>(null);
   const [replanFor, setReplanFor] = useState<{ taskId: string; title: string } | null>(null);
+  const [replanCustomMode, setReplanCustomMode] = useState(false);
+  const [replanCustomText, setReplanCustomText] = useState('');
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ id: string } | null>(null);
   // Tracks the event id currently being dropped so we can hide it from the
@@ -439,6 +441,28 @@ export default function CalendarView() {
     if (reason) await update.mutateAsync({ id: replanFor.taskId, patch: { replanning_reason: reason } as any });
     toast.success('Task moved. Progress preserved.');
     setReplanFor(null);
+    setReplanCustomMode(false);
+    setReplanCustomText('');
+  }
+
+  async function saveCustomReplanReason() {
+    if (!replanFor) return;
+    const text = replanCustomText.trim();
+    if (text) {
+      // No `replanning_reason_text` column exists; append the custom reason
+      // to the task's notes as a dated entry.
+      const t = allTasks.find(x => x.id === replanFor.taskId);
+      const existing = (t as any)?.notes ?? '';
+      const stamp = new Date().toLocaleDateString();
+      const appended = existing
+        ? `${existing}\n\n[${stamp}] Reschedule reason: ${text}`
+        : `[${stamp}] Reschedule reason: ${text}`;
+      await update.mutateAsync({ id: replanFor.taskId, patch: { notes: appended } as any });
+    }
+    toast.success('Task moved. Progress preserved.');
+    setReplanFor(null);
+    setReplanCustomMode(false);
+    setReplanCustomText('');
   }
 
   const now = new Date();
@@ -972,15 +996,25 @@ export default function CalendarView() {
       <Dialog open={!!replanFor} onOpenChange={(o) => { if (!o) setReplanReason(null); }}>
         <DialogContent className="max-w-md rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="pace-title text-left">Task moved. What changed?</DialogTitle>
+            <DialogTitle className="pace-title text-left">Rescheduled. What got in the way?</DialogTitle>
             <DialogDescription className="text-[13px] text-muted-foreground text-left">
-              Optional — helps you spot patterns.
+              Rescheduling is part of good planning.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-1">
-            <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
+            <ReplanReasonChips
+              onSelect={(r) => { setReplanCustomMode(false); setReplanReason(r); }}
+              customSelected={replanCustomMode}
+              customText={replanCustomText}
+              onSelectCustom={() => setReplanCustomMode(true)}
+              onCustomTextChange={setReplanCustomText}
+            />
           </div>
-          <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+          {replanCustomMode ? (
+            <button onClick={saveCustomReplanReason} className="pace-btn-primary pace-btn-sm mt-3 w-full">Save reason</button>
+          ) : (
+            <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+          )}
         </DialogContent>
       </Dialog>
 

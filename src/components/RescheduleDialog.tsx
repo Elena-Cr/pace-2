@@ -40,6 +40,8 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   }, []);
   const [selected, setSelected] = useState<string>(tomorrowISO);
   const [reason, setReason] = useState<ReplanReason | undefined>(undefined);
+  const [customMode, setCustomMode] = useState(false);
+  const [customText, setCustomText] = useState('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
 
@@ -48,6 +50,8 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
     if (open) {
       setSelected(tomorrowISO);
       setReason(undefined);
+      setCustomMode(false);
+      setCustomText('');
       setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
       setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
     }
@@ -90,6 +94,14 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       }
       patch.start_time = hasRange ? `${startTime}:00` : null;
       patch.end_time = hasRange ? `${endTime}:00` : null;
+      if (!isSchedule && customMode && customText.trim()) {
+        // No `replanning_reason_text` column; append to notes as a fallback.
+        const stamp = new Date().toLocaleDateString();
+        const existing = (task as any).notes ?? '';
+        patch.notes = existing
+          ? `${existing}\n\n[${stamp}] Reschedule reason: ${customText.trim()}`
+          : `[${stamp}] Reschedule reason: ${customText.trim()}`;
+      }
       await update.mutateAsync({ id: task.id, patch });
       toast.success(isSchedule ? 'Task scheduled.' : 'Task moved. Progress preserved.');
       onClose();
@@ -175,8 +187,16 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
 
         {!isSchedule && (
           <div className="mt-3">
-            <div className="pace-eyebrow mb-1.5">Reason (optional)</div>
-            <ReplanReasonChips selected={reason} onSelect={setReason} />
+            <div className="pace-title text-left text-[15px]">Rescheduled. What got in the way?</div>
+            <div className="text-[12px] text-muted-foreground mb-2">Rescheduling is part of good planning.</div>
+            <ReplanReasonChips
+              selected={reason}
+              onSelect={(r) => { setCustomMode(false); setReason(r); }}
+              customSelected={customMode}
+              customText={customText}
+              onSelectCustom={() => { setCustomMode(true); setReason(undefined); }}
+              onCustomTextChange={setCustomText}
+            />
           </div>
         )}
 
