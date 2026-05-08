@@ -9,6 +9,7 @@ import TaskMeta from '@/components/TaskMeta';
 import { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
