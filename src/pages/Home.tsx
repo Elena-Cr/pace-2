@@ -148,7 +148,15 @@ export default function Home() {
     const fmtRange = (s: number | null, e: number | null) =>
       s == null || e == null ? '' : `${fmtT(s)} – ${fmtT(e)}`;
 
-    const items: Array<{ key: string; title: string; range: string; startMin: number; note?: string | null }> = [];
+    type RestKind = 'sleep' | 'meal' | 'recovery' | 'custom';
+    const inferKind = (title: string): RestKind => {
+      const t = title.toLowerCase();
+      if (t.includes('sleep') || t.includes('nap') || t.includes('bed')) return 'sleep';
+      if (t.includes('lunch') || t.includes('meal') || t.includes('breakfast') || t.includes('dinner') || t.includes('food') || t.includes('snack')) return 'meal';
+      if (t.includes('walk') || t.includes('recovery') || t.includes('stretch') || t.includes('yoga')) return 'recovery';
+      return 'custom';
+    };
+    const items: Array<{ key: string; title: string; range: string; startMin: number; note?: string | null; kind: RestKind }> = [];
 
     // One-time rest tasks
     restBlocks.forEach((t: any) => {
@@ -160,6 +168,7 @@ export default function Home() {
         range: fmtRange(s, e),
         startMin: s ?? Number.POSITIVE_INFINITY,
         note: t.next_action,
+        kind: inferKind(t.title || ''),
       });
     });
 
@@ -173,6 +182,7 @@ export default function Home() {
         title: ev.title,
         range: fmtRange(ev.startMin, ev.endMin),
         startMin: ev.startMin,
+        kind: (blocks[i]?.kind as RestKind) ?? 'custom',
       });
     });
 
