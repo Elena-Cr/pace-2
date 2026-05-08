@@ -51,7 +51,7 @@ function SectionToggle({
   );
 }
 
-const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
+const STATUSES: Status[] = ['not_started','in_progress','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
