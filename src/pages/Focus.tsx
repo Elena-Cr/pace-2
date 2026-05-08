@@ -322,7 +322,7 @@ export default function Focus() {
       setCompletionCheck(false);
       setMoreTimeReschedule(true);
     } else if (outcome === 'blocked') {
-      if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
+      if (task) await update.mutateAsync({ id: task.id, patch: buildBlockedPatch(task as any) as any });
       toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
       nav('/');
     } else {
