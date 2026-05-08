@@ -109,12 +109,18 @@ export default function Focus() {
     nav('/focus', { state: { taskId: id, subtaskId: subId ?? null }, replace: true });
   }
 
-  function confirmSwitch() {
+  async function confirmSwitch() {
     const id = pendingSwitchId;
     setPendingSwitchId(null);
     if (!id) return;
-    // Drop the running session locally — outcomes are only persisted on
-    // explicit complete; a quick switch is treated as a discard.
+    // Close out the in-flight session as 'switched' so we don't leave
+    // orphaned open rows in focus_sessions (Issue L).
+    if (sessionId) {
+      await supabase.from('focus_sessions').update({
+        ended_at: new Date().toISOString(),
+        outcome: 'switched',
+      }).eq('id', sessionId);
+    }
     setRunning(false);
     setSessionId(null);
     setSecondsLeft(planned * 60);
