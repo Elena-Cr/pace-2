@@ -27,7 +27,7 @@ export type Task = {
   progress: number;                       // 0..100
   reschedule_count: number;
   involves_others: boolean;
-  others_rely: boolean;
+  others_rely?: boolean;
   subtasks: Subtask[];
   replanning_reason: string | null;
   last_mood: string | null;
