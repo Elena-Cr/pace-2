@@ -995,15 +995,77 @@ export default function CalendarView() {
               )}
               {open.notes && <div className="mt-2 text-[14px] text-muted-foreground">{open.notes}</div>}
 
-              {open.taskId && (
+              {/* One-time rest block: edit / remove. */}
+              {open.taskId && open.kind === 'rest' && !open.fixed && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      const init: RestBlockInitial = {
+                        id: open.taskId,
+                        date: open.scheduled_date ?? toISODate(days[open.day]),
+                        startTime: open.start_time ?? undefined,
+                        endTime: open.end_time ?? undefined,
+                        label: open.title,
+                      };
+                      setOpen(null);
+                      setRestEdit(init);
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const id = open.taskId;
+                      setOpen(null);
+                      if (!id) return;
+                      try {
+                        await remove.mutateAsync(id);
+                        toast.success('Rest block removed.');
+                      } catch (err: any) {
+                        toast.error(err?.message ?? 'Could not remove.');
+                      }
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                  </button>
+                </div>
+              )}
+
+              {/* Regular task actions. */}
+              {open.taskId && open.kind !== 'rest' && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm">Edit</button>
                   <button onClick={() => { const id = open.taskId; setOpen(null); if (id) setRescheduleId(id); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
                   <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
                 </div>
               )}
+
+              {/* Recurring rest block (from Settings): read-only + shortcut. */}
               {open.fixed && (
-                <div className="mt-4 text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+                <div className="mt-4 space-y-2">
+                  <div className="text-[12px] text-muted-foreground">This is a protected block to support your recovery.</div>
+                  <button
+                    onClick={() => {
+                      const init: RestBlockInitial = {
+                        date: toISODate(new Date()),
+                        startTime: undefined,
+                        endTime: undefined,
+                        label: open.title,
+                      };
+                      // Pre-fill the start/end with the recurring block's times.
+                      const sH = Math.floor(open.startMin / 60);
+                      const sM = open.startMin % 60;
+                      const eH = Math.floor(open.endMin / 60);
+                      const eM = open.endMin % 60;
+                      init.startTime = `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`;
+                      init.endTime = `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+                      setOpen(null);
+                      setRestEdit(init);
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <Plus className="w-3.5 h-3.5" /> Add a similar block today
+                  </button>
+                </div>
               )}
             </>
           )}
