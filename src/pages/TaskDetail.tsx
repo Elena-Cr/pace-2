@@ -525,7 +525,7 @@ export default function TaskDetail() {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      <div className="mt-2 flex items-start justify-between gap-3">
+      <div className="mt-2 gap-3 flex items-end justify-between">
         <h1 className="pace-screen-title flex-1 min-w-0">{task.title}</h1>
         <button
           onClick={openEdit}
