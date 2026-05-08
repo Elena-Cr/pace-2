@@ -28,13 +28,14 @@ import {
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
+import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
 
-const FILTERS: { k: 'all' | Status; label: string }[] = [
+const DOMAIN_FILTERS: { k: 'all' | Domain; label: string }[] = [
   { k: 'all', label: 'All' },
-  { k: 'in_progress', label: STATUS_LABEL.in_progress },
-  { k: 'blocked', label: STATUS_LABEL.blocked },
-  { k: 'nearly_done', label: STATUS_LABEL.nearly_done },
+  { k: 'academic', label: DOMAIN_LABEL.academic },
+  { k: 'work', label: DOMAIN_LABEL.work },
+  { k: 'social', label: DOMAIN_LABEL.social },
+  { k: 'personal', label: DOMAIN_LABEL.personal },
 ];
 
 export default function Home() {
