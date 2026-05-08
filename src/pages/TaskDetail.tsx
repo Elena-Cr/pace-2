@@ -22,7 +22,7 @@ import {
 } from '@/lib/pace';
 import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users, CalendarIcon, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, X, Trash2, Pencil, Users, CalendarIcon, ChevronDown } from 'lucide-react';
 
 // Pre-generated 15-minute interval times (00:00 → 23:45)
 const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => {
@@ -51,7 +51,7 @@ function SectionToggle({
   );
 }
 
-const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
+const STATUSES: Status[] = ['not_started','in_progress','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
 const EFFORTS = ['Light', 'Moderate', 'Heavy'];
 
@@ -78,6 +78,7 @@ export default function TaskDetail() {
   const [notesDraft, setNotesDraft] = useState('');
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   // Edit-form draft state. Populated from `task` whenever edit mode opens.
   const [eTitle, setETitle] = useState('');
@@ -315,10 +316,6 @@ export default function TaskDetail() {
     await update({ subtasks: next });
   }
 
-  async function pauseTask() {
-    await update({ status: 'blocked' });
-  }
-
   async function remove() {
     await removeMut.mutateAsync(task!.id);
     toast.success('Removed.');
@@ -522,43 +519,31 @@ export default function TaskDetail() {
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
-      <div className="mt-3 flex items-start justify-between gap-2">
-        <TaskMeta task={task} />
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`status-chip status-${task.status}`}>{STATUS_LABEL[task.status as Status]}</span>
-          <button onClick={openEdit} className="pace-btn-ghost pace-btn-sm" aria-label="Edit action details">
-            <Pencil className="w-3.5 h-3.5" /> Edit
-          </button>
-        </div>
+      <div className="mt-2 flex items-start justify-between gap-3">
+        <h1 className="pace-screen-title flex-1 min-w-0">{task.title}</h1>
+        <button
+          onClick={openEdit}
+          className="shrink-0 inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-[13px] font-semibold shadow-[0_4px_14px_hsl(var(--primary)/0.3)] transition active:scale-95"
+          aria-label="Edit action details"
+        >
+          <Pencil className="w-3.5 h-3.5" /> Edit
+        </button>
       </div>
 
-      <h1 className="pace-screen-title mt-2">{task.title}</h1>
+      <div className="mt-2">
+        <TaskMeta task={task} compact />
+      </div>
 
       {/* Status flow */}
       <div className="mt-5 pace-card">
         <div className="pace-eyebrow mb-2">Progress</div>
         <div className="flex flex-wrap gap-1.5">
-          {STATUSES.map(s => {
-            // Helper text disambiguates the two "in motion" states that
-            // testers found hard to tell apart.
-            const hint =
-              s === 'started' ? 'I have begun but paused' :
-              s === 'in_progress' ? 'Actively working on this now' :
-              s === 'not_started' ? 'Not begun yet' :
-              s === 'blocked' ? 'Stuck — waiting on something' :
-              s === 'nearly_done' ? 'Almost finished' :
-              s === 'done' ? 'Completed' : '';
-            return (
-              <button key={s} onClick={() => setStatus(s)} title={hint} aria-label={`${STATUS_LABEL[s]} — ${hint}`}
-                className={task.status === s ? 'pace-chip-filled' : 'pace-chip'}>
-                {STATUS_LABEL[s]}
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-3">
-          <div className="pace-progress"><i style={{ width: `${computedProgress}%` }} /></div>
-          <div className="pace-meta mt-1">{computedProgress}%</div>
+          {STATUSES.map(s => (
+            <button key={s} onClick={() => setStatus(s)}
+              className={task.status === s ? 'pace-chip-filled' : 'pace-chip'}>
+              {STATUS_LABEL[s]}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -577,15 +562,6 @@ export default function TaskDetail() {
                 <span className={`text-[14px] truncate ${s.done ? 'line-through text-muted-foreground' : ''}`}>{s.title}</span>
               </button>
               <div className="flex items-center gap-1 shrink-0">
-                {!s.done && (
-                  <button
-                    onClick={() => nav('/focus', { state: { taskId: task.id, subtaskId: s.id } })}
-                    className="pace-btn-ghost pace-btn-sm"
-                    aria-label={`Focus on ${s.title}`}
-                  >
-                    <Timer className="w-3.5 h-3.5" /> Focus
-                  </button>
-                )}
                 <button onClick={() => removeSub(s.id)} aria-label="Remove">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -647,12 +623,8 @@ export default function TaskDetail() {
 
       {/* Actions */}
       <div className="mt-5 grid grid-cols-2 gap-2">
-        <button onClick={() => nav('/focus', { state: { taskId: task.id } })} className="pace-btn-primary col-span-2">
-          <Timer className="w-4 h-4" /> Focus on this
-        </button>
-        <button onClick={pauseTask} className="pace-btn">Pause</button>
         <button onClick={() => setRescheduleOpen(true)} className="pace-btn">Reschedule</button>
-        <button onClick={remove} className="pace-btn-ghost col-span-2 text-[hsl(var(--attention))]">
+        <button onClick={() => setConfirmRemove(true)} className="pace-btn-ghost text-[hsl(var(--attention))]">
           <Trash2 className="w-4 h-4" /> Remove
         </button>
       </div>
@@ -662,6 +634,21 @@ export default function TaskDetail() {
         open={rescheduleOpen}
         onClose={() => setRescheduleOpen(false)}
       />
+
+      <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this action?</AlertDialogTitle>
+            <AlertDialogDescription>
+              No worries — you can always add it back later. This will take it off your list for now.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmRemove(false); remove(); }}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

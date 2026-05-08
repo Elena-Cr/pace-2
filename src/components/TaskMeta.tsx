@@ -1,4 +1,4 @@
-import { Users, Clock, CalendarDays, Flag, Activity, Repeat, AlertTriangle } from 'lucide-react';
+import { Users, Clock, CalendarDays, Flag, Activity, Repeat, AlertTriangle, MapPin } from 'lucide-react';
 import {
   DOMAIN_LABEL, PRIORITY_LABEL, fmtMin, formatDeadline, formatScheduledWhen,
   type Domain, type Priority,
@@ -19,15 +19,17 @@ export type TaskMetaInfo = {
   involves_others?: boolean;
   others_rely?: boolean;
   reschedule_count?: number;
+  location?: string | null;
 };
 
 // Small chip used by TaskMeta. Kept inline so usage stays one import.
-function Chip({ icon: Icon, label, value, tone }: { icon: any; label: string; value: string; tone?: 'attention' }) {
+function Chip({ icon: Icon, label, value, tone, compact }: { icon: any; label: string; value: string; tone?: 'attention'; compact?: boolean }) {
   const toneClass = tone === 'attention'
     ? 'bg-[hsl(var(--attention)/0.15)] text-[hsl(var(--attention))]'
     : 'bg-muted text-foreground';
+  const sizeClass = compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-[12px]';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] ${toneClass}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full ${sizeClass} ${toneClass}`}>
       <Icon className="w-3 h-3 shrink-0" />
       <span className="text-muted-foreground">{label}:</span>
       <span className="font-medium">{value}</span>
@@ -42,28 +44,26 @@ export default function TaskMeta({ task, compact = false, omitDate = false }: { 
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${compact ? 'text-[11px]' : ''}`}>
-      {whenLabel && <Chip icon={CalendarDays} label="Scheduled" value={whenLabel} />}
-      {/* When a deadline already exists, the "not scheduled" state is just
-          a planning gap — render it neutrally so the chips don't read as
-          contradicting each other. Without a deadline we still flag it. */}
+      {whenLabel && <Chip icon={CalendarDays} label="Scheduled" value={whenLabel} compact={compact} />}
       {!whenLabel && showDeadline && (
-        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled yet" />
+        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled yet" compact={compact} />
       )}
       {!whenLabel && !showDeadline && (
-        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" />
+        <Chip icon={CalendarDays} label="Scheduled" value="Not scheduled" tone="attention" compact={compact} />
       )}
-      {task.priority && <Chip icon={Flag} label="Priority" value={PRIORITY_LABEL[task.priority]} />}
-      {task.domain && <Chip icon={Activity} label="Category" value={DOMAIN_LABEL[task.domain]} />}
+      {task.priority && <Chip icon={Flag} label="Priority" value={PRIORITY_LABEL[task.priority]} compact={compact} />}
+      {task.domain && <Chip icon={Activity} label="Category" value={DOMAIN_LABEL[task.domain]} compact={compact} />}
       {task.duration_minutes != null && task.duration_minutes > 0 && (
-        <Chip icon={Clock} label="Estimate" value={fmtMin(task.duration_minutes)} />
+        <Chip icon={Clock} label="Estimate" value={fmtMin(task.duration_minutes)} compact={compact} />
       )}
-      {task.effort_level && <Chip icon={Activity} label="Effort" value={task.effort_level} />}
-      {showDeadline && <Chip icon={AlertTriangle} label="Deadline" value={formatDeadline(task.deadline ?? null)} />}
+      {task.effort_level && <Chip icon={Activity} label="Effort" value={task.effort_level} compact={compact} />}
+      {showDeadline && <Chip icon={AlertTriangle} label="Deadline" value={formatDeadline(task.deadline ?? null)} compact={compact} />}
       {showOthers && (
-        <Chip icon={Users} label="People" value="Involves others" />
+        <Chip icon={Users} label="People" value="Involves others" compact={compact} />
       )}
+      {task.location && <Chip icon={MapPin} label="Location" value={task.location} compact={compact} />}
       {(task.reschedule_count ?? 0) > 0 && (
-        <Chip icon={Repeat} label="Rescheduled" value={`${task.reschedule_count}×`} />
+        <Chip icon={Repeat} label="Rescheduled" value={`${task.reschedule_count}×`} compact={compact} />
       )}
     </div>
   );
