@@ -22,9 +22,11 @@ import {
   getTaskRestConflicts,
   effectiveCapacityMinutes,
   capacityState,
-  // getNoDeadlineHighValue — removed per spec
   resolveProfileEnergy,
+  buildBlockedPatch,
+  buildMoveToLaterPatch,
 } from '@/lib/scheduling';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
 import { Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Check, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
