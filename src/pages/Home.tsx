@@ -221,9 +221,13 @@ export default function Home() {
   // precedence over the daily energy_level for the current period.
   const periodKey = nowHour < 12 ? 'morning_energy' : nowHour < 17 ? 'afternoon_energy' : 'evening_energy';
   const periodOverride = (capacity as any)?.[periodKey] as string | null | undefined;
-  const effectiveOverride = capacity
-    ? { available_hours: Number(capacity.available_hours), energy_level: periodOverride ?? capacity.energy_level ?? profileEnergy }
-    : { available_hours: profileCapMin / 60, energy_level: profileEnergy };
+  // Always use the profile capacity as the Med baseline so the displayed
+  // value matches what the user set during onboarding / Settings. Only the
+  // energy level (with optional per-period override) flexes capacity ±pct.
+  const effectiveOverride = {
+    available_hours: profileCapMin / 60,
+    energy_level: capacity ? (periodOverride ?? capacity.energy_level ?? profileEnergy) : profileEnergy,
+  };
   const capMin = effectiveCapacityMinutes(
     effectiveOverride,
     profileCapMin,
