@@ -282,14 +282,19 @@ export default function TaskDetail() {
     // Explicit user selection: honour the canonical target so progress
     // can decrease when moving backwards (e.g. Done → Nearly done).
     const finalProgress = progressForStatusExplicit(s, task.progress || 0);
-    await update({ status: s, progress: finalProgress });
+    if (s === 'blocked') {
+      // Blocked clears the schedule and bumps reschedule_count if it had been
+      // scheduled — see buildBlockedPatch.
+      const patch: any = { ...buildBlockedPatch(task as any), progress: finalProgress };
+      await update(patch);
+      toast.success('Marked blocked. Cleared from your plan.');
+      return;
+    }
+    const patch: any = { status: s, progress: finalProgress };
+    if (s === 'done') patch.completed_at = new Date().toISOString();
+    await update(patch);
     if (s === 'done') {
-      const messages = [
-        'Done. That was real work.',
-        'Completed. Momentum is building.',
-        'One less thing. Nice pacing.',
-      ];
-      toast.success(messages[Math.floor(Math.random() * messages.length)]);
+      toast.success(pickCompletionMessage());
     } else {
       toast.success(`Marked ${STATUS_LABEL[s].toLowerCase()}.`);
     }
