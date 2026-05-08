@@ -101,7 +101,8 @@
       sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
-    line-height: 1.55;
+    line-height: 1.5;
+    font-size: 14px;
   }
   h1,
   h2,
