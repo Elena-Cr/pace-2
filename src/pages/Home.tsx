@@ -459,7 +459,10 @@ export default function Home() {
       {/* Needs attention */}
       {missed.length > 0 && (
         <div className="mt-6 space-y-2.5">
-          <div className="pace-eyebrow"><span className="priority-dot must" />Needs attention</div>
+          <div>
+            <div className="text-[16px] font-semibold">That's OK -  let's figure out the next step.</div>
+            <div className="text-[13px] text-muted-foreground mt-0.5">Pick what feels right for now.</div>
+          </div>
           {missed.slice(0, 3).map(t => {
             const overdue = daysOverdue(t.scheduled_date ?? null);
             const moved = t.reschedule_count ?? 0;
