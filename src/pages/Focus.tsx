@@ -239,7 +239,7 @@ export default function Focus() {
   }
 
   async function markBlocked() {
-    if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
+    if (task) await update.mutateAsync({ id: task.id, patch: buildBlockedPatch(task as any) as any });
     if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'blocked' }).eq('id', sessionId);
     toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
     nav('/');
