@@ -601,7 +601,7 @@ export default function CalendarView() {
                 <div>
                   <div className="pace-title">{dateObj.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="gap-2 flex items-start justify-end">
                   <DayEnergyPicker
                     date={summary.date}
                     current={summary.energy}
