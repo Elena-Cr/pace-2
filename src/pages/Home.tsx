@@ -127,6 +127,54 @@ export default function Home() {
 
   const todayTasks = useMemo(() => getTodayTasks(tasks, todayStr), [tasks, todayStr]);
   const restBlocks = useMemo(() => getRestBlocksForDate(tasks, todayStr), [tasks, todayStr]);
+
+  // Unified rest agenda for today: one-time rest tasks + recurring fixed
+  // blocks from the user's profile (sleep/meal/recovery/custom). Sorted by
+  // start time so the user sees when each protected block falls.
+  const todayRestItems = useMemo(() => {
+    const toMin = (s?: string | null) => {
+      if (!s) return null;
+      const [h, m] = s.split(':').map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+    const fmtT = (min: number) => {
+      const h = Math.floor(min / 60), m = min % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    const fmtRange = (s: number | null, e: number | null) =>
+      s == null || e == null ? '' : `${fmtT(s)} – ${fmtT(e)}`;
+
+    const items: Array<{ key: string; title: string; range: string; startMin: number; note?: string | null }> = [];
+
+    // One-time rest tasks
+    restBlocks.forEach((t: any) => {
+      const s = toMin(t.start_time);
+      const e = toMin(t.end_time);
+      items.push({
+        key: `rest-${t.id}`,
+        title: t.title,
+        range: fmtRange(s, e),
+        startMin: s ?? Number.POSITIVE_INFINITY,
+        note: t.next_action,
+      });
+    });
+
+    // Recurring fixed blocks from profile
+    const blocks = (userProfile?.default_time_blocks ?? []).map((b: any) => ({
+      label: b.label, start: b.start, end: b.end, kind: b.kind, days: b.days,
+    }));
+    expandTimeBlocks(blocks, todayStr).forEach((ev, i) => {
+      items.push({
+        key: `fix-${i}-${ev.startMin}`,
+        title: ev.title,
+        range: fmtRange(ev.startMin, ev.endMin),
+        startMin: ev.startMin,
+      });
+    });
+
+    return items.sort((a, b) => a.startMin - b.startMin);
+  }, [restBlocks, userProfile, todayStr]);
+
   const real = todayTasks;
   const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
 
@@ -549,7 +597,7 @@ export default function Home() {
       </div>
 
       <div className="mt-3 space-y-2.5">
-        {filtered.length === 0 && restBlocks.length === 0 && (
+        {filtered.length === 0 && todayRestItems.length === 0 && (
           <div className="pace-card-soft text-sm text-muted-foreground">
             Nothing on today's list. Tap <span className="font-semibold text-foreground">New action</span> above to add something — title is the only thing required.
           </div>
@@ -566,11 +614,18 @@ export default function Home() {
           </div>
         ))}
 
-        {/* Rest blocks stay visible no matter which status filter is active. */}
-        {restBlocks.map(t => (
-          <div key={t.id} className="pace-rest">
-            <span>◯ {t.title}</span>
-            <span>{t.next_action ?? ''}</span>
+        {/* Rest blocks stay visible no matter which status filter is active.
+            Includes both one-time rest tasks and recurring protected time
+            blocks from the user's profile, sorted by start time. */}
+        {todayRestItems.map(r => (
+          <div key={r.key} className="pace-rest">
+            <span className="inline-flex items-center gap-2 min-w-0">
+              <span className="shrink-0">◯</span>
+              <span className="truncate">{r.title}</span>
+            </span>
+            <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+              {r.range || r.note || ''}
+            </span>
           </div>
         ))}
 
