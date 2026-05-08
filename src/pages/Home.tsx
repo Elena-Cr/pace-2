@@ -282,20 +282,27 @@ export default function Home() {
     }
   }
 
-  // Next up: prefer in_progress, else nearest
+  // Up next: surface the action whose scheduled start time is the next one
+  // after the current local time in Europe/Copenhagen. Falls back to the
+  // earliest-starting task still ahead today; if everything is in the past,
+  // fall back to the earliest unfinished task today.
   const nextUp = useMemo(() => {
-    const inProg = real.find(t => t.status === 'in_progress');
-    if (inProg) return inProg;
-    return [...real].sort((a, b) => {
-      const ap = a.priority === 'must' ? 0 : a.priority === 'should' ? 1 : 2;
-      const bp = b.priority === 'must' ? 0 : b.priority === 'should' ? 1 : 2;
-      if (ap !== bp) return ap - bp;
-      // Within a priority, prefer the soonest deadline. Tasks without a
-      // deadline sort after tasks that have one.
-      const ad = a.deadline ? Date.parse(a.deadline) : Number.POSITIVE_INFINITY;
-      const bd = b.deadline ? Date.parse(b.deadline) : Number.POSITIVE_INFINITY;
-      return ad - bd;
-    })[0];
+    const scheduled = real.filter(t => t.status !== 'done' && t.start_time);
+    if (scheduled.length === 0) return real.find(t => t.status !== 'done') ?? null;
+    const toMin = (s: string) => {
+      const [h, m] = s.split(':').map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+    // Current minute-of-day in Europe/Copenhagen (independent of the device tz).
+    const cphParts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Copenhagen',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const cphHour = Number(cphParts.find(p => p.type === 'hour')?.value ?? 0);
+    const cphMin = Number(cphParts.find(p => p.type === 'minute')?.value ?? 0);
+    const nowMin = cphHour * 60 + cphMin;
+    const sorted = [...scheduled].sort((a, b) => toMin(a.start_time!) - toMin(b.start_time!));
+    return sorted.find(t => toMin(t.start_time!) >= nowMin) ?? sorted[0];
   }, [real]);
 
   const totalToday = real.length + doneToday.length;
