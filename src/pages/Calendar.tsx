@@ -100,15 +100,13 @@ const ALL_DOMAINS: Array<Domain | 'rest'> = ['academic', 'work', 'social', 'pers
 function NeedsAttention({
   items,
   onReschedule,
-  onReduce,
+  onLater,
   onBlock,
-  onStart,
 }: {
   items: CalEvent[];
   onReschedule: (ev: CalEvent) => void;
-  onReduce: (ev: CalEvent) => void;
+  onLater: (ev: CalEvent) => void;
   onBlock: (ev: CalEvent) => void;
-  onStart: (ev: CalEvent) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -149,17 +147,14 @@ function NeedsAttention({
                       The scheduled window has passed. Pick a gentle next step.
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      <button onClick={() => onStart(ev)} className="pace-btn-primary pace-btn-sm">
-                        <Timer className="w-3.5 h-3.5" /> Start now
-                      </button>
-                      <button onClick={() => onReschedule(ev)} className="pace-btn pace-btn-sm">
+                      <button onClick={() => onReschedule(ev)} className="pace-btn-primary pace-btn-sm">
                         <MoveRight className="w-3.5 h-3.5" /> Reschedule
                       </button>
-                      <button onClick={() => onReduce(ev)} className="pace-btn pace-btn-sm">
-                        Reduce to 10 min
-                      </button>
                       <button onClick={() => onBlock(ev)} className="pace-btn pace-btn-sm">
-                        Mark blocked
+                        Mark as blocked
+                      </button>
+                      <button onClick={() => onLater(ev)} className="pace-btn pace-btn-sm">
+                        Move to Later
                       </button>
                     </div>
                   </div>
