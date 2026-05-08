@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, Pencil } from 'lucide-react';
 import { useUpsertCapacity } from '@/hooks/useDailyCapacity';
 import {
   DropdownMenu,
@@ -62,11 +62,12 @@ export default function DayEnergyPicker({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center gap-1 rounded-full font-medium ${sizeCls} ${tone} hover:opacity-90`}
+          className={`inline-flex items-center gap-1 rounded-full font-medium ${sizeCls} ${tone} hover:opacity-90 ring-1 ring-border/60`}
           aria-label={`Energy: ${LABEL[value]}. Tap to change.`}
         >
           <Zap className={size === 'md' ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
           {LABEL[value]}
+          <Pencil className={`opacity-70 ${size === 'md' ? 'w-3 h-3 ml-0.5' : 'w-2.5 h-2.5 ml-0.5'}`} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[140px]">
