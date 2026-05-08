@@ -75,8 +75,6 @@ export default function TaskDetail() {
   const [subInput, setSubInput] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
-  const [editingNext, setEditingNext] = useState(false);
-  const [nextDraft, setNextDraft] = useState('');
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
