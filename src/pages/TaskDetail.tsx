@@ -78,6 +78,7 @@ export default function TaskDetail() {
   const [notesDraft, setNotesDraft] = useState('');
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   // Edit-form draft state. Populated from `task` whenever edit mode opens.
   const [eTitle, setETitle] = useState('');
