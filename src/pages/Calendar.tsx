@@ -72,9 +72,9 @@ function fmtRange(s: number, e: number) { return `${fmtTime(s)} – ${fmtTime(e)
 function scheduledLabel(min: number) {
   if (!min) return 'free';
   const h = Math.floor(min / 60); const m = min % 60;
-  if (h && m) return `${h}h ${m}m`;
+  if (h && m) return `${h}h${m}m`;
   if (h) return `${h}h`;
-  return `${m} mins`;
+  return `${m}m`;
 }
 
 // Sample non-task blocks repeated each weekday
@@ -555,6 +555,7 @@ export default function CalendarView() {
                 className={`flex-1 min-w-0 px-1 py-2 rounded-2xl text-center ${active ? 'bg-muted-foreground/15 border border-muted-foreground/40' : 'bg-card border border-border/60'}`}>
                 <div className="text-[9px] font-semibold uppercase tracking-wider opacity-80 truncate">{DAYS[i]}</div>
                 <div className="text-[14px] font-semibold leading-tight">{d.getDate()}</div>
+                <div className="text-[9px] text-muted-foreground mt-0.5">{scheduledLabel(summary.planned)}</div>
                 <div className="h-1.5 mt-0.5 flex items-center justify-center" aria-hidden="true">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
                 </div>
