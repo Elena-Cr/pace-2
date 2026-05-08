@@ -485,7 +485,7 @@ export default function Home() {
                   </div>
                 )}
                 {!heavyMoved && (
-                  <div className="text-[13px] mt-1">This action needs attention. What would help now?</div>
+                  <div className="text-[13px] mt-1">Pick what feels right for now.</div>
                 )}
                 <div className="mt-2 flex gap-1.5 flex-wrap">
                   {heavyMoved ? (
