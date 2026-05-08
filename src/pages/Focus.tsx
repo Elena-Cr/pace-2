@@ -118,7 +118,7 @@ export default function Focus() {
     if (sessionId) {
       await supabase.from('focus_sessions').update({
         ended_at: new Date().toISOString(),
-        outcome: 'switched',
+        outcome: 'abandoned',
       }).eq('id', sessionId);
     }
     setRunning(false);
