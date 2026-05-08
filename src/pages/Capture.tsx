@@ -294,17 +294,27 @@ export default function Capture() {
           </div>
         )}
 
-        {/* ALWAYS-VISIBLE: Category */}
+        {/* ALWAYS-VISIBLE: Category (required) */}
         <div>
           <label className="pace-field-label">Category</label>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
-              <button key={d.k} onClick={() => setDomain(d.k)}
-                className={domain === d.k ? 'pace-chip-filled' : 'pace-chip'}>{d.label}</button>
+              <button key={d.k} onClick={() => { setDomain(d.k); setCategoryChosen(true); }}
+                className={domain === d.k && categoryChosen ? 'pace-chip-filled' : 'pace-chip'}>{d.label}</button>
             ))}
-            <button onClick={() => setDomain(null)} className={`pace-chip-dashed ${domain === null ? 'opacity-100' : 'opacity-70'}`}>Decide later</button>
+            <button
+              onClick={() => { setDomain(null); setCategoryChosen(true); }}
+              className={`pace-chip-dashed ${domain === null && categoryChosen ? 'opacity-100' : 'opacity-70'}`}
+            >
+              Decide later
+            </button>
           </div>
         </div>
+
+        <p className="text-[13px] text-muted-foreground">
+          Optional fields — fill these in now, or whenever it feels right.
+        </p>
+
 
         {/* SECTION A: Priority & Effort */}
         <SectionToggle open={openA} onToggle={() => setOpenA(o => !o)} title="Priority & Effort" hasValue={sectionAHasValue}>
