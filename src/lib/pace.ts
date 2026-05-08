@@ -58,12 +58,12 @@ export const STATUS_LABEL: Record<Status, string> = {
 };
 
 export const REPLAN_REASON_LABEL: Record<ReplanReason, string> = {
-  too_tired: 'Too tired',
-  underestimated: 'Underestimated it',
-  waiting_others: 'Waiting on others',
-  higher_priority: 'Higher priority came up',
-  needed_more_time: 'Needed more time',
-  circumstances_changed: 'Circumstances changed',
+  too_tired: 'Low energy today',
+  underestimated: 'Took longer than expected',
+  waiting_others: 'Waiting on someone else',
+  higher_priority: 'Something more urgent came up',
+  needed_more_time: 'Need a longer slot',
+  circumstances_changed: 'Plans changed',
 };
 
 export const MOOD_LABEL: Record<Mood, string> = {
