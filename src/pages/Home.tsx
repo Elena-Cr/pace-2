@@ -9,6 +9,8 @@ import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import RescheduleDialog from '@/components/RescheduleDialog';
 import RestBlockDialog, { RestBlockInitial } from '@/components/RestBlockDialog';
+import DayEnergyPicker from '@/components/DayEnergyPicker';
+import CapacityInfoButton from '@/components/CapacityInfoButton';
 import { greeting, todayISO, toISODate, Status, STATUS_LABEL, Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, fmtMin, formatDeadline } from '@/lib/pace';
 import {
   getTodayTasks,
