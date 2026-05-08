@@ -34,7 +34,7 @@ const App = () => (
             <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
             <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
             <Route path="/capture" element={<RequireAuth><Capture /></RequireAuth>} />
-            <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
+            {/* /plan route removed — features migrated to Home/Calendar/Settings. */}
             
             <Route path="/focus" element={<RequireAuth><Focus /></RequireAuth>} />
             <Route path="/workload" element={<RequireAuth><Workload /></RequireAuth>} />
