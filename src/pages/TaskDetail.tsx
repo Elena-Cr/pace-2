@@ -232,14 +232,8 @@ export default function TaskDetail() {
     if (!task) return;
     if (!eTitle.trim()) { toast.error('Add a title to save.'); return; }
     if (!eEstimate || Number(eEstimate) <= 0) { toast.error('Add a time estimate.'); return; }
-    if (eScheduledISO && !eHasTimeRange) {
-      toast.error('Pick a start and end time for this day.');
-      return;
-    }
     setSavingEdit(true);
     try {
-      const start_time = eHasTimeRange && eScheduledISO ? `${eStartTime}:00` : null;
-      const end_time = eHasTimeRange && eScheduledISO ? `${eEndTime}:00` : null;
       await updateMut.mutateAsync({
         id: task.id,
         patch: {
@@ -249,9 +243,6 @@ export default function TaskDetail() {
           deadline: eDeadline ? new Date(eDeadline).toISOString() : null,
           duration_minutes: eEstimate ? Number(eEstimate) : null,
           effort_level: eEffort,
-          scheduled_date: eScheduledISO,
-          start_time,
-          end_time,
           next_action: eNextAction.trim() || null,
           notes: eNotes.trim() || null,
           subtasks: eSubtasks,
@@ -454,77 +445,12 @@ export default function TaskDetail() {
             </button>
           </SectionToggle>
 
-          {/* SECTION B: Scheduling & Deadline */}
+          {/* SECTION B: Deadline */}
           <SectionToggle
             open={eOpenB} onToggle={() => setEOpenB(o => !o)}
-            title="Scheduling & Deadline"
-            hasValue={!!eScheduledISO || !!eDeadline}
+            title="Deadline"
+            hasValue={!!eDeadline}
           >
-            <div>
-              <label className="pace-field-label">What date would you like to schedule this for?</label>
-              <p className="pace-meta mt-0.5 mb-1.5">This is when you plan to work on it.</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {([
-                  { k: 'today', label: 'Today' },
-                  { k: 'tomorrow', label: 'Tomorrow' },
-                  { k: 'backlog', label: 'Backlog' },
-                ] as const).map(opt => (
-                  <button key={opt.k} type="button" onClick={() => setEWhen(opt.k)}
-                    className={eWhen === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
-                    {opt.label}
-                  </button>
-                ))}
-                <Popover open={eDatePopoverOpen} onOpenChange={setEDatePopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        eWhen === 'pick' && ePickedDate ? 'pace-chip-filled' : 'pace-chip',
-                        'inline-flex items-center gap-1.5'
-                      )}
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5" />
-                      {eWhen === 'pick' && ePickedDate ? format(ePickedDate, 'MMM d') : 'Pick a date'}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={ePickedDate}
-                      onSelect={(d) => {
-                        if (d) {
-                          setEPickedDate(d);
-                          setEWhen('pick');
-                          setEDatePopoverOpen(false);
-                        }
-                      }}
-                      initialFocus
-                      className={cn('p-3 pointer-events-auto')}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {eScheduledISO && (
-                <div className="mt-3">
-                  <label className="pace-field-label">Start time</label>
-                  <select
-                    className="pace-field"
-                    value={eStartTime}
-                    onChange={e => setEStartTime(e.target.value)}
-                  >
-                    <option value="">Select a time…</option>
-                    {TIME_OPTIONS.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  {eHasTimeRange && (
-                    <p className="pace-meta mt-1">Ends at {eEndTime}.</p>
-                  )}
-                </div>
-              )}
-            </div>
-
             <div>
               <label className="pace-field-label">Does this have a deadline? (optional)</label>
               <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
