@@ -9,6 +9,7 @@ import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
 import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
 import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes, resolveProfileEnergy } from '@/lib/scheduling';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -1216,9 +1217,18 @@ export default function CalendarView() {
 
   async function toggleDone(ev: CalEvent) {
     if (!ev.taskId) return;
-    const newStatus: Status = ev.status === 'done' ? 'in_progress' : 'done';
+    const wasDone = ev.status === 'done';
+    const newStatus: Status = wasDone ? 'in_progress' : 'done';
     try {
-      await update.mutateAsync({ id: ev.taskId, patch: { status: newStatus } as any });
+      const patch: any = { status: newStatus };
+      if (!wasDone) {
+        patch.progress = 100;
+        patch.completed_at = new Date().toISOString();
+      } else {
+        patch.completed_at = null;
+      }
+      await update.mutateAsync({ id: ev.taskId, patch });
+      if (!wasDone) toast.success(pickCompletionMessage());
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not update.');
     }

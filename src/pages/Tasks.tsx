@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { todayISO, DOMAIN_LABEL, type Domain } from '@/lib/pace';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import {
   getBacklog,
   getMissed,
@@ -71,6 +72,7 @@ export default function Tasks() {
         progress: next === 'done' ? 100 : 0,
         completed_at: next === 'done' ? new Date().toISOString() : null,
       } as any });
+      if (next === 'done') toast.success(pickCompletionMessage());
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not update.');
     }

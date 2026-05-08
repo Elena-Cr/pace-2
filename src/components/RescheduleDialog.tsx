@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { buildReschedulePatch, workloadByDate } from '@/lib/scheduling';
+import { buildReschedulePatch, buildMoveToLaterPatch, workloadByDate } from '@/lib/scheduling';
 import { Mood, ReplanReason, fmtMin, toISODate, todayISO } from '@/lib/pace';
 import { toast } from 'sonner';
-import TimeRangePicker, { timeStringToMin } from '@/components/TimeRangePicker';
 import { Clock } from 'lucide-react';
 
 type Props = {
@@ -31,7 +29,6 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   // bumps for first-time scheduling. This keeps callers simple.
   const isSchedule = (mode === 'schedule');
   const { data: tasks = [] } = useTasks();
-  const { profile } = useUserProfile();
   const { update } = useTaskMutations();
   const task = useMemo(() => tasks.find(t => t.id === taskId) ?? null, [tasks, taskId]);
 
@@ -43,7 +40,6 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   const [customMode, setCustomMode] = useState(false);
   const [customText, setCustomText] = useState('');
   const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
   // Editable time estimate (P20). Stored as separate H/M strings so the
   // user can clear either without losing the other.
   const [estHours, setEstHours] = useState<string>('');
@@ -57,12 +53,11 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       setCustomMode(false);
       setCustomText('');
       setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
-      setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
       const dur = task?.duration_minutes ?? 0;
       setEstHours(dur > 0 ? String(Math.floor(dur / 60)) : '');
       setEstMinutes(dur > 0 ? String(dur % 60) : '');
     }
-  }, [open, tomorrowISO, task?.start_time, task?.end_time, task?.scheduled_date, task?.duration_minutes]);
+  }, [open, tomorrowISO, task?.start_time, task?.scheduled_date, task?.duration_minutes]);
 
   // Next 14 days starting tomorrow, with planned workload per day.
   const loads = useMemo(() => workloadByDate(tasks.filter(t => !t.is_rest)), [tasks]);
@@ -80,13 +75,6 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   async function confirm() {
     if (!task) return;
     if (selected < todayISO()) { toast.error('Pick today or a later date.'); return; }
-    const hasRange = !!startTime && !!endTime
-      && timeStringToMin(endTime)! > timeStringToMin(startTime)!;
-    const hadRange = !!startTime || !!endTime;
-    if (hadRange && !hasRange) {
-      toast.error('End time must be after start time.');
-      return;
-    }
     try {
       // Only bump reschedule_count + flip status when the *date* actually
       // changes. Time-only or estimate-only edits within the same day are
@@ -101,14 +89,23 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
           mood: mood ?? undefined,
         });
       }
-      patch.start_time = hasRange ? `${startTime}:00` : null;
-      patch.end_time = hasRange ? `${endTime}:00` : null;
       const h = Math.max(0, Math.floor(Number(estHours) || 0));
       const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
       const totalMin = h * 60 + m;
+      patch.start_time = startTime ? `${startTime}:00` : null;
+      // End time is derived from start + estimate so the calendar can still
+      // place the action; users no longer pick it explicitly.
+      if (startTime && totalMin > 0) {
+        const [sh, sm] = startTime.split(':').map(Number);
+        const endMin = sh * 60 + sm + totalMin;
+        const eh = Math.floor(endMin / 60) % 24;
+        const em = endMin % 60;
+        patch.end_time = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}:00`;
+      } else {
+        patch.end_time = null;
+      }
       if (totalMin > 0) patch.duration_minutes = totalMin;
       if (!isSchedule && dateChanged && customMode && customText.trim()) {
-        // No `replanning_reason_text` column; append to notes as a fallback.
         const stamp = new Date().toLocaleDateString();
         const existing = (task as any).notes ?? '';
         patch.notes = existing
@@ -121,6 +118,23 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
         dateChanged ? 'Task moved. Progress preserved.' :
         'Updated.'
       );
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not move.');
+    }
+  }
+
+  async function moveToLater() {
+    if (!task) return;
+    try {
+      const patch: any = buildMoveToLaterPatch(task);
+      // Preserve the (possibly edited) time estimate the user typed in the dialog.
+      const h = Math.max(0, Math.floor(Number(estHours) || 0));
+      const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
+      const totalMin = h * 60 + m;
+      if (totalMin > 0) patch.duration_minutes = totalMin;
+      await update.mutateAsync({ id: task.id, patch });
+      toast.success('Moved to Later. Time estimate kept.');
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
@@ -189,16 +203,13 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
 
         <div className="mt-3">
           <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
-            <Clock className="w-3 h-3" /> Pick a start and end time (optional)
+            <Clock className="w-3 h-3" /> Pick a start time (optional)
           </div>
-          <TimeRangePicker
-            startTime={startTime}
-            endTime={endTime}
-            onChange={(s, e) => { setStartTime(s); setEndTime(e); }}
-            date={selected}
-            tasks={tasks}
-            blocks={profile?.default_time_blocks ?? []}
-            excludeTaskId={task?.id ?? null}
+          <input
+            type="time"
+            className="pace-field"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
           />
         </div>
 
@@ -252,6 +263,15 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
             {ctaLabel}
           </button>
         </div>
+
+        {!isSchedule && (
+          <button
+            onClick={moveToLater}
+            className="mt-2 pace-btn pace-btn-sm w-full text-[13px]"
+          >
+            Move to Later
+          </button>
+        )}
       </DialogContent>
     </Dialog>
   );

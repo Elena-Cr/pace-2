@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import AppShell from '@/components/AppShell';
-import { type Task, progressForStatus, getTodayTasks } from '@/lib/scheduling';
+import { type Task, progressForStatus, getTodayTasks, buildBlockedPatch } from '@/lib/scheduling';
 import { todayISO, DOMAIN_COLOR_VAR, type Domain, type Subtask, fmtMin } from '@/lib/pace';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import RescheduleDialog from '@/components/RescheduleDialog';
 
@@ -238,7 +239,7 @@ export default function Focus() {
   }
 
   async function markBlocked() {
-    if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
+    if (task) await update.mutateAsync({ id: task.id, patch: buildBlockedPatch(task as any) as any });
     if (sessionId) await supabase.from('focus_sessions').update({ ended_at: new Date().toISOString(), outcome: 'blocked' }).eq('id', sessionId);
     toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
     nav('/');
@@ -307,8 +308,8 @@ export default function Focus() {
       }).eq('id', sessionId);
     }
     if (outcome === 'completed' && task) {
-      await update.mutateAsync({ id: task.id, patch: { status: 'done', progress: 100 } as any });
-      toast.success('Done. That was real work.');
+      await update.mutateAsync({ id: task.id, patch: { status: 'done', progress: 100, completed_at: new Date().toISOString() } as any });
+      toast.success(pickCompletionMessage());
       nav('/');
     } else if (outcome === 'more_time' && task) {
       // Use the canonical status→progress mapping so we agree with TaskDetail.
@@ -321,7 +322,7 @@ export default function Focus() {
       setCompletionCheck(false);
       setMoreTimeReschedule(true);
     } else if (outcome === 'blocked') {
-      if (task) await update.mutateAsync({ id: task.id, patch: { status: 'blocked' } as any });
+      if (task) await update.mutateAsync({ id: task.id, patch: buildBlockedPatch(task as any) as any });
       toast.success('Marked as blocked. We\'ll surface it when something unblocks.');
       nav('/');
     } else {
