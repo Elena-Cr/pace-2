@@ -285,6 +285,8 @@ export default function Focus() {
     }
     if (task) setRescheduleOpen(true);
   }
+
+  async function takeBreak() {
     setOverrunPrompt(false);
     // Close out the focus session as a "more_time" outcome since the user
     // chose to step away rather than finish.
