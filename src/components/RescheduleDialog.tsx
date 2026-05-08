@@ -94,6 +94,14 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       }
       patch.start_time = hasRange ? `${startTime}:00` : null;
       patch.end_time = hasRange ? `${endTime}:00` : null;
+      if (!isSchedule && customMode && customText.trim()) {
+        // No `replanning_reason_text` column; append to notes as a fallback.
+        const stamp = new Date().toLocaleDateString();
+        const existing = (task as any).notes ?? '';
+        patch.notes = existing
+          ? `${existing}\n\n[${stamp}] Reschedule reason: ${customText.trim()}`
+          : `[${stamp}] Reschedule reason: ${customText.trim()}`;
+      }
       await update.mutateAsync({ id: task.id, patch });
       toast.success(isSchedule ? 'Task scheduled.' : 'Task moved. Progress preserved.');
       onClose();
