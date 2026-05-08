@@ -222,7 +222,7 @@ export default function TaskDetail() {
     // Open sections that already contain user data so the editor reflects state.
     const hasA = !!task.effort_level || (task.duration_minutes ?? 0) > 0 || !!(task.involves_others || task.others_rely) || task.priority !== 'should';
     const hasB = !!task.scheduled_date || !!task.deadline;
-    const hasC = (Array.isArray(task.subtasks) && task.subtasks.length > 0) || !!task.notes;
+    const hasC = (Array.isArray(task.subtasks) && task.subtasks.length > 0) || !!task.notes || !!(task as any).location;
     setEOpenA(hasA); setEOpenB(hasB); setEOpenC(hasC);
 
     setEditMode(true);
