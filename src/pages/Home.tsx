@@ -180,7 +180,7 @@ export default function Home() {
   }, [restBlocks, userProfile, todayStr]);
 
   const real = todayTasks;
-  const filtered = filter === 'all' ? real : real.filter(t => t.status === filter);
+  const filtered = filter === 'all' ? real : real.filter(t => (t.domain ?? 'personal') === filter);
 
   // Conflict detection: build today's full event picture (tasks + protected
   // time blocks from the user profile) and ask the shared helper which task
