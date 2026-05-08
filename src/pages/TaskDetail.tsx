@@ -20,7 +20,8 @@ import {
   DOMAIN_LABEL, STATUS_LABEL, PRIORITY_LABEL, Status, Priority, Domain, Subtask,
   formatDeadline, fmtMin, toISODate,
 } from '@/lib/pace';
-import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
+import { progressForStatusExplicit, buildReschedulePatch, buildBlockedPatch } from '@/lib/scheduling';
+import { pickCompletionMessage } from '@/lib/completionMessages';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Trash2, Pencil, Users, CalendarIcon, ChevronDown } from 'lucide-react';
 
