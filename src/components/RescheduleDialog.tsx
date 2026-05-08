@@ -202,6 +202,35 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
           />
         </div>
 
+        <div className="mt-3">
+          <label className="pace-field-label">Time estimate</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="pace-field"
+              value={estHours}
+              onChange={(e) => setEstHours(e.target.value)}
+              placeholder="0"
+              aria-label="Hours"
+            />
+            <span className="text-[13px] text-muted-foreground">H</span>
+            <input
+              type="number"
+              min={0}
+              max={59}
+              inputMode="numeric"
+              className="pace-field"
+              value={estMinutes}
+              onChange={(e) => setEstMinutes(e.target.value)}
+              placeholder="0"
+              aria-label="Minutes"
+            />
+            <span className="text-[13px] text-muted-foreground">M</span>
+          </div>
+        </div>
+
         {!isSchedule && (
           <div className="mt-3">
             <div className="pace-title text-left text-[15px]">Rescheduled. What got in the way?</div>
