@@ -38,7 +38,7 @@ function Chip({ icon: Icon, label, value, tone }: { icon: any; label: string; va
 export default function TaskMeta({ task, compact = false }: { task: TaskMetaInfo; compact?: boolean }) {
   const whenLabel = formatScheduledWhen(task.scheduled_date ?? null, task.start_time ?? null, task.end_time ?? null);
   const showDeadline = !!task.deadline;
-  const showOthers = !!(task.involves_others || task.others_rely);
+  const showOthers = !!task.involves_others;
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${compact ? 'text-[11px]' : ''}`}>
@@ -52,7 +52,7 @@ export default function TaskMeta({ task, compact = false }: { task: TaskMetaInfo
       {task.effort_level && <Chip icon={Activity} label="Effort" value={task.effort_level} />}
       {showDeadline && <Chip icon={AlertTriangle} label="Deadline" value={formatDeadline(task.deadline ?? null)} />}
       {showOthers && (
-        <Chip icon={Users} label="People" value={task.others_rely ? 'Others rely on this' : 'Involves others'} />
+        <Chip icon={Users} label="People" value="Involves others" />
       )}
       {(task.reschedule_count ?? 0) > 0 && (
         <Chip icon={Repeat} label="Rescheduled" value={`${task.reschedule_count}×`} />
