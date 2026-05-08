@@ -972,23 +972,24 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add action / Add rest block */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button onClick={() => nav('/capture')} className="pace-btn-primary">
-          <Plus className="w-4 h-4" /> Add action
-        </button>
-        <button
-          onClick={() => {
-            const focus =
-              view === 'day' ? days[dayIdx] :
-              view === 'week' ? centerDate :
-              new Date();
-            setRestEdit({ date: toISODate(focus), startTime: '12:00', endTime: '12:30', label: 'Rest' });
-          }}
-          className="pace-btn">
-          <Moon className="w-4 h-4" /> Add rest block
-        </button>
-      </div>
+      {/* Add action / Add rest block — hidden in 3-day (week) view */}
+      {view !== 'week' && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button onClick={() => nav('/capture')} className="pace-btn-primary">
+            <Plus className="w-4 h-4" /> Add action
+          </button>
+          <button
+            onClick={() => {
+              const focus =
+                view === 'day' ? days[dayIdx] :
+                new Date();
+              setRestEdit({ date: toISODate(focus), startTime: '12:00', endTime: '12:30', label: 'Rest' });
+            }}
+            className="pace-btn">
+            <Moon className="w-4 h-4" /> Add rest block
+          </button>
+        </div>
+      )}
 
       {/* Detail dialog — shadcn Dialog gives us focus trap + Escape for free. */}
       <Dialog open={!!open} onOpenChange={(o) => { if (!o) setOpen(null); }}>
