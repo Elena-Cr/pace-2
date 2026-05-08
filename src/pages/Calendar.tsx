@@ -177,7 +177,7 @@ export default function CalendarView() {
   const { user, loading } = useAuth();
   const { profile: userProfile } = useUserProfile();
   const { data: allTasks = [] } = useTasks();
-  const { update, insert } = useTaskMutations();
+  const { update, insert, remove } = useTaskMutations();
   const nav = useNavigate();
   // URL-backed view + date so back-navigation from TaskDetail restores the
   // exact calendar state the user left. `view` is one of day|week|month;
