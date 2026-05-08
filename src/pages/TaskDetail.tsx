@@ -6,7 +6,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import RescheduleDialog from '@/components/RescheduleDialog';
 import TaskMeta from '@/components/TaskMeta';
-import TimeRangePicker, { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
+import { durationMinutesFromRange, minToTimeString, timeStringToMin } from '@/components/TimeRangePicker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -21,7 +21,34 @@ import {
 } from '@/lib/pace';
 import { progressForStatusExplicit, buildReschedulePatch } from '@/lib/scheduling';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users, CalendarIcon, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, X, Timer, Trash2, Pencil, Users, CalendarIcon, ChevronDown } from 'lucide-react';
+
+// Pre-generated 15-minute interval times (00:00 → 23:45)
+const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => {
+  const h = Math.floor(i / 4); const m = (i % 4) * 15;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+});
+
+function SectionToggle({
+  open, onToggle, title, hasValue, children,
+}: { open: boolean; onToggle: () => void; title: string; hasValue: boolean; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className={cn('text-[14px] font-medium', hasValue ? 'text-primary' : 'text-foreground')}>
+          {title}
+        </span>
+        <ChevronDown className={cn('w-4 h-4 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && <div className="px-4 pb-4 space-y-4 animate-fade-in">{children}</div>}
+    </div>
+  );
+}
 
 const STATUSES: Status[] = ['not_started','started','in_progress','blocked','nearly_done','done'];
 const DOMAINS: Domain[] = ['academic', 'work', 'social', 'personal'];
