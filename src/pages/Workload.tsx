@@ -189,18 +189,6 @@ export default function Workload() {
         )}
       </div>
 
-      {noDeadline.length > 0 && (
-        <div className="mt-4 pace-card">
-          <div className="pace-eyebrow mb-2"><span className="priority-dot must" />Important without a deadline</div>
-          <div className="space-y-2">
-            {noDeadline.map(t => (
-              <button key={t.id} onClick={() => nav(`/task/${t.id}`)} className="w-full text-left rounded-xl bg-muted px-3 py-2 text-[14px]">
-                {t.title}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Recovery reflection */}
       <div className="mt-4 pace-card">
