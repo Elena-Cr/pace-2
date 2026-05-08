@@ -203,16 +203,13 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
 
         <div className="mt-3">
           <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
-            <Clock className="w-3 h-3" /> Pick a start and end time (optional)
+            <Clock className="w-3 h-3" /> Pick a start time (optional)
           </div>
-          <TimeRangePicker
-            startTime={startTime}
-            endTime={endTime}
-            onChange={(s, e) => { setStartTime(s); setEndTime(e); }}
-            date={selected}
-            tasks={tasks}
-            blocks={profile?.default_time_blocks ?? []}
-            excludeTaskId={task?.id ?? null}
+          <input
+            type="time"
+            className="pace-field"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
           />
         </div>
 
