@@ -35,8 +35,8 @@ function Chip({ icon: Icon, label, value, tone }: { icon: any; label: string; va
   );
 }
 
-export default function TaskMeta({ task, compact = false }: { task: TaskMetaInfo; compact?: boolean }) {
-  const whenLabel = formatScheduledWhen(task.scheduled_date ?? null, task.start_time ?? null, task.end_time ?? null);
+export default function TaskMeta({ task, compact = false, omitDate = false }: { task: TaskMetaInfo; compact?: boolean; omitDate?: boolean }) {
+  const whenLabel = formatScheduledWhen(task.scheduled_date ?? null, task.start_time ?? null, task.end_time ?? null, { omitDate });
   const showDeadline = !!task.deadline;
   const showOthers = !!task.involves_others;
 
