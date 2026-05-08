@@ -3,7 +3,7 @@ import type { Task } from '@/lib/scheduling';
 import TaskMeta from './TaskMeta';
 import { ArrowRight } from 'lucide-react';
 
-export default function TaskCard({ task, onOpen }: { task: Task; onOpen?: (t: Task) => void }) {
+export default function TaskCard({ task, onOpen, omitDate = false }: { task: Task; onOpen?: (t: Task) => void; omitDate?: boolean }) {
   const accent = task.domain
     ? DOMAIN_COLOR_VAR[task.domain as Domain]
     : 'hsl(var(--border))';
@@ -21,7 +21,7 @@ export default function TaskCard({ task, onOpen }: { task: Task; onOpen?: (t: Ta
         <div className="pace-task-title">{task.title}</div>
         <span className={`status-chip status-${task.status} shrink-0`}>{STATUS_LABEL[task.status]}</span>
       </div>
-      <TaskMeta task={task} />
+      <TaskMeta task={task} omitDate={omitDate} />
       {task.progress > 0 && task.status !== 'done' && (
         <div className="pace-progress"><i style={{ width: `${task.progress}%` }} /></div>
       )}
