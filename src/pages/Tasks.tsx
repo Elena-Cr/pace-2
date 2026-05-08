@@ -70,27 +70,21 @@ export default function Tasks() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group]);
 
-  const recurringStems = useMemo(
-    () => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)),
-    [templates],
-  );
+  // recurringStems no longer needed without the no-deadline group, but
+  // we keep the templates dependency stable.
+  void useMemo(() => new Set(templates.map(t => stem(t.exampleTitle)).filter(Boolean)), [templates]);
 
   const counts = useMemo(() => {
     const backlog = getBacklog(tasks).filter(t => !t.is_rest);
     const missed = getMissed(tasks, today);
-    const noDeadline = getNoDeadlineHighValue(tasks, recurringStems, stem);
-    // "Needs action" = anything with at least one warning (missed, blocked,
-    // unscheduled, or important-without-a-deadline). Dedupe by id.
-    const noDeadlineIds = new Set(noDeadline.map(t => t.id));
     const merged = new Map<string, Task>();
     [...backlog, ...missed].forEach(t => merged.set(t.id, t));
-    noDeadline.forEach(t => merged.set(t.id, t));
     const action = Array.from(merged.values());
     const scheduled = tasks.filter(t => t.scheduled_date && t.scheduled_date >= today && t.status !== 'done' && !t.is_rest);
     const done = tasks.filter(t => t.status === 'done');
     const all = tasks.filter(t => !t.is_rest);
-    return { action, all, backlog, missed, no_deadline: noDeadline, scheduled, done, _noDeadlineIds: noDeadlineIds };
-  }, [tasks, today, recurringStems]);
+    return { action, all, backlog, missed, scheduled, done };
+  }, [tasks, today]);
 
   const filtered = useMemo(() => {
     let list: Task[] = (counts as any)[group] ?? [];
@@ -108,10 +102,7 @@ export default function Tasks() {
   }, [counts, group, domain]);
 
   function warningsFor(t: Task): TaskWarning[] {
-    const base = getTaskWarnings(t, today);
-    // Only surface "no deadline" when the task is in our high-value set —
-    // not every task without a deadline is a problem.
-    return base.filter(w => w !== 'no_deadline' || counts._noDeadlineIds.has(t.id));
+    return getTaskWarnings(t, today);
   }
 
   return (
