@@ -259,17 +259,24 @@ export function bufferMinutes(task: Pick<Task, 'duration_minutes'>): number {
 
 // Same shape as calculateDailyWorkload but adds the per-task buffer.
 export function calculateDailyWorkloadWithBuffer(tasks: Task[]): number {
-  return tasks.reduce((sum, t) => sum + (t.duration_minutes || 0) + bufferMinutes(t), 0);
+  return tasks.reduce((sum, t) => {
+    if ((t as any).counts_toward_capacity === false) return sum;
+    return sum + (t.duration_minutes || 0) + bufferMinutes(t);
+  }, 0);
 }
 
 export function calculateDailyWorkload(tasks: Task[]): number {
-  return tasks.reduce((sum, t) => sum + (t.duration_minutes || 0), 0);
+  return tasks.reduce((sum, t) => {
+    if ((t as any).counts_toward_capacity === false) return sum;
+    return sum + (t.duration_minutes || 0);
+  }, 0);
 }
 
 export function workloadByDate(tasks: Task[]): Record<string, number> {
   const out: Record<string, number> = {};
   tasks.forEach(t => {
     if (!t.scheduled_date) return;
+    if ((t as any).counts_toward_capacity === false) return;
     out[t.scheduled_date] = (out[t.scheduled_date] || 0) + (t.duration_minutes || 0);
   });
   return out;

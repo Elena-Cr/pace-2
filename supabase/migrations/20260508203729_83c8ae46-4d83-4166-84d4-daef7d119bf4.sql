@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS counts_toward_capacity boolean NOT NULL DEFAULT true;

@@ -63,6 +63,7 @@ export default function Capture() {
   const { profile: userProfile } = useUserProfile();
   const [title, setTitle] = useState('');
   const [domain, setDomain] = useState<Domain | null>(null);
+  const [categoryChosen, setCategoryChosen] = useState(false);
   const [priority, setPriority] = useState<Priority>('should');
   const [deadline, setDeadline] = useState('');
   const [when, setWhen] = useState<'today' | 'tomorrow' | 'backlog' | 'pick'>('backlog');
@@ -79,6 +80,7 @@ export default function Capture() {
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
   const [othersInvolved, setOthersInvolved] = useState(false);
+  const [countsTowardCapacity, setCountsTowardCapacity] = useState(true);
   const [subtasks, setSubtasks] = useState<{ id: string; title: string; done: boolean }[]>([]);
   const [subInput, setSubInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -197,7 +199,9 @@ export default function Capture() {
   async function save() {
     if (!user) return;
     if (!title.trim()) { toast.error('Add a title to start.'); return; }
-    if (!estimate || Number(estimate) <= 0) { toast.error('Add a time estimate.'); return; }
+    if (!categoryChosen) { toast.error('Pick a category.'); return; }
+    const isLater = when === 'backlog' && !scheduledISO;
+    if (!isLater && (!estimate || Number(estimate) <= 0)) { toast.error('Add a time estimate.'); return; }
     if (scheduledISO && !hasTimeRange) {
       toast.error('Pick a start time for this day.');
       return;
@@ -221,6 +225,7 @@ export default function Capture() {
         start_time,
         end_time,
         location: location.trim() || null,
+        counts_toward_capacity: countsTowardCapacity,
       } as any);
       toast.success('Captured.');
       nav('/');
@@ -234,7 +239,6 @@ export default function Capture() {
   return (
     <AppShell>
       <div className="pace-eyebrow">New action</div>
-      <h1 className="pace-screen-title mt-1">Capture</h1>
 
       <div className="mt-6 space-y-4">
         {/* Recurring templates from past tasks */}
@@ -290,17 +294,27 @@ export default function Capture() {
           </div>
         )}
 
-        {/* ALWAYS-VISIBLE: Category */}
+        {/* ALWAYS-VISIBLE: Category (required) */}
         <div>
           <label className="pace-field-label">Category</label>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
-              <button key={d.k} onClick={() => setDomain(d.k)}
-                className={domain === d.k ? 'pace-chip-filled' : 'pace-chip'}>{d.label}</button>
+              <button key={d.k} onClick={() => { setDomain(d.k); setCategoryChosen(true); }}
+                className={domain === d.k && categoryChosen ? 'pace-chip-filled' : 'pace-chip'}>{d.label}</button>
             ))}
-            <button onClick={() => setDomain(null)} className={`pace-chip-dashed ${domain === null ? 'opacity-100' : 'opacity-70'}`}>Decide later</button>
+            <button
+              onClick={() => { setDomain(null); setCategoryChosen(true); }}
+              className={`pace-chip-dashed ${domain === null && categoryChosen ? 'opacity-100' : 'opacity-70'}`}
+            >
+              Decide later
+            </button>
           </div>
         </div>
+
+        <p className="text-[13px] text-muted-foreground">
+          Optional fields — fill these in now, or whenever it feels right.
+        </p>
+
 
         {/* SECTION A: Priority & Effort */}
         <SectionToggle open={openA} onToggle={() => setOpenA(o => !o)} title="Priority & Effort" hasValue={sectionAHasValue}>
@@ -317,7 +331,7 @@ export default function Capture() {
           </div>
 
           <div>
-            <div className="pace-field-label">Effort level (optional)</div>
+            <div className="pace-field-label">Effort level</div>
             <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
             <div className="flex gap-1.5 mt-1.5">
               {EFFORTS.map(e => (
@@ -447,16 +461,28 @@ export default function Capture() {
           </div>
 
           <div>
-            <label className="pace-field-label">Does this have a deadline? (optional)</label>
+            <label className="pace-field-label">Does this have a deadline?</label>
             <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
             <input type="date" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
         </SectionToggle>
 
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+          <div className="min-w-0">
+            <label htmlFor="capture-capacity" className="text-[14px] font-medium block">
+              Count toward daily capacity
+            </label>
+            <p className="text-[12px] text-muted-foreground mt-0.5">
+              Turn off for calendar events or items that aren't workload.
+            </p>
+          </div>
+          <Switch id="capture-capacity" checked={countsTowardCapacity} onCheckedChange={setCountsTowardCapacity} />
+        </div>
+
         {/* SECTION C: Notes & Next Steps */}
         <SectionToggle open={openC} onToggle={() => setOpenC(o => !o)} title="Notes & Next Steps" hasValue={sectionCHasValue}>
           <div>
-            <label className="pace-field-label">Next steps (optional)</label>
+            <label className="pace-field-label">Next steps</label>
             <div className="flex gap-2">
               <input className="pace-field" value={subInput}
                 onChange={e => setSubInput(e.target.value)}
@@ -479,12 +505,12 @@ export default function Capture() {
           </div>
 
           <div>
-            <label className="pace-field-label">Notes (optional)</label>
+            <label className="pace-field-label">Notes</label>
             <textarea className="pace-field min-h-[88px] py-3" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Anything that helps future-you" />
           </div>
 
           <div>
-            <label className="pace-field-label">Location (optional)</label>
+            <label className="pace-field-label">Location</label>
             <input className="pace-field" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Library, home office" />
           </div>
         </SectionToggle>

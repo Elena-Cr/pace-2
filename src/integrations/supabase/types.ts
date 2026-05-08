@@ -127,6 +127,7 @@ export type Database = {
       tasks: {
         Row: {
           completed_at: string | null
+          counts_toward_capacity: boolean
           created_at: string
           deadline: string | null
           domain: Database["public"]["Enums"]["task_domain"] | null
@@ -155,6 +156,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          counts_toward_capacity?: boolean
           created_at?: string
           deadline?: string | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
@@ -185,6 +187,7 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          counts_toward_capacity?: boolean
           created_at?: string
           deadline?: string | null
           domain?: Database["public"]["Enums"]["task_domain"] | null
