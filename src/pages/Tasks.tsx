@@ -23,7 +23,7 @@ type DomainFilter = 'all' | Domain | 'none';
 const GROUPS: { k: GroupKey; label: string; icon: any }[] = [
   { k: 'action', label: 'Needs action', icon: AlertTriangle },
   { k: 'all', label: 'All', icon: ListTodo },
-  { k: 'backlog', label: 'Backlog', icon: Inbox },
+  { k: 'backlog', label: 'Later', icon: Inbox },
   { k: 'missed', label: 'Missed', icon: AlertTriangle },
   { k: 'no_deadline', label: 'No deadline', icon: Flag },
   { k: 'scheduled', label: 'Scheduled', icon: CalendarClock },
