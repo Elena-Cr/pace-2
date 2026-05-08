@@ -311,18 +311,6 @@ export default function Capture() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
-          <div className="min-w-0">
-            <label htmlFor="capture-capacity" className="text-[14px] font-medium block">
-              Count toward daily capacity
-            </label>
-            <p className="text-[12px] text-muted-foreground mt-0.5">
-              Turn off for calendar events or items that aren't workload.
-            </p>
-          </div>
-          <Switch id="capture-capacity" checked={countsTowardCapacity} onCheckedChange={setCountsTowardCapacity} />
-        </div>
-
         <p className="text-[13px] text-muted-foreground">
           Optional fields — fill these in now, or whenever it feels right.
         </p>
@@ -479,6 +467,17 @@ export default function Capture() {
           </div>
         </SectionToggle>
 
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+          <div className="min-w-0">
+            <label htmlFor="capture-capacity" className="text-[14px] font-medium block">
+              Count toward daily capacity
+            </label>
+            <p className="text-[12px] text-muted-foreground mt-0.5">
+              Turn off for calendar events or items that aren't workload.
+            </p>
+          </div>
+          <Switch id="capture-capacity" checked={countsTowardCapacity} onCheckedChange={setCountsTowardCapacity} />
+        </div>
 
         {/* SECTION C: Notes & Next Steps */}
         <SectionToggle open={openC} onToggle={() => setOpenC(o => !o)} title="Notes & Next Steps" hasValue={sectionCHasValue}>
