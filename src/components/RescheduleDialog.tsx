@@ -40,6 +40,8 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   }, []);
   const [selected, setSelected] = useState<string>(tomorrowISO);
   const [reason, setReason] = useState<ReplanReason | undefined>(undefined);
+  const [customMode, setCustomMode] = useState(false);
+  const [customText, setCustomText] = useState('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
 
