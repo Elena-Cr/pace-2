@@ -955,8 +955,8 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add action / Add rest block — hidden in 3-day (week) view */}
-      {view !== 'week' && (
+      {/* Add action / Add rest block — only on day view */}
+      {view === 'day' && (
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button onClick={() => nav('/capture')} className="pace-btn-primary">
             <Plus className="w-4 h-4" /> Add action
