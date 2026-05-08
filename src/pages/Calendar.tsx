@@ -118,7 +118,7 @@ function NeedsAttention({
         className="w-full flex items-center gap-2 text-left">
         <AlertTriangle className="w-4 h-4 text-[hsl(var(--attention))]" />
         <span className="text-[13px] font-semibold text-[hsl(var(--attention))]">
-          Needs attention · {items.length}
+          That's OK -  let's figure out the next step. · {items.length}
         </span>
         <span className="ml-auto text-[11px] text-muted-foreground">
           {collapsed ? 'Show' : 'Hide'}
