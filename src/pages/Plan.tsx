@@ -349,7 +349,7 @@ export default function Plan() {
                   )}
                 </div>
               </div>
-              {t.duration_minutes && <span className="pace-chip">+{bufferMinutes(t)}m buffer</span>}
+              
             </button>
           );
         })}
