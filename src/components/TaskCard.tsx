@@ -38,7 +38,7 @@ export default function TaskCard({
   return (
     <button
       onClick={() => onOpen?.(task)}
-      className={`w-full text-left pace-card !p-3 flex items-start gap-1.5 hover:shadow-sm transition animate-fade-in ${done ? "opacity-60" : ""}`}
+      className={`w-full text-left pace-card !p-3 flex items-start gap-1 hover:shadow-sm transition animate-fade-in ${done ? "opacity-60" : ""}`}
     >
       <span aria-hidden="true" className="w-1 self-stretch rounded-full shrink-0" style={{ background: accent }} />
       {onToggleComplete && (
