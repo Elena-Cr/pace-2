@@ -44,18 +44,25 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   const [customText, setCustomText] = useState('');
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
+  // Editable time estimate (P20). Stored as separate H/M strings so the
+  // user can clear either without losing the other.
+  const [estHours, setEstHours] = useState<string>('');
+  const [estMinutes, setEstMinutes] = useState<string>('');
 
   // Reset selection whenever a new task opens.
   useEffect(() => {
     if (open) {
-      setSelected(tomorrowISO);
+      setSelected(task?.scheduled_date ?? tomorrowISO);
       setReason(undefined);
       setCustomMode(false);
       setCustomText('');
       setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
       setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
+      const dur = task?.duration_minutes ?? 0;
+      setEstHours(dur > 0 ? String(Math.floor(dur / 60)) : '');
+      setEstMinutes(dur > 0 ? String(dur % 60) : '');
     }
-  }, [open, tomorrowISO, task?.start_time, task?.end_time]);
+  }, [open, tomorrowISO, task?.start_time, task?.end_time, task?.scheduled_date, task?.duration_minutes]);
 
   // Next 14 days starting tomorrow, with planned workload per day.
   const loads = useMemo(() => workloadByDate(tasks.filter(t => !t.is_rest)), [tasks]);
@@ -81,10 +88,12 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       return;
     }
     try {
+      // Only bump reschedule_count + flip status when the *date* actually
+      // changes. Time-only or estimate-only edits within the same day are
+      // treated as a metadata update so the counter doesn't inflate.
+      const dateChanged = selected !== (task.scheduled_date ?? null);
       let patch: any;
-      if (isSchedule) {
-        // First-time scheduling: just set the date. Don't bump the
-        // reschedule counter or change status.
+      if (isSchedule || !dateChanged) {
         patch = { scheduled_date: selected };
       } else {
         patch = buildReschedulePatch(task, selected, {
@@ -94,7 +103,11 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
       }
       patch.start_time = hasRange ? `${startTime}:00` : null;
       patch.end_time = hasRange ? `${endTime}:00` : null;
-      if (!isSchedule && customMode && customText.trim()) {
+      const h = Math.max(0, Math.floor(Number(estHours) || 0));
+      const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
+      const totalMin = h * 60 + m;
+      if (totalMin > 0) patch.duration_minutes = totalMin;
+      if (!isSchedule && dateChanged && customMode && customText.trim()) {
         // No `replanning_reason_text` column; append to notes as a fallback.
         const stamp = new Date().toLocaleDateString();
         const existing = (task as any).notes ?? '';
@@ -103,7 +116,11 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
           : `[${stamp}] Reschedule reason: ${customText.trim()}`;
       }
       await update.mutateAsync({ id: task.id, patch });
-      toast.success(isSchedule ? 'Task scheduled.' : 'Task moved. Progress preserved.');
+      toast.success(
+        isSchedule ? 'Task scheduled.' :
+        dateChanged ? 'Task moved. Progress preserved.' :
+        'Updated.'
+      );
       onClose();
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
@@ -183,6 +200,35 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
             blocks={profile?.default_time_blocks ?? []}
             excludeTaskId={task?.id ?? null}
           />
+        </div>
+
+        <div className="mt-3">
+          <label className="pace-field-label">Time estimate</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              className="pace-field"
+              value={estHours}
+              onChange={(e) => setEstHours(e.target.value)}
+              placeholder="0"
+              aria-label="Hours"
+            />
+            <span className="text-[13px] text-muted-foreground">H</span>
+            <input
+              type="number"
+              min={0}
+              max={59}
+              inputMode="numeric"
+              className="pace-field"
+              value={estMinutes}
+              onChange={(e) => setEstMinutes(e.target.value)}
+              placeholder="0"
+              aria-label="Minutes"
+            />
+            <span className="text-[13px] text-muted-foreground">M</span>
+          </div>
         </div>
 
         {!isSchedule && (

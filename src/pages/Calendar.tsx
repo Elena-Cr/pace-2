@@ -1036,7 +1036,7 @@ export default function CalendarView() {
               {/* Regular task actions. */}
               {open.taskId && open.kind !== 'rest' && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm">Edit</button>
+                  <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm"><Pencil className="w-3.5 h-3.5" /> Edit details</button>
                   <button onClick={() => { const id = open.taskId; setOpen(null); if (id) setRescheduleId(id); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
                   <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
                 </div>

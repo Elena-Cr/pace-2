@@ -338,9 +338,15 @@ export function findScheduleConflicts(opts: {
     if (t.scheduled_date !== date) return;
     if (excludeTaskId && t.id === excludeTaskId) return;
     if (t.status === 'done') return;
-    const s = timeStringToMin(t.start_time);
-    const e = timeStringToMin(t.end_time);
-    if (s == null || e == null) return;
+    // Fall back to the same defaults getScheduledEvents uses for visual
+    // placement so untimed scheduled actions still participate in conflict
+    // detection (Issue C). Missing start_time → 09:00; missing end_time →
+    // start + duration_minutes (or +30m if duration is also missing).
+    const sExplicit = timeStringToMin(t.start_time);
+    const s = sExplicit ?? (9 * 60);
+    const dur = t.duration_minutes && t.duration_minutes > 0 ? t.duration_minutes : 30;
+    const e = timeStringToMin(t.end_time) ?? (s + dur);
+    if (e <= s) return;
     if (startMin < e && endMin > s) {
       out.push({ title: t.title, startMin: s, endMin: e, kind: t.is_rest ? 'rest' : 'task' });
     }
