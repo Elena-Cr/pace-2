@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock, EnergyPattern, EnergyLevel, DEFAULT_ENERGY_PATTERN } from '@/hooks/useUserProfile';
 import { fmtMin } from '@/lib/pace';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 
 const ENERGY_LEVELS: EnergyLevel[] = ['Low', 'Med', 'High'];
 
@@ -20,12 +20,22 @@ export default function Onboarding() {
   const { profile, loading, update } = useUserProfile();
   const nav = useNavigate();
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(authProfile?.display_name ?? '');
+  const [name, setName] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
   const [capacityMin, setCapacityMin] = useState(profile?.daily_capacity_minutes ?? 330);
   const [tasksPerDay, setTasksPerDay] = useState(profile?.preferred_tasks_per_day ?? 4);
   const [blocks, setBlocks] = useState<TimeBlock[]>(profile?.default_time_blocks ?? DEFAULT_BLOCKS);
   const [energyPattern, setEnergyPattern] = useState<EnergyPattern>(profile?.energy_pattern ?? DEFAULT_ENERGY_PATTERN);
   const [busy, setBusy] = useState(false);
+
+  // Pre-fill the name from the signup profile once it loads. We don't want
+  // to overwrite anything the user has typed, and we also skip the default
+  // 'Friend' fallback inserted by the handle_new_user trigger.
+  useEffect(() => {
+    if (nameTouched) return;
+    const dn = authProfile?.display_name;
+    if (dn && dn !== 'Friend' && dn !== name) setName(dn);
+  }, [authProfile?.display_name, nameTouched, name]);
 
   // Side-effect navigation runs in an effect, not the render body, so we never
   // briefly render Onboarding for an already-onboarded user (or vice versa).
@@ -70,7 +80,13 @@ export default function Onboarding() {
       title: 'What should we call you?',
       sub: 'You can change this later in Settings.',
       body: (
-        <input className="pace-field" autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+        <input
+          className="pace-field"
+          autoFocus
+          value={name}
+          onChange={e => { setNameTouched(true); setName(e.target.value); }}
+          placeholder="Your name"
+        />
       ),
       canNext: name.trim().length > 0,
     },
@@ -98,28 +114,7 @@ export default function Onboarding() {
       canNext: true,
     },
     {
-      eyebrow: '03 · Pace',
-      title: 'How many actions feel right per day?',
-      sub: 'An action is one meaningful task — something you can finish or meaningfully advance in a single day. Most students find 3–5 works well.',
-      body: (
-        <div className="space-y-3">
-          <div className="flex gap-2 justify-center">
-            {[2, 3, 4, 5, 6, 8].map(n => (
-              <button key={n} onClick={() => setTasksPerDay(n)}
-                className={tasksPerDay === n ? 'pace-chip-filled' : 'pace-chip'}>
-                {n}
-              </button>
-            ))}
-          </div>
-          <p className="pace-meta text-center">
-            e.g. draft the intro section, reply to all emails, prepare for tomorrow's lecture.
-          </p>
-        </div>
-      ),
-      canNext: true,
-    },
-    {
-      eyebrow: '04 · Energy (optional)',
+      eyebrow: '03 · Energy (optional)',
       title: 'When do you usually have the most energy?',
       sub: 'You can skip this and set it later in Settings.',
       body: (
@@ -163,14 +158,28 @@ export default function Onboarding() {
       canNext: true,
     },
     {
-      eyebrow: '05 · Protected time',
+      eyebrow: '04 · Protected time',
       title: 'When do you sleep, eat, and recover?',
-      sub: 'These blocks stay protected on your calendar.',
+      sub: 'These blocks stay protected on your calendar. Add, edit, or remove anything that doesn\'t fit your routine.',
       body: (
         <div className="space-y-2">
           {blocks.map((b, i) => (
             <div key={i} className="pace-card !p-3">
-              <div className="pace-eyebrow">{b.label}</div>
+              <div className="flex items-center gap-2">
+                <input
+                  className="pace-field !py-1.5 text-[13px] font-medium flex-1"
+                  value={b.label}
+                  onChange={e => setBlock(i, { label: e.target.value })}
+                  placeholder="Block name"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBlocks(prev => prev.filter((_, idx) => idx !== i))}
+                  aria-label={`Remove ${b.label || 'block'}`}
+                  className="rounded-full p-1.5 text-muted-foreground hover:text-[hsl(var(--attention))] hover:bg-muted">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div>
                   <label className="pace-field-label">Start</label>
@@ -181,8 +190,28 @@ export default function Onboarding() {
                   <input type="time" className="pace-field" value={b.end} onChange={e => setBlock(i, { end: e.target.value })} />
                 </div>
               </div>
+              <div className="mt-2">
+                <label className="pace-field-label">Type</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {(['sleep', 'meal', 'recovery', 'custom'] as const).map(k => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setBlock(i, { kind: k })}
+                      className={b.kind === k ? 'pace-chip-filled' : 'pace-chip'}>
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ))}
+          <button
+            type="button"
+            onClick={() => setBlocks(prev => [...prev, { label: 'New block', start: '12:00', end: '12:30', kind: 'custom' }])}
+            className="pace-btn w-full justify-center">
+            <Plus className="w-4 h-4" /> Add a block
+          </button>
         </div>
       ),
       canNext: true,
@@ -231,6 +260,17 @@ export default function Onboarding() {
             </button>
           )}
         </div>
+        {step > 0 && (
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={() => (isLast ? finish() : setStep(s => s + 1))}
+              disabled={busy}
+              className="text-[13px] font-medium text-muted-foreground hover:text-foreground underline underline-offset-2">
+              Skip this step
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );
