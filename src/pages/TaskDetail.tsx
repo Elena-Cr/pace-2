@@ -627,12 +627,8 @@ export default function TaskDetail() {
 
       {/* Actions */}
       <div className="mt-5 grid grid-cols-2 gap-2">
-        <button onClick={() => nav('/focus', { state: { taskId: task.id } })} className="pace-btn-primary col-span-2">
-          <Timer className="w-4 h-4" /> Focus on this
-        </button>
-        <button onClick={pauseTask} className="pace-btn">Pause</button>
         <button onClick={() => setRescheduleOpen(true)} className="pace-btn">Reschedule</button>
-        <button onClick={remove} className="pace-btn-ghost col-span-2 text-[hsl(var(--attention))]">
+        <button onClick={() => setConfirmRemove(true)} className="pace-btn-ghost text-[hsl(var(--attention))]">
           <Trash2 className="w-4 h-4" /> Remove
         </button>
       </div>
@@ -642,6 +638,21 @@ export default function TaskDetail() {
         open={rescheduleOpen}
         onClose={() => setRescheduleOpen(false)}
       />
+
+      <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this action?</AlertDialogTitle>
+            <AlertDialogDescription>
+              No worries — you can always add it back later. This will take it off your list for now.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmRemove(false); remove(); }}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
