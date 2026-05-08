@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
-import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
+import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, formatDeadline, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
 import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes, resolveProfileEnergy } from '@/lib/scheduling';
 import { pickCompletionMessage } from '@/lib/completionMessages';
