@@ -684,7 +684,7 @@ export default function Home() {
       {backlog.length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-semibold">Backlog</h2>
+            <h2 className="text-[18px] font-semibold">Later</h2>
             <span className="pace-meta">{backlog.length} unscheduled</span>
           </div>
           <div className="mt-2 space-y-2">
