@@ -190,9 +190,17 @@ export default function Home() {
       label: b.label, start: b.start, end: b.end, kind: b.kind as any, days: b.days,
     }));
     const blockEvents = expandTimeBlocks(blocks, todayStr);
-    const ids = getTaskRestConflicts([...taskEvents, ...blockEvents]);
-    // ids are like "task-<uuid>"; map back to task ids
-    return new Set(Array.from(ids).map(id => id.replace(/^task-/, '')));
+    const all = [...taskEvents, ...blockEvents];
+    const ids = getTaskRestConflicts(all);
+    // Map conflicting event ids back to task ids via the typed taskId field
+    // on the event, so we don't depend on the "task-" id prefix format.
+    const byId = new Map(all.map(e => [e.id, e] as const));
+    const out = new Set<string>();
+    ids.forEach(id => {
+      const ev = byId.get(id);
+      if (ev?.taskId) out.add(ev.taskId);
+    });
+    return out;
   }, [tasks, userProfile, todayStr]);
 
   // Important without a deadline (recurring or must-priority).
@@ -282,7 +290,12 @@ export default function Home() {
     return [...real].sort((a, b) => {
       const ap = a.priority === 'must' ? 0 : a.priority === 'should' ? 1 : 2;
       const bp = b.priority === 'must' ? 0 : b.priority === 'should' ? 1 : 2;
-      return ap - bp;
+      if (ap !== bp) return ap - bp;
+      // Within a priority, prefer the soonest deadline. Tasks without a
+      // deadline sort after tasks that have one.
+      const ad = a.deadline ? Date.parse(a.deadline) : Number.POSITIVE_INFINITY;
+      const bd = b.deadline ? Date.parse(b.deadline) : Number.POSITIVE_INFINITY;
+      return ad - bd;
     })[0];
   }, [real]);
 

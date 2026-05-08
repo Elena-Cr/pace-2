@@ -546,12 +546,23 @@ export default function TaskDetail() {
       <div className="mt-5 pace-card">
         <div className="pace-eyebrow mb-2">Progress</div>
         <div className="flex flex-wrap gap-1.5">
-          {STATUSES.map(s => (
-            <button key={s} onClick={() => setStatus(s)}
-              className={task.status === s ? 'pace-chip-filled' : 'pace-chip'}>
-              {STATUS_LABEL[s]}
-            </button>
-          ))}
+          {STATUSES.map(s => {
+            // Helper text disambiguates the two "in motion" states that
+            // testers found hard to tell apart.
+            const hint =
+              s === 'started' ? 'I have begun but paused' :
+              s === 'in_progress' ? 'Actively working on this now' :
+              s === 'not_started' ? 'Not begun yet' :
+              s === 'blocked' ? 'Stuck — waiting on something' :
+              s === 'nearly_done' ? 'Almost finished' :
+              s === 'done' ? 'Completed' : '';
+            return (
+              <button key={s} onClick={() => setStatus(s)} title={hint} aria-label={`${STATUS_LABEL[s]} — ${hint}`}
+                className={task.status === s ? 'pace-chip-filled' : 'pace-chip'}>
+                {STATUS_LABEL[s]}
+              </button>
+            );
+          })}
         </div>
         <div className="mt-3">
           <div className="pace-progress"><i style={{ width: `${computedProgress}%` }} /></div>
