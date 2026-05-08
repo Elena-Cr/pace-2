@@ -179,28 +179,13 @@ export default function Workload() {
       </div>
 
 
-      {/* Recovery reflection */}
-      <div className="mt-4 pace-card">
-        <div className="pace-eyebrow mb-2">Recovery reflection</div>
-        <div className="text-[14px]">Did this plan leave enough time for rest and recovery?</div>
-        <div className="mt-2 flex gap-1.5">
-          {[1,2,3,4,5].map(n => (
-            <button key={n} onClick={() => setReflection(n)}
-              className={reflection === n ? 'pace-chip-filled' : 'pace-chip'}>
-              {n}
-            </button>
-          ))}
-        </div>
-        {reflection !== null && (
-          <div className="mt-2 text-[13px] text-muted-foreground">
-            {reflection <= 2
-              ? 'Noted. Try protecting one extra rest block next week.'
-              : reflection >= 4
-              ? 'Lovely. Worth keeping that pacing.'
-              : 'Noted. We can adjust the next plan together.'}
-          </div>
-        )}
-      </div>
+      {/* Insights — collapsible */}
+      <Insights
+        weekTotalMin={grandTotal}
+        weekCapMin={dailyCapMin * 7}
+        tasks={tasks}
+      />
+
     </AppShell>
   );
 }
