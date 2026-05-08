@@ -480,7 +480,7 @@ export default function CalendarView() {
         <h1 className="pace-screen-title">Calendar</h1>
         <div className="flex items-center bg-muted rounded-full p-1 text-[12px] font-medium">
           <button onClick={() => setView('day')} className={`px-3 py-1 rounded-full ${view === 'day' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Day</button>
-          <button onClick={() => setView('week')} className={`px-3 py-1 rounded-full ${view === 'week' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Week</button>
+          <button onClick={() => setView('week')} aria-label="3-Day view" className={`px-3 py-1 rounded-full ${view === 'week' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>3-Day</button>
           <button onClick={() => setView('month')} className={`px-3 py-1 rounded-full ${view === 'month' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Month</button>
         </div>
       </div>
@@ -1104,8 +1104,46 @@ export default function CalendarView() {
               {open.taskId && open.kind !== 'rest' && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button onClick={() => { const id = open.taskId; setOpen(null); nav(`/task/${id}`); }} className="pace-btn pace-btn-sm"><Pencil className="w-3.5 h-3.5" /> Edit details</button>
-                  <button onClick={() => { const id = open.taskId; setOpen(null); if (id) setRescheduleId(id); }} className="pace-btn pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
-                  <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn-primary pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
+                  <button onClick={() => { const id = open.taskId; setOpen(null); if (id) setRescheduleId(id); }} className="pace-btn-primary pace-btn-sm"><MoveRight className="w-3.5 h-3.5" /> Reschedule</button>
+                  <button
+                    onClick={async () => {
+                      const ev = open;
+                      const id = ev.taskId;
+                      if (!id || !ev.scheduled_date) { setOpen(null); if (id) setRescheduleId(id); return; }
+                      const base = new Date(ev.scheduled_date + 'T00:00:00');
+                      base.setDate(base.getDate() + 1);
+                      const tomorrowISO = toISODate(base);
+                      // Conflict check: overlap with any non-completed task on tomorrow at the same slot.
+                      const hasConflict = allTasks.some(t => {
+                        if (t.id === id) return false;
+                        if (t.scheduled_date !== tomorrowISO) return false;
+                        if (t.status === 'done') return false;
+                        if (!t.start_time || !t.end_time) return false;
+                        const [sh, sm] = t.start_time.split(':').map(Number);
+                        const [eh, em] = t.end_time.split(':').map(Number);
+                        const ts = sh * 60 + sm, te = eh * 60 + em;
+                        return ts < ev.endMin && te > ev.startMin;
+                      });
+                      if (hasConflict) {
+                        toast.warning('That slot tomorrow is taken — pick another time.');
+                        setOpen(null);
+                        setRescheduleId(id);
+                        return;
+                      }
+                      try {
+                        const t = allTasks.find(x => x.id === id);
+                        if (!t) return;
+                        await update.mutateAsync({ id, patch: buildReschedulePatch(t, tomorrowISO) });
+                        toast.success('Moved to tomorrow.');
+                        setOpen(null);
+                      } catch (err: any) {
+                        toast.error(err?.message ?? 'Could not move.');
+                      }
+                    }}
+                    className="pace-btn pace-btn-sm">
+                    <MoveRight className="w-3.5 h-3.5" /> Move to tomorrow
+                  </button>
+                  <button onClick={() => { setOpen(null); nav('/focus'); }} className="pace-btn pace-btn-sm"><Timer className="w-3.5 h-3.5" /> Start focus</button>
                 </div>
               )}
 
