@@ -200,6 +200,7 @@ export default function Tasks() {
             );
           })}
         </ul>
+      )}
 
       <RescheduleDialog
         taskId={scheduleId}
