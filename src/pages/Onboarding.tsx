@@ -20,12 +20,22 @@ export default function Onboarding() {
   const { profile, loading, update } = useUserProfile();
   const nav = useNavigate();
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(authProfile?.display_name ?? '');
+  const [name, setName] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
   const [capacityMin, setCapacityMin] = useState(profile?.daily_capacity_minutes ?? 330);
   const [tasksPerDay, setTasksPerDay] = useState(profile?.preferred_tasks_per_day ?? 4);
   const [blocks, setBlocks] = useState<TimeBlock[]>(profile?.default_time_blocks ?? DEFAULT_BLOCKS);
   const [energyPattern, setEnergyPattern] = useState<EnergyPattern>(profile?.energy_pattern ?? DEFAULT_ENERGY_PATTERN);
   const [busy, setBusy] = useState(false);
+
+  // Pre-fill the name from the signup profile once it loads. We don't want
+  // to overwrite anything the user has typed, and we also skip the default
+  // 'Friend' fallback inserted by the handle_new_user trigger.
+  useEffect(() => {
+    if (nameTouched) return;
+    const dn = authProfile?.display_name;
+    if (dn && dn !== 'Friend' && dn !== name) setName(dn);
+  }, [authProfile?.display_name, nameTouched, name]);
 
   // Side-effect navigation runs in an effect, not the render body, so we never
   // briefly render Onboarding for an already-onboarded user (or vice versa).
