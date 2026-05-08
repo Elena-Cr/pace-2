@@ -996,15 +996,25 @@ export default function CalendarView() {
       <Dialog open={!!replanFor} onOpenChange={(o) => { if (!o) setReplanReason(null); }}>
         <DialogContent className="max-w-md rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="pace-title text-left">Task moved. What changed?</DialogTitle>
+            <DialogTitle className="pace-title text-left">Rescheduled. What got in the way?</DialogTitle>
             <DialogDescription className="text-[13px] text-muted-foreground text-left">
-              Optional — helps you spot patterns.
+              Rescheduling is part of good planning.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-1">
-            <ReplanReasonChips onSelect={(r) => setReplanReason(r)} />
+            <ReplanReasonChips
+              onSelect={(r) => { setReplanCustomMode(false); setReplanReason(r); }}
+              customSelected={replanCustomMode}
+              customText={replanCustomText}
+              onSelectCustom={() => setReplanCustomMode(true)}
+              onCustomTextChange={setReplanCustomText}
+            />
           </div>
-          <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+          {replanCustomMode ? (
+            <button onClick={saveCustomReplanReason} className="pace-btn-primary pace-btn-sm mt-3 w-full">Save reason</button>
+          ) : (
+            <button onClick={() => setReplanReason(null)} className="pace-btn-ghost pace-btn-sm mt-3 w-full">Skip</button>
+          )}
         </DialogContent>
       </Dialog>
 
