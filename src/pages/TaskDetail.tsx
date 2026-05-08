@@ -218,7 +218,7 @@ export default function TaskDetail() {
       setEEstHours(''); setEEstMinutes('');
     }
 
-    setELocation('');
+    setELocation((task as any).location ?? '');
     // Open sections that already contain user data so the editor reflects state.
     const hasA = !!task.effort_level || (task.duration_minutes ?? 0) > 0 || !!(task.involves_others || task.others_rely) || task.priority !== 'should';
     const hasB = !!task.scheduled_date || !!task.deadline;
