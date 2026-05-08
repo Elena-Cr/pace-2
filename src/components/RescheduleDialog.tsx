@@ -50,6 +50,8 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
     if (open) {
       setSelected(tomorrowISO);
       setReason(undefined);
+      setCustomMode(false);
+      setCustomText('');
       setStartTime(task?.start_time ? task.start_time.slice(0, 5) : '');
       setEndTime(task?.end_time ? task.end_time.slice(0, 5) : '');
     }
