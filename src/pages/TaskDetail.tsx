@@ -575,28 +575,6 @@ export default function TaskDetail() {
         </button>
       )}
 
-      {/* First-step prompt for heavier tasks with no next action defined. */}
-      {!task.next_action && !editingNext && (task.effort_level === 'Heavy' || (task.duration_minutes ?? 0) >= 90) && (
-        <div className="mt-4 pace-card-soft">
-          <div className="pace-eyebrow mb-1"><span className="priority-dot should" />A bigger one</div>
-          <div className="text-[14px]">This is a bigger one. What's the smallest thing you could do first?</div>
-          <div className="mt-2 flex gap-2">
-            <input
-              className="pace-field"
-              placeholder="e.g. Open the doc and read the brief"
-              value={nextDraft}
-              onChange={e => setNextDraft(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') { e.preventDefault(); const v = nextDraft.trim(); if (v) { update({ next_action: v }); setNextDraft(''); } }
-              }}
-            />
-            <button
-              onClick={() => { const v = nextDraft.trim(); if (v) { update({ next_action: v }); setNextDraft(''); } }}
-              className="pace-btn pace-btn-sm"
-            >Save</button>
-          </div>
-        </div>
-      )}
 
       {/* Status flow */}
       <div className="mt-5 pace-card">
