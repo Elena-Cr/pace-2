@@ -345,115 +345,13 @@ export default function TaskDetail() {
         <h1 className="pace-screen-title mt-2">Edit action</h1>
 
         <div className="mt-5 space-y-4">
+          {/* ALWAYS VISIBLE: Title */}
           <div>
             <label className="pace-field-label">What needs doing?</label>
             <input className="pace-field" value={eTitle} onChange={e => setETitle(e.target.value)} placeholder="e.g. Stats problem set 4" />
           </div>
 
-          <div>
-            <label className="pace-field-label">When would you like to work on this?</label>
-            <div className="flex gap-1.5 flex-wrap">
-              {([
-                { k: 'today', label: 'Today' },
-                { k: 'tomorrow', label: 'Tomorrow' },
-                { k: 'backlog', label: 'Backlog' },
-              ] as const).map(opt => (
-                <button key={opt.k} type="button" onClick={() => setEWhen(opt.k)}
-                  className={eWhen === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
-                  {opt.label}
-                </button>
-              ))}
-              <Popover open={eDatePopoverOpen} onOpenChange={setEDatePopoverOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      eWhen === 'pick' && ePickedDate ? 'pace-chip-filled' : 'pace-chip',
-                      'inline-flex items-center gap-1.5'
-                    )}
-                  >
-                    <CalendarIcon className="w-3.5 h-3.5" />
-                    {eWhen === 'pick' && ePickedDate ? format(ePickedDate, 'MMM d') : 'Pick a date'}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={ePickedDate}
-                    onSelect={(d) => {
-                      if (d) {
-                        setEPickedDate(d);
-                        setEWhen('pick');
-                        setEDatePopoverOpen(false);
-                      }
-                    }}
-                    initialFocus
-                    className={cn('p-3 pointer-events-auto')}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {eScheduledISO && (
-              <div className="mt-3">
-                <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
-                  <Clock className="w-3 h-3" /> Pick a start and end time
-                </div>
-                <TimeRangePicker
-                  startTime={eStartTime}
-                  endTime={eEndTime}
-                  onChange={(s, e) => { setEStartTime(s); setEEndTime(e); }}
-                  date={eScheduledISO}
-                  tasks={allTasks}
-                  blocks={userProfile?.default_time_blocks ?? []}
-                  excludeTaskId={task.id}
-                  required
-                />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="pace-field-label">Time estimate</label>
-            {eHasTimeRange && (
-              <p className="pace-meta mt-0.5 mb-1.5">From your selected start and end time. Edit to ask to move the end time.</p>
-            )}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <input
-                  type="number" min={0} step={1}
-                  className="pace-field"
-                  placeholder="Hours"
-                  value={eEstHours}
-                  onBlur={checkEditEstimateOnBlur}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '') return setEEstHours('');
-                    const n = Math.max(0, Math.floor(Number(v)));
-                    setEEstHours(Number.isNaN(n) ? '' : n);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="number" min={0} max={59} step={1}
-                  className="pace-field"
-                  placeholder="Minutes"
-                  value={eEstMinutes}
-                  onBlur={checkEditEstimateOnBlur}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '') return setEEstMinutes('');
-                    let n = Math.max(0, Math.floor(Number(v)));
-                    if (Number.isNaN(n)) return setEEstMinutes('');
-                    if (n > 59) n = 59;
-                    setEEstMinutes(n);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
+          {/* ALWAYS VISIBLE: Category */}
           <div>
             <label className="pace-field-label">Category</label>
             <div className="flex flex-wrap gap-1.5">
@@ -466,82 +364,217 @@ export default function TaskDetail() {
             </div>
           </div>
 
-          <div>
-            <label className="pace-field-label">Priority</label>
-            <div className="flex gap-1.5">
-              {(['must','should','could'] as Priority[]).map(p => (
-                <button key={p} onClick={() => setEPriority(p)}
-                  className={ePriority === p ? 'pace-chip-filled' : 'pace-chip'}>
-                  <span className={`priority-dot ${p}`} />{PRIORITY_LABEL[p]}
-                </button>
-              ))}
+          {/* SECTION A: Priority & Effort */}
+          <SectionToggle
+            open={eOpenA} onToggle={() => setEOpenA(o => !o)}
+            title="Priority & Effort"
+            hasValue={!!eEffort || !!eEstimate || eOthers || ePriority !== 'should'}
+          >
+            <div>
+              <label className="pace-field-label">Priority</label>
+              <div className="flex gap-1.5">
+                {(['must','should','could'] as Priority[]).map(p => (
+                  <button key={p} onClick={() => setEPriority(p)}
+                    className={ePriority === p ? 'pace-chip-filled' : 'pace-chip'}>
+                    <span className={`priority-dot ${p}`} />{PRIORITY_LABEL[p]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <button type="button" onClick={() => setEShowAdvanced(s => !s)} className="pace-btn-ghost w-full">
-            {eShowAdvanced ? 'Hide other details' : 'View other details'}
-          </button>
-
-          {eShowAdvanced && (
-            <div className="space-y-4 animate-fade-in">
-              <div>
-                <label className="pace-field-label">Deadline (optional)</label>
-                <input type="datetime-local" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
-              </div>
-
-              <div>
-                <div className="pace-field-label">Effort level (optional)</div>
-                <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
-                <div className="flex gap-1.5 mt-1.5">
-                  {EFFORTS.map(e => (
-                    <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
-                      className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
-                  ))}
+            <div>
+              <label className="pace-field-label">Time estimate</label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="number" min={0} step={1}
+                    className="pace-field pr-8"
+                    placeholder="Hours"
+                    value={eEstHours}
+                    onBlur={checkEditEstimateOnBlur}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '') return setEEstHours('');
+                      const n = Math.max(0, Math.floor(Number(v)));
+                      setEEstHours(Number.isNaN(n) ? '' : n);
+                    }}
+                  />
+                  {eEstHours !== '' && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">h</span>
+                  )}
+                </div>
+                <div className="flex-1 relative">
+                  <input
+                    type="number" min={0} max={59} step={1}
+                    className="pace-field pr-8"
+                    placeholder="Minutes"
+                    value={eEstMinutes}
+                    onBlur={checkEditEstimateOnBlur}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '') return setEEstMinutes('');
+                      let n = Math.max(0, Math.floor(Number(v)));
+                      if (Number.isNaN(n)) return setEEstMinutes('');
+                      if (n > 59) n = 59;
+                      setEEstMinutes(n);
+                    }}
+                  />
+                  {eEstMinutes !== '' && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">m</span>
+                  )}
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label className="pace-field-label">Smallest next action (optional)</label>
-                <input className="pace-field" value={eNextAction} onChange={e => setENextAction(e.target.value)} placeholder="e.g. open the assignment page" />
+            <div>
+              <div className="pace-field-label">Effort level (optional)</div>
+              <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
+              <div className="flex gap-1.5 mt-1.5">
+                {EFFORTS.map(e => (
+                  <button key={e} onClick={() => setEEffort(e === eEffort ? null : e)}
+                    className={eEffort === e ? 'pace-chip-filled' : 'pace-chip'}>{e}</button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setEOthers(v => !v)}
+              className={cn(
+                'w-full justify-center inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium border',
+                eOthers
+                  ? 'bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] border-[hsl(var(--success)/0.35)]'
+                  : 'bg-muted text-muted-foreground border-border'
+              )}
+              aria-pressed={eOthers}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Involves others? {eOthers ? 'Yes' : 'No'}
+            </button>
+          </SectionToggle>
+
+          {/* SECTION B: Scheduling & Deadline */}
+          <SectionToggle
+            open={eOpenB} onToggle={() => setEOpenB(o => !o)}
+            title="Scheduling & Deadline"
+            hasValue={!!eScheduledISO || !!eDeadline}
+          >
+            <div>
+              <label className="pace-field-label">What date would you like to schedule this for?</label>
+              <p className="pace-meta mt-0.5 mb-1.5">This is when you plan to work on it.</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {([
+                  { k: 'today', label: 'Today' },
+                  { k: 'tomorrow', label: 'Tomorrow' },
+                  { k: 'backlog', label: 'Backlog' },
+                ] as const).map(opt => (
+                  <button key={opt.k} type="button" onClick={() => setEWhen(opt.k)}
+                    className={eWhen === opt.k ? 'pace-chip-filled' : 'pace-chip'}>
+                    {opt.label}
+                  </button>
+                ))}
+                <Popover open={eDatePopoverOpen} onOpenChange={setEDatePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        eWhen === 'pick' && ePickedDate ? 'pace-chip-filled' : 'pace-chip',
+                        'inline-flex items-center gap-1.5'
+                      )}
+                    >
+                      <CalendarIcon className="w-3.5 h-3.5" />
+                      {eWhen === 'pick' && ePickedDate ? format(ePickedDate, 'MMM d') : 'Pick a date'}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={ePickedDate}
+                      onSelect={(d) => {
+                        if (d) {
+                          setEPickedDate(d);
+                          setEWhen('pick');
+                          setEDatePopoverOpen(false);
+                        }
+                      }}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div>
-                <label className="pace-field-label">Next steps (optional)</label>
-                <div className="flex gap-2">
-                  <input className="pace-field" value={eSubInput}
-                    onChange={e => setESubInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSub(); } }}
-                    placeholder="Break it into small pieces" />
-                  <button type="button" onClick={addEditSub} className="pace-btn px-4"><Plus className="w-4 h-4" /></button>
-                </div>
-                {eSubtasks.length > 0 && (
-                  <ul className="mt-2 space-y-1">
-                    {eSubtasks.map(s => (
-                      <li key={s.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-[14px]">
-                        <span>· {s.title}</span>
-                        <button onClick={() => setESubtasks(x => x.filter(y => y.id !== s.id))} aria-label="Remove">
-                          <X className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      </li>
+              {eScheduledISO && (
+                <div className="mt-3">
+                  <label className="pace-field-label">Start time</label>
+                  <select
+                    className="pace-field"
+                    value={eStartTime}
+                    onChange={e => setEStartTime(e.target.value)}
+                  >
+                    <option value="">Select a time…</option>
+                    {TIME_OPTIONS.map(t => (
+                      <option key={t} value={t}>{t}</option>
                     ))}
-                  </ul>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setEOthers(v => !v)}
-                className={`${eOthers ? 'pace-chip-filled' : 'pace-chip'} w-full justify-center`}
-              >
-                <Users className="w-3.5 h-3.5" /> Involves or relies on others (optional)
-              </button>
-
-              <div>
-                <label className="pace-field-label">Notes (optional)</label>
-                <textarea className="pace-field min-h-[88px] py-3" value={eNotes} onChange={e => setENotes(e.target.value)} placeholder="Anything that helps future-you" />
-              </div>
+                  </select>
+                  {eHasTimeRange && (
+                    <p className="pace-meta mt-1">Ends at {eEndTime}.</p>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+
+            <div>
+              <label className="pace-field-label">Does this have a deadline? (optional)</label>
+              <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
+              <input type="datetime-local" className="pace-field" value={eDeadline} onChange={e => setEDeadline(e.target.value)} />
+            </div>
+          </SectionToggle>
+
+          {/* SECTION C: Notes & Next Steps */}
+          <SectionToggle
+            open={eOpenC} onToggle={() => setEOpenC(o => !o)}
+            title="Notes & Next Steps"
+            hasValue={eSubtasks.length > 0 || !!eNotes.trim() || !!eLocation.trim()}
+          >
+            <div>
+              <label className="pace-field-label">Smallest next action (optional)</label>
+              <input className="pace-field" value={eNextAction} onChange={e => setENextAction(e.target.value)} placeholder="e.g. open the assignment page" />
+            </div>
+
+            <div>
+              <label className="pace-field-label">Next steps (optional)</label>
+              <div className="flex gap-2">
+                <input className="pace-field" value={eSubInput}
+                  onChange={e => setESubInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSub(); } }}
+                  placeholder="Break it into small pieces" />
+                <button type="button" onClick={addEditSub} className="pace-btn px-4"><Plus className="w-4 h-4" /></button>
+              </div>
+              {eSubtasks.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {eSubtasks.map(s => (
+                    <li key={s.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-[14px]">
+                      <span>· {s.title}</span>
+                      <button onClick={() => setESubtasks(x => x.filter(y => y.id !== s.id))} aria-label="Remove">
+                        <X className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <label className="pace-field-label">Notes (optional)</label>
+              <textarea className="pace-field min-h-[88px] py-3" value={eNotes} onChange={e => setENotes(e.target.value)} placeholder="Anything that helps future-you" />
+            </div>
+
+            <div>
+              <label className="pace-field-label">Location (optional)</label>
+              <input className="pace-field" value={eLocation} onChange={e => setELocation(e.target.value)} placeholder="e.g. Library, home office" />
+            </div>
+          </SectionToggle>
 
           <div className="flex gap-2 pt-2">
             <button onClick={() => setEditMode(false)} className="pace-btn flex-1">Cancel</button>
@@ -549,6 +582,8 @@ export default function TaskDetail() {
               {savingEdit ? 'Saving…' : 'Save changes'}
             </button>
           </div>
+          {/* keep refs alive for unused imports */}
+          <span className="hidden">{allTasks.length}{userProfile ? '' : ''}</span>
         </div>
 
         <AlertDialog open={!!ePendingEstimate} onOpenChange={(o) => { if (!o) cancelEditEstimateChange(); }}>
