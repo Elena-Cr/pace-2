@@ -331,7 +331,7 @@ export default function Capture() {
           </div>
 
           <div>
-            <div className="pace-field-label">Effort level (optional)</div>
+            <div className="pace-field-label">Effort level</div>
             <p className="pace-meta mt-1">How much mental or physical effort this requires.</p>
             <div className="flex gap-1.5 mt-1.5">
               {EFFORTS.map(e => (
@@ -461,7 +461,7 @@ export default function Capture() {
           </div>
 
           <div>
-            <label className="pace-field-label">Does this have a deadline? (optional)</label>
+            <label className="pace-field-label">Does this have a deadline?</label>
             <p className="pace-meta mt-0.5 mb-1.5">This is the latest date it must be done by.</p>
             <input type="date" className="pace-field" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
@@ -470,7 +470,7 @@ export default function Capture() {
         {/* SECTION C: Notes & Next Steps */}
         <SectionToggle open={openC} onToggle={() => setOpenC(o => !o)} title="Notes & Next Steps" hasValue={sectionCHasValue}>
           <div>
-            <label className="pace-field-label">Next steps (optional)</label>
+            <label className="pace-field-label">Next steps</label>
             <div className="flex gap-2">
               <input className="pace-field" value={subInput}
                 onChange={e => setSubInput(e.target.value)}
@@ -493,12 +493,12 @@ export default function Capture() {
           </div>
 
           <div>
-            <label className="pace-field-label">Notes (optional)</label>
+            <label className="pace-field-label">Notes</label>
             <textarea className="pace-field min-h-[88px] py-3" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Anything that helps future-you" />
           </div>
 
           <div>
-            <label className="pace-field-label">Location (optional)</label>
+            <label className="pace-field-label">Location</label>
             <input className="pace-field" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Library, home office" />
           </div>
         </SectionToggle>
