@@ -53,7 +53,7 @@ type CalEvent = {
 };
 
 const HOUR_PX = 56;
-const START_HOUR = 6;
+const START_HOUR = 0;
 const END_HOUR = 24; // exclusive
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -798,8 +798,9 @@ export default function CalendarView() {
 
       <div className="mt-3 pace-card !p-3 overflow-hidden">
 
-        {/* Time grid */}
-        <div ref={gridRef} className="relative mt-2 flex" style={{ height: totalGridHeight }}>
+        {/* Time grid — scrollable to access full 00:00–24:00 range */}
+        <div className="relative mt-2 overflow-y-auto" style={{ maxHeight: '60vh' }}>
+        <div ref={gridRef} className="relative flex" style={{ height: totalGridHeight }}>
           {/* Hour labels */}
           <div className="w-9 shrink-0 relative">
             {HOURS.map((h, i) => (
@@ -906,6 +907,7 @@ export default function CalendarView() {
             })}
           </div>
         </div>
+        </div>
       </div>
       </>
       )}
@@ -970,23 +972,24 @@ export default function CalendarView() {
           </div>
         );
       })()}
-      {/* Add action / Add rest block */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button onClick={() => nav('/capture')} className="pace-btn-primary">
-          <Plus className="w-4 h-4" /> Add action
-        </button>
-        <button
-          onClick={() => {
-            const focus =
-              view === 'day' ? days[dayIdx] :
-              view === 'week' ? centerDate :
-              new Date();
-            setRestEdit({ date: toISODate(focus), startTime: '12:00', endTime: '12:30', label: 'Rest' });
-          }}
-          className="pace-btn">
-          <Moon className="w-4 h-4" /> Add rest block
-        </button>
-      </div>
+      {/* Add action / Add rest block — hidden in 3-day (week) view */}
+      {view !== 'week' && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button onClick={() => nav('/capture')} className="pace-btn-primary">
+            <Plus className="w-4 h-4" /> Add action
+          </button>
+          <button
+            onClick={() => {
+              const focus =
+                view === 'day' ? days[dayIdx] :
+                new Date();
+              setRestEdit({ date: toISODate(focus), startTime: '12:00', endTime: '12:30', label: 'Rest' });
+            }}
+            className="pace-btn">
+            <Moon className="w-4 h-4" /> Add rest block
+          </button>
+        </div>
+      )}
 
       {/* Detail dialog — shadcn Dialog gives us focus trap + Escape for free. */}
       <Dialog open={!!open} onOpenChange={(o) => { if (!o) setOpen(null); }}>
