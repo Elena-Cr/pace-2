@@ -1217,9 +1217,18 @@ export default function CalendarView() {
 
   async function toggleDone(ev: CalEvent) {
     if (!ev.taskId) return;
-    const newStatus: Status = ev.status === 'done' ? 'in_progress' : 'done';
+    const wasDone = ev.status === 'done';
+    const newStatus: Status = wasDone ? 'in_progress' : 'done';
     try {
-      await update.mutateAsync({ id: ev.taskId, patch: { status: newStatus } as any });
+      const patch: any = { status: newStatus };
+      if (!wasDone) {
+        patch.progress = 100;
+        patch.completed_at = new Date().toISOString();
+      } else {
+        patch.completed_at = null;
+      }
+      await update.mutateAsync({ id: ev.taskId, patch });
+      if (!wasDone) toast.success(pickCompletionMessage());
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not update.');
     }
