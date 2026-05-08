@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile, TimeBlock } from '@/hooks/useUserProfile';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
-import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, ReplanReason, toISODate } from '@/lib/pace';
+import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, formatDeadline, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
 import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes, resolveProfileEnergy } from '@/lib/scheduling';
 import { pickCompletionMessage } from '@/lib/completionMessages';
@@ -699,7 +699,9 @@ export default function CalendarView() {
                     }
 
                     const t = ev.taskId ? taskById.get(ev.taskId) : undefined;
-                    const buf = t ? bufferMinutes(t) : 0;
+                    const status = (t?.status ?? ev.status ?? 'not_started') as string;
+                    const deadlineIso = (t?.deadline ?? null) as string | null;
+                    const involvesOthers = !!(t?.involves_others ?? (ev as any).involves_others);
                     return (
                       <li key={ev.id}>
                         <button onClick={() => setOpen(ev)}
@@ -722,16 +724,12 @@ export default function CalendarView() {
                                 {ev.domain === 'rest' ? 'Rest' : DOMAIN_LABEL[ev.domain as Domain]}
                               </span>
                               {ev.duration_minutes != null && <span>· {fmtMin(ev.duration_minutes)}</span>}
-                              {ev.effort_level && <span>· {ev.effort_level} effort</span>}
-                              {ev.others_rely && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> shared</span>}
-                              {(ev.reschedule_count ?? 0) >= 2 && <span className="pace-chip !py-0.5 !px-1.5 !text-[11px]">Rescheduled {ev.reschedule_count}×</span>}
-                              {conflict && <span className="inline-flex items-center gap-1 text-[hsl(var(--attention))]"><AlertTriangle className="w-3 h-3" /> overlaps rest</span>}
+                              {deadlineIso && (
+                                <span className="inline-flex items-center gap-1">· <AlertTriangle className="w-3 h-3" /> {formatDeadline(deadlineIso)}</span>
+                              )}
+                              {involvesOthers && <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" /> Involves others</span>}
+                              <span className={`status-chip status-${status} ml-auto`}>{STATUS_LABEL[status as any]}</span>
                             </div>
-                            {ev.next_action && (
-                              <div className="mt-1.5 text-[13px] text-muted-foreground">
-                                <span className="font-medium text-foreground">Next:</span> {ev.next_action}
-                              </div>
-                            )}
                           </div>
                         </button>
                       </li>
