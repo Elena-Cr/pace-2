@@ -28,7 +28,7 @@ import {
 } from '@/lib/scheduling';
 import { useTaskSuggestions, stem } from '@/hooks/useTaskSuggestions';
 import { toast } from 'sonner';
-import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
+import { Calendar as CalIcon, Timer, Plus, ArrowRight, Sparkles, Moon, Sun, Coffee, Utensils, Check, Settings as SettingsIcon, Users, AlertTriangle } from 'lucide-react';
 
 const DOMAIN_FILTERS: { k: 'all' | Domain; label: string }[] = [
   { k: 'all', label: 'All' },
