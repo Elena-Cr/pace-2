@@ -606,7 +606,7 @@ export default function CalendarView() {
                     availableHours={summary.availH}
                     size="md"
                   />
-                  <div className={`rounded-full px-3 py-1 text-[11px] font-medium ${stateClass}`}>{stateLabel}</div>
+                  <div className={`rounded-full px-3 py-1 text-[12px] font-medium ${stateClass}`}>{stateLabel}</div>
                   <CapacityInfoButton />
                 </div>
               </div>
