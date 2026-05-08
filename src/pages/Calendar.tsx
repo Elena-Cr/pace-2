@@ -716,9 +716,6 @@ export default function CalendarView() {
                               <div className={`text-[15px] font-medium leading-snug truncate ${done ? 'line-through' : ''}`}>{ev.title}</div>
                               <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{fmtRange(ev.startMin, ev.endMin)}</span>
                             </div>
-                            {buf > 0 && (
-                              <div className="mt-0.5 text-[11px] text-muted-foreground">+{fmtMin(buf)} buffer</div>
-                            )}
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
                               <span className={`inline-flex items-center gap-1 ${dc.text}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${dc.bar}`} />

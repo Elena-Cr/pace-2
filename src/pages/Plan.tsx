@@ -287,11 +287,6 @@ export default function Plan() {
         <span>{fmtMin(plannedMinutes)} planned</span>
         <span>{capacityReady ? `${fmtMin(capacityMinutes)} available` : '— available'}</span>
       </div>
-      {bufferTotal > 0 && (
-        <div className="mt-1 text-[11px] text-muted-foreground">
-          {fmtMin(bufferTotal)} of {fmtMin(plannedMinutes)} is buffer time
-        </div>
-      )}
 
       {showPaceHint && (
         <div className="pace-card-soft mt-3 animate-fade-in text-[13px] text-muted-foreground">
@@ -354,7 +349,7 @@ export default function Plan() {
                   )}
                 </div>
               </div>
-              {t.duration_minutes && <span className="pace-chip">+{bufferMinutes(t)}m buffer</span>}
+              
             </button>
           );
         })}
