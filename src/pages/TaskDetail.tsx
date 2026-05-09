@@ -102,6 +102,7 @@ export default function TaskDetail() {
   const [eSubtasks, setESubtasks] = useState<Subtask[]>([]);
   const [eSubInput, setESubInput] = useState('');
   const [eLocation, setELocation] = useState('');
+  const [eCountsTowardCapacity, setECountsTowardCapacity] = useState(true);
   const [eOpenA, setEOpenA] = useState(false);
   const [eOpenB, setEOpenB] = useState(false);
   const [eOpenC, setEOpenC] = useState(false);
@@ -220,6 +221,7 @@ export default function TaskDetail() {
     }
 
     setELocation((task as any).location ?? '');
+    setECountsTowardCapacity((task as any).counts_toward_capacity !== false);
     // Open sections that already contain user data so the editor reflects state.
     const hasA = !!task.effort_level || (task.duration_minutes ?? 0) > 0 || !!(task.involves_others || task.others_rely) || task.priority !== 'should';
     const hasB = !!task.scheduled_date || !!task.deadline;
@@ -249,6 +251,7 @@ export default function TaskDetail() {
           subtasks: eSubtasks,
           involves_others: eOthers,
           location: eLocation.trim() || null,
+          counts_toward_capacity: eCountsTowardCapacity,
         } as any,
       });
       toast.success('Saved.');
@@ -355,6 +358,13 @@ export default function TaskDetail() {
               <button onClick={() => setEDomain(null)}
                 className={`pace-chip-dashed ${eDomain === null ? 'opacity-100' : 'opacity-70'}`}>Decide later</button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+            <label htmlFor="edit-capacity" className="text-[14px] font-medium">
+              Count toward daily capacity
+            </label>
+            <Switch id="edit-capacity" checked={eCountsTowardCapacity} onCheckedChange={setECountsTowardCapacity} />
           </div>
 
           {/* SECTION A: Priority & Effort */}
