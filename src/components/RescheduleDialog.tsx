@@ -75,6 +75,7 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   async function confirm() {
     if (!task) return;
     if (selected < todayISO()) { toast.error('Pick today or a later date.'); return; }
+    if (isSchedule && !startTime) { toast.error('Add a start time to schedule this task.'); return; }
     try {
       // Only bump reschedule_count + flip status when the *date* actually
       // changes. Time-only or estimate-only edits within the same day are
@@ -143,7 +144,7 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
 
   const title = isSchedule ? 'When would you like to do this?' : 'When works better?';
   const description = isSchedule
-    ? "Pick a day in the next two weeks. Add a time if you'd like."
+    ? "Pick a day in the next two weeks and add a start time."
     : "Pick any day in the next two weeks. We'll keep your progress and notes.";
   const ctaLabel = isSchedule ? 'Schedule task' : 'Move to selected date';
 
@@ -203,7 +204,7 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
 
         <div className="mt-3">
           <div className="pace-eyebrow inline-flex items-center gap-1.5 mb-1.5">
-            <Clock className="w-3 h-3" /> Pick a start time (optional)
+            <Clock className="w-3 h-3" /> Pick a start time {isSchedule ? <span className="text-[hsl(var(--attention))]">*</span> : '(optional)'}
           </div>
           <input
             type="time"
