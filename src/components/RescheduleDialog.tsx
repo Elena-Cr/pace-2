@@ -233,6 +233,20 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
           />
+          {conflicts.length > 0 && (
+            <div className="mt-2 flex items-start gap-1.5 rounded-xl border border-[hsl(var(--attention)/0.4)] bg-[hsl(var(--attention)/0.08)] px-3 py-2 text-[12px] text-[hsl(var(--attention))]">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-medium">Overlaps {conflicts.length === 1 ? 'another block' : `${conflicts.length} other blocks`}.</div>
+                <ul className="mt-0.5 space-y-0.5 text-[hsl(var(--attention)/0.9)]">
+                  {conflicts.slice(0, 3).map((c, i) => {
+                    const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+                    return <li key={i}>· {c.title} ({fmt(c.startMin)}–{fmt(c.endMin)})</li>;
+                  })}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-3">
