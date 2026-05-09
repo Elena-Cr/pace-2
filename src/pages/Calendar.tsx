@@ -871,7 +871,7 @@ export default function CalendarView() {
                         draggable={!isFixed}
                         onDragStart={() => setDrag({ id: ev.id })}
                         onClick={(e) => { e.stopPropagation(); setOpen(ev); }}
-                        className={`absolute rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30`}
+                        className={`absolute rounded-lg ${dc.bg} text-left p-1.5 overflow-hidden border border-border/30 flex flex-col items-start justify-start`}
                         style={{ top, height, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`, zIndex: 5 }}>
                         <div className="flex gap-1 items-start">
                           <div className="min-w-0 flex-1">
