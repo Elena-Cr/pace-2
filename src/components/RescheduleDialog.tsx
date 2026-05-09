@@ -74,6 +74,25 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
     return out;
   }, [loads]);
 
+  // Detect overlaps between the proposed [start, start+est) window and any
+  // other tasks/rest blocks on the selected day so the user is warned before
+  // committing the change.
+  const conflicts = useMemo(() => {
+    const sMin = timeStringToMin(startTime);
+    if (sMin == null) return [];
+    const h = Math.max(0, Math.floor(Number(estHours) || 0));
+    const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
+    const dur = h * 60 + m || (task?.duration_minutes ?? 30);
+    return findScheduleConflicts({
+      date: selected,
+      startMin: sMin,
+      endMin: sMin + dur,
+      tasks,
+      blocks: (userProfile?.default_time_blocks as any) ?? [],
+      excludeTaskId: task?.id ?? null,
+    });
+  }, [selected, startTime, estHours, estMinutes, tasks, userProfile?.default_time_blocks, task?.id, task?.duration_minutes]);
+
   async function confirm() {
     if (!task) return;
     if (selected < todayISO()) { toast.error('Pick today or a later date.'); return; }
