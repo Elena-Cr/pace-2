@@ -54,6 +54,7 @@ export default function Workload() {
       const dayTasks = tasks.filter(t => t.scheduled_date === iso && !t.is_rest);
       const totals: Record<Domain, number> = { academic: 0, work: 0, social: 0, personal: 0 };
       dayTasks.forEach(t => {
+        if ((t as any).counts_toward_capacity === false) return;
         const m = t.duration_minutes || 30;
         if (t.domain) totals[t.domain as Domain] += m;
       });
