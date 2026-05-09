@@ -802,7 +802,7 @@ export default function CalendarView() {
             {HOURS.map((h, i) => (
               <div key={h} className="absolute left-0 right-0 text-[10px] text-muted-foreground -translate-y-1.5"
                    style={{ top: i * HOUR_PX }}>
-                {((h + 11) % 12 + 1)}{h < 12 ? 'a' : 'p'}
+                {h.toString().padStart(2, '0')}
               </div>
             ))}
           </div>
