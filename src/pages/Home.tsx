@@ -233,8 +233,8 @@ export default function Home() {
     profileCapMin,
     { affects: userProfile?.energy_affects_capacity ?? true, pct: userProfile?.energy_capacity_pct ?? 10 },
   );
-  const plannedMin = real.reduce((s, t) => s + (t.duration_minutes || 0), 0)
-    + doneToday.reduce((s, t) => s + (t.duration_minutes || 0), 0);
+  const plannedMin = real.reduce((s, t) => s + ((t as any).counts_toward_capacity === false ? 0 : (t.duration_minutes || 0)), 0)
+    + doneToday.reduce((s, t) => s + ((t as any).counts_toward_capacity === false ? 0 : (t.duration_minutes || 0)), 0);
   const capState = capacityState(plannedMin, capMin);
   const ratio = plannedMin / Math.max(1, capMin);
   const energy = periodOverride ?? capacity?.energy_level ?? profileEnergy;
