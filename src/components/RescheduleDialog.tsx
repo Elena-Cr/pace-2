@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
 import { useTasks, useTaskMutations } from '@/hooks/useTasks';
-import { buildReschedulePatch, buildMoveToLaterPatch, workloadByDate } from '@/lib/scheduling';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { buildReschedulePatch, buildMoveToLaterPatch, workloadByDate, findScheduleConflicts, timeStringToMin } from '@/lib/scheduling';
 import { Mood, ReplanReason, fmtMin, toISODate, todayISO } from '@/lib/pace';
 import { toast } from 'sonner';
-import { Clock } from 'lucide-react';
+import { AlertTriangle, Clock } from 'lucide-react';
 
 type Props = {
   taskId: string | null;
@@ -30,6 +31,7 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   const isSchedule = (mode === 'schedule');
   const { data: tasks = [] } = useTasks();
   const { update } = useTaskMutations();
+  const { profile: userProfile } = useUserProfile();
   const task = useMemo(() => tasks.find(t => t.id === taskId) ?? null, [tasks, taskId]);
 
   const tomorrowISO = useMemo(() => {
@@ -71,6 +73,25 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
     }
     return out;
   }, [loads]);
+
+  // Detect overlaps between the proposed [start, start+est) window and any
+  // other tasks/rest blocks on the selected day so the user is warned before
+  // committing the change.
+  const conflicts = useMemo(() => {
+    const sMin = timeStringToMin(startTime);
+    if (sMin == null) return [];
+    const h = Math.max(0, Math.floor(Number(estHours) || 0));
+    const m = Math.max(0, Math.floor(Number(estMinutes) || 0));
+    const dur = h * 60 + m || (task?.duration_minutes ?? 30);
+    return findScheduleConflicts({
+      date: selected,
+      startMin: sMin,
+      endMin: sMin + dur,
+      tasks,
+      blocks: (userProfile?.default_time_blocks as any) ?? [],
+      excludeTaskId: task?.id ?? null,
+    });
+  }, [selected, startTime, estHours, estMinutes, tasks, userProfile?.default_time_blocks, task?.id, task?.duration_minutes]);
 
   async function confirm() {
     if (!task) return;
@@ -212,6 +233,20 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
           />
+          {conflicts.length > 0 && (
+            <div className="mt-2 flex items-start gap-1.5 rounded-xl border border-[hsl(var(--attention)/0.4)] bg-[hsl(var(--attention)/0.08)] px-3 py-2 text-[12px] text-[hsl(var(--attention))]">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-medium">Overlaps {conflicts.length === 1 ? 'another block' : `${conflicts.length} other blocks`}.</div>
+                <ul className="mt-0.5 space-y-0.5 text-[hsl(var(--attention)/0.9)]">
+                  {conflicts.slice(0, 3).map((c, i) => {
+                    const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+                    return <li key={i}>· {c.title} ({fmt(c.startMin)}–{fmt(c.endMin)})</li>;
+                  })}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-3">

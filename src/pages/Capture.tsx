@@ -6,7 +6,8 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import AppShell from '@/components/AppShell';
 import { Domain, Priority, PRIORITY_LABEL, fmtMin, DOMAIN_LABEL, toISODate } from '@/lib/pace';
 import { toast } from 'sonner';
-import { X, Plus, Sparkles, Repeat, Users, CalendarIcon, ChevronDown } from 'lucide-react';
+import { X, Plus, Sparkles, Repeat, Users, CalendarIcon, ChevronDown, AlertTriangle } from 'lucide-react';
+import { findScheduleConflicts } from '@/lib/scheduling';
 import { useTaskSuggestions, Suggestion, stem } from '@/hooks/useTaskSuggestions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -128,6 +129,21 @@ export default function Capture() {
     const startMin = timeStringToMin(startTime)!;
     setEndTime(minToTimeString(startMin + Number(estimate)));
   }, [startTime, estimate]);
+
+  // Warn if the proposed start + duration overlaps another task or rest block
+  // on the chosen day. Shown inline under the start time input.
+  const conflicts = useMemo(() => {
+    const sMin = timeStringToMin(startTime);
+    if (sMin == null || !scheduledISO) return [];
+    const dur = Number(estimate) || 30;
+    return findScheduleConflicts({
+      date: scheduledISO,
+      startMin: sMin,
+      endMin: sMin + dur,
+      tasks,
+      blocks: (userProfile?.default_time_blocks as any) ?? [],
+    });
+  }, [startTime, estimate, scheduledISO, tasks, userProfile?.default_time_blocks]);
 
   function checkEstimateOnBlur() {
     if (!hasTimeRange) return;
@@ -418,6 +434,20 @@ export default function Capture() {
                 </select>
                 {hasTimeRange && (
                   <p className="pace-meta mt-1">Ends at {endTime}.</p>
+                )}
+                {conflicts.length > 0 && (
+                  <div className="mt-2 flex items-start gap-1.5 rounded-xl border border-[hsl(var(--attention)/0.4)] bg-[hsl(var(--attention)/0.08)] px-3 py-2 text-[12px] text-[hsl(var(--attention))]">
+                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-medium">Overlaps {conflicts.length === 1 ? 'another block' : `${conflicts.length} other blocks`}.</div>
+                      <ul className="mt-0.5 space-y-0.5 text-[hsl(var(--attention)/0.9)]">
+                        {conflicts.slice(0, 3).map((c, i) => {
+                          const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+                          return <li key={i}>· {c.title} ({fmt(c.startMin)}–{fmt(c.endMin)})</li>;
+                        })}
+                      </ul>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
