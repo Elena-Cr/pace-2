@@ -130,6 +130,21 @@ export default function Capture() {
     setEndTime(minToTimeString(startMin + Number(estimate)));
   }, [startTime, estimate]);
 
+  // Warn if the proposed start + duration overlaps another task or rest block
+  // on the chosen day. Shown inline under the start time input.
+  const conflicts = useMemo(() => {
+    const sMin = timeStringToMin(startTime);
+    if (sMin == null || !scheduledISO) return [];
+    const dur = Number(estimate) || 30;
+    return findScheduleConflicts({
+      date: scheduledISO,
+      startMin: sMin,
+      endMin: sMin + dur,
+      tasks,
+      blocks: (userProfile?.default_time_blocks as any) ?? [],
+    });
+  }, [startTime, estimate, scheduledISO, tasks, userProfile?.default_time_blocks]);
+
   function checkEstimateOnBlur() {
     if (!hasTimeRange) return;
     const rangeDur = durationMinutesFromRange(startTime, endTime);
