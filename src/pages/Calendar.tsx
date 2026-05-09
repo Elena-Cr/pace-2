@@ -829,7 +829,13 @@ export default function CalendarView() {
               return (
                 <div key={di}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop(di)}
+                  onDrop={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const rawMin = START_HOUR * 60 + (y / HOUR_PX) * 60;
+                    const snapped = Math.round(rawMin / 15) * 15;
+                    handleDrop(di, snapped);
+                  }}
                   // Single click handler computes the hour from the y-offset.
                   // Replaces 18 separate <button> hour cells per day so keyboard
                   // users don't get a tab stop at every empty slot.
