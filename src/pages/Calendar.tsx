@@ -8,7 +8,7 @@ import { useTasks, useTaskMutations } from '@/hooks/useTasks';
 import { useDailyCapacityRange } from '@/hooks/useDailyCapacity';
 import { Domain, DOMAIN_LABEL, DOMAIN_COLOR_VAR, Status, STATUS_LABEL, fmtMin, formatDeadline, ReplanReason, toISODate } from '@/lib/pace';
 import type { Task } from '@/lib/scheduling';
-import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes, resolveProfileEnergy } from '@/lib/scheduling';
+import { getScheduledEvents, effectiveCapacityMinutes, capacityState, buildReschedulePatch, layoutEventsForDay, bufferMinutes, resolveProfileEnergy, minToTimeString } from '@/lib/scheduling';
 import { pickCompletionMessage } from '@/lib/completionMessages';
 import { toast } from 'sonner';
 import ReplanReasonChips from '@/components/ReplanReasonChips';
@@ -429,18 +429,29 @@ export default function CalendarView() {
     else setWeekStart(startOfWeek(d));
   }
 
-  // Drag & drop reschedule
-  async function handleDrop(targetDay: number) {
+  // Drag & drop reschedule. `dropStartMin` is the minute-of-day where the
+  // user released the block, snapped to the nearest 15 minutes. When omitted
+  // (e.g. dropped outside the time grid), the task's existing start_time is
+  // preserved.
+  async function handleDrop(targetDay: number, dropStartMin?: number) {
     if (!drag) return;
     const ev = events.find(e => e.id === drag.id);
     setDrag(null);
-    if (!ev || !ev.taskId || ev.day === targetDay) return;
+    if (!ev || !ev.taskId) return;
+    if (ev.day === targetDay && dropStartMin == null) return;
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
     if (!t) return;
     setDraggingId(ev.id);
     try {
-      await update.mutateAsync({ id: ev.taskId, patch: buildReschedulePatch(t, newDate) });
+      const patch: any = buildReschedulePatch(t, newDate);
+      if (dropStartMin != null) {
+        const duration = Math.max(15, ev.endMin - ev.startMin);
+        const startMin = Math.max(0, Math.min(24 * 60 - duration, dropStartMin));
+        patch.start_time = minToTimeString(startMin);
+        patch.end_time = minToTimeString(startMin + duration);
+      }
+      await update.mutateAsync({ id: ev.taskId, patch });
       setReplanFor({ taskId: ev.taskId, title: ev.title });
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
@@ -818,7 +829,13 @@ export default function CalendarView() {
               return (
                 <div key={di}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop(di)}
+                  onDrop={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const rawMin = START_HOUR * 60 + (y / HOUR_PX) * 60;
+                    const snapped = Math.round(rawMin / 15) * 15;
+                    handleDrop(di, snapped);
+                  }}
                   // Single click handler computes the hour from the y-offset.
                   // Replaces 18 separate <button> hour cells per day so keyboard
                   // users don't get a tab stop at every empty slot.
