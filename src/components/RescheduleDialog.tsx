@@ -31,6 +31,7 @@ export default function RescheduleDialog({ taskId, open, onClose, mood, mode = '
   const isSchedule = (mode === 'schedule');
   const { data: tasks = [] } = useTasks();
   const { update } = useTaskMutations();
+  const { profile: userProfile } = useUserProfile();
   const task = useMemo(() => tasks.find(t => t.id === taskId) ?? null, [tasks, taskId]);
 
   const tomorrowISO = useMemo(() => {
