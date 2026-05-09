@@ -541,7 +541,7 @@ export default function Home() {
                 )}
                 <div className="mt-2 flex gap-1.5 flex-wrap">
                   <button onClick={() => nudge(t.id, 'reschedule')} className="pace-btn-primary pace-btn-sm">Reschedule</button>
-                  <button onClick={() => nudge(t.id, 'block')} className="pace-btn pace-btn-sm">Mark as blocked</button>
+                  
                   <button onClick={() => nudge(t.id, 'later')} className="pace-btn pace-btn-sm">Move to Later</button>
                 </div>
               </div>
