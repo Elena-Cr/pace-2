@@ -429,18 +429,29 @@ export default function CalendarView() {
     else setWeekStart(startOfWeek(d));
   }
 
-  // Drag & drop reschedule
-  async function handleDrop(targetDay: number) {
+  // Drag & drop reschedule. `dropStartMin` is the minute-of-day where the
+  // user released the block, snapped to the nearest 15 minutes. When omitted
+  // (e.g. dropped outside the time grid), the task's existing start_time is
+  // preserved.
+  async function handleDrop(targetDay: number, dropStartMin?: number) {
     if (!drag) return;
     const ev = events.find(e => e.id === drag.id);
     setDrag(null);
-    if (!ev || !ev.taskId || ev.day === targetDay) return;
+    if (!ev || !ev.taskId) return;
+    if (ev.day === targetDay && dropStartMin == null) return;
     const newDate = toISODate(days[targetDay]);
     const t = tasks.find(x => x.id === ev.taskId);
     if (!t) return;
     setDraggingId(ev.id);
     try {
-      await update.mutateAsync({ id: ev.taskId, patch: buildReschedulePatch(t, newDate) });
+      const patch: any = buildReschedulePatch(t, newDate);
+      if (dropStartMin != null) {
+        const duration = Math.max(15, ev.endMin - ev.startMin);
+        const startMin = Math.max(0, Math.min(24 * 60 - duration, dropStartMin));
+        patch.start_time = minToTimeString(startMin);
+        patch.end_time = minToTimeString(startMin + duration);
+      }
+      await update.mutateAsync({ id: ev.taskId, patch });
       setReplanFor({ taskId: ev.taskId, title: ev.title });
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not move.');
